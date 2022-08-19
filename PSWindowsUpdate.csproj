@@ -1,0 +1,136 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{31C18EBF-C6E4-45E7-AECF-7FE9913ACB15}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>PSWindowsUpdate</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <ApplicationVersion>2.2.0.3</ApplicationVersion>
+    <FileAlignment>512</FileAlignment>
+    <LangVersion>8</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BITSReference4_0" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Management.Infrastructure" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Management.Automation" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="PSWindowsUpdate\AddWUServiceManager.cs" />
+    <Compile Include="PSWindowsUpdate\EnableWURemoting.cs" />
+    <Compile Include="PSWindowsUpdate\GetWindowsUpdate_v2.cs" />
+    <Compile Include="PSWindowsUpdate\GetWindowsUpdate.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUApiVersion.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUHistory.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUInstallerStatus.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUJob.cs" />
+    <Compile Include="PSWindowsUpdate\GetWULastResults.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUOfflineMSU.cs" />
+    <Compile Include="PSWindowsUpdate\GetWURebootStatus.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUServiceManager.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUSettings.cs" />
+    <Compile Include="PSWindowsUpdate\GetWUTest.cs" />
+    <Compile Include="PSWindowsUpdate\InvokeWUJob.cs" />
+    <Compile Include="PSWindowsUpdate\WUBits.cs" />
+    <Compile Include="PSWindowsUpdate\WUCimSession.cs" />
+    <Compile Include="PSWindowsUpdate\WindowsUpdate.cs" />
+    <Compile Include="PSWindowsUpdate\AgentInfo.cs" />
+    <Compile Include="PSWindowsUpdate\History.cs" />
+    <Compile Include="PSWindowsUpdate\InstallerStatus.cs" />
+    <Compile Include="PSWindowsUpdate\WUJob.cs" />
+    <Compile Include="PSWindowsUpdate\LastResults.cs" />
+    <Compile Include="PSWindowsUpdate\OfflineMSU.cs" />
+    <Compile Include="PSWindowsUpdate\RebootStatus.cs" />
+    <Compile Include="PSWindowsUpdate\ServiceManager.cs" />
+    <Compile Include="PSWindowsUpdate\WUSettings.cs" />
+    <Compile Include="PSWindowsUpdate\WUImpersonator.cs" />
+    <Compile Include="PSWindowsUpdate\CredentialType.cs" />
+    <Compile Include="PSWindowsUpdate\PersistenceType.cs" />
+    <Compile Include="PSWindowsUpdate\SecureStringHelper.cs" />
+    <Compile Include="PSWindowsUpdate\NativeMethods.cs" />
+    <Compile Include="PSWindowsUpdate\Credential.cs" />
+    <Compile Include="PSWindowsUpdate\WUServiceController.cs" />
+    <Compile Include="PSWindowsUpdate\PSCredMan.cs" />
+    <Compile Include="PSWindowsUpdate\WUAPIObject.cs" />
+    <Compile Include="PSWindowsUpdate\WUApiCode.cs" />
+    <Compile Include="PSWindowsUpdate\ValidateDateTimeAttribute.cs" />
+    <Compile Include="PSWindowsUpdate\ValidateRecurseCycleAttribute.cs" />
+    <Compile Include="PSWindowsUpdate\ValidateTestAttribute.cs" />
+    <Compile Include="PSWindowsUpdate\ValidateIntGt0Attribute.cs" />
+    <Compile Include="PSWindowsUpdate\WUTools.cs" />
+    <Compile Include="PSWindowsUpdate\RemoveWindowsUpdate.cs" />
+    <Compile Include="PSWindowsUpdate\RemoveWUServiceManager.cs" />
+    <Compile Include="PSWindowsUpdate\ResetWUComponents.cs" />
+    <Compile Include="PSWindowsUpdate\SetPSWUSettings.cs" />
+    <Compile Include="PSWindowsUpdate\SetWUSettings.cs" />
+    <Compile Include="PSWindowsUpdate\UpdateWUModule.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="MSHTML">
+      <Guid>{3050F1C5-98B5-11CF-BB82-00AA00BDCE0B}</Guid>
+      <VersionMajor>4</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="NetFwTypeLib">
+      <Guid>{58FBCF7C-E7A9-467C-80B3-FC65E8FCCA08}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="TaskScheduler">
+      <Guid>{E34CB9F1-C7F7-424C-BE29-027DCC09363A}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+    <COMReference Include="WUApiLib">
+      <Guid>{B596CC9F-56E5-419E-A622-E01BB457431E}</Guid>
+      <VersionMajor>2</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
