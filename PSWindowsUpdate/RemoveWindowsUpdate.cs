@@ -113,30 +113,31 @@ namespace PSWindowsUpdate {
 
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
-            var text = KBArticleID.Replace("KB", "");
             var computerName = ComputerName;
-            foreach (var text2 in computerName) {
-                WriteDebug(DateTime.Now.ToString() + " " + text2 + ": Connecting...");
+            foreach (var compName in computerName) {
+                WriteDebug(DateTime.Now + " " + compName + ": Connecting...");
                 try {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(text2);
-                    WriteDebug(DateTime.Now.ToString() + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now.ToString() + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pSWUModule = WUToolsObj.GetPSWUModule(compName);
+                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
-                if (ScheduleJob == DateTime.MinValue && WUToolsObj.IsLocalHost(text2)) {
-                    if ((bool)WUSAMode) {
-                        WriteVerbose(text2 + ": Try to uninstall KB" + KBArticleID);
+                if (ScheduleJob == DateTime.MinValue && WUToolsObj.IsLocalHost(compName)) {
+                    if (WUSAMode) {
+                        // 2022-08-19: possible fix for issue described by MizardX (https://github.com/mgajda83/PSWindowsUpdate/pull/9)
+                        var articleId = KBArticleID.Replace("KB", "");
+                        WriteVerbose(compName + ": Try to uninstall KB" + KBArticleID);
                         var processStartInfo = new ProcessStartInfo();
                         processStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         processStartInfo.FileName = "cmd";
-                        if (WUToolsObj.IsLocalHost(text2)) {
-                            processStartInfo.Arguments = "/C wusa.exe /uninstall /KB:" + text + " /quiet /norestart";
+                        if (WUToolsObj.IsLocalHost(compName)) {
+                            processStartInfo.Arguments = "/C wusa.exe /uninstall /KB:" + articleId + " /quiet /norestart";
                         } else {
-                            processStartInfo.Arguments = "/C winrs.exe -r:" + text2 + " wusa.exe /uninstall /KB:" + text + " /quiet /norestart";
+                            processStartInfo.Arguments = "/C winrs.exe -r:" + compName + " wusa.exe /uninstall /KB:" + articleId + " /quiet /norestart";
                         }
 
                         WriteDebug("Process: " + processStartInfo.FileName + " " + processStartInfo.Arguments);
-                        if (ShouldProcess(text2, "(" + DateTime.Now.ToString() + ") Remove (wusa.exe) Windows Update: " + KBArticleID)) {
+                        if (ShouldProcess(compName, "(" + DateTime.Now + ") Remove (wusa.exe) Windows Update: " + KBArticleID)) {
                             Process.Start(processStartInfo);
                             WriteDebug("Process started.");
                         }
@@ -144,8 +145,8 @@ namespace PSWindowsUpdate {
                         continue;
                     }
 
-                    var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(text2);
-                    WriteDebug(DateTime.Now.ToString() + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
+                    var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(compName);
+                    WriteDebug(DateTime.Now + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
                     if (wUApiUpdateSessionObj.Status) {
                         UpdateSessionObj = (UpdateSession)wUApiUpdateSessionObj.Object;
                         SearcherObj = UpdateSessionObj.CreateUpdateSearcher();
@@ -154,7 +155,7 @@ namespace PSWindowsUpdate {
                             text3 = text3 + " and UpdateID='" + UpdateID + "'";
                         }
 
-                        WriteDebug(DateTime.Now.ToString() + " Pre search criteria: " + text3);
+                        WriteDebug(DateTime.Now + " Pre search criteria: " + text3);
                         ISearchResult searchResult;
                         try {
                             searchResult = SearcherObj.Search(text3);
@@ -170,7 +171,7 @@ namespace PSWindowsUpdate {
                                 var errorRecord = new ErrorRecord(ex, "Debug: " + ex.ErrorCode, ErrorCategory.CloseError, null);
                                 ThrowTerminatingError(errorRecord);
                             } else {
-                                WriteError(new ErrorRecord(new Exception(text2 + ": Unknown failure. Try debug."), "Unknown", ErrorCategory.CloseError, null));
+                                WriteError(new ErrorRecord(new Exception(compName + ": Unknown failure. Try debug."), "Unknown", ErrorCategory.CloseError, null));
                             }
 
                             continue;
@@ -189,7 +190,7 @@ namespace PSWindowsUpdate {
                             foreach (IUpdate item in updateCollection2) {
                                 var flag = false;
                                 foreach (string kBArticleID in item.KBArticleIDs) {
-                                    if (Regex.IsMatch(KBArticleID, kBArticleID.ToString(), RegexOptions.IgnoreCase)) {
+                                    if (Regex.IsMatch(KBArticleID, kBArticleID, RegexOptions.IgnoreCase)) {
                                         flag = true;
                                         break;
                                     }
@@ -206,7 +207,7 @@ namespace PSWindowsUpdate {
 
                         var count2 = updateCollection.Count;
                         WriteDebug("Found [" + count2 + "] Updates in post search criteria");
-                        if (count2 == 0 || !ShouldProcess(text2, "(" + DateTime.Now.ToString() + ") Remove (WUApi) Windows Update: " + updateCollection[0].Title)) {
+                        if (count2 == 0 || !ShouldProcess(compName, "(" + DateTime.Now + ") Remove (WUApi) Windows Update: " + updateCollection[0].Title)) {
                             continue;
                         }
 
@@ -238,10 +239,10 @@ namespace PSWindowsUpdate {
                                     break;
                             }
 
-                            WriteDebug(DateTime.Now.ToString() + " Uninstallation status: " + text5);
+                            WriteDebug(DateTime.Now + " Uninstallation status: " + text5);
                             if (installationResult.RebootRequired) {
                                 NeedsReboot = installationResult.RebootRequired;
-                                WriteDebug(DateTime.Now.ToString() + " Reboot is required");
+                                WriteDebug(DateTime.Now + " Reboot is required");
                             }
                         } catch (Exception ex2) {
                             if (Regex.IsMatch(ex2.Message, "HRESULT: 0x80240028")) {
@@ -252,7 +253,7 @@ namespace PSWindowsUpdate {
                                 WriteWarning(ex2.Message + ". Your security policy don't allow a non-administator identity to perform this task.");
                             }
                         }
-                    } else if ((bool)Debuger) {
+                    } else if (Debuger) {
                         var errorRecord2 = new ErrorRecord(wUApiUpdateSessionObj.Exception, "Debug", ErrorCategory.CloseError, null);
                         WriteError(errorRecord2);
                     } else {
@@ -263,7 +264,7 @@ namespace PSWindowsUpdate {
                     continue;
                 }
 
-                var errorRecord3 = WUToolsObj.CheckPSWUModule(text2);
+                var errorRecord3 = WUToolsObj.CheckPSWUModule(compName);
                 if (errorRecord3 != null) {
                     WriteError(errorRecord3);
                     continue;
@@ -279,21 +280,21 @@ namespace PSWindowsUpdate {
                     text6 = text6 + " -UpdateID '" + UpdateID + "'";
                 }
 
-                if ((bool)AutoReboot) {
+                if (AutoReboot) {
                     text6 += " -AutoReboot";
                 }
 
                 if (ScheduleReboot != DateTime.MinValue) {
-                    text6 = text6 + " -ScheduleReboot " + ScheduleReboot.ToString();
+                    text6 = text6 + " -ScheduleReboot " + ScheduleReboot;
                 }
 
-                if ((bool)IgnoreReboot) {
+                if (IgnoreReboot) {
                     text6 += " -IgnoreReboot";
                 }
 
                 text6 += " -Verbose -Confirm:$false *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                 var invokeWUJob = new InvokeWUJob();
-                invokeWUJob.ComputerName = new string[1] { text2 };
+                invokeWUJob.ComputerName = new string[1] { compName };
                 if (Credential != null) {
                     invokeWUJob.Credential = Credential;
                 }
@@ -301,10 +302,10 @@ namespace PSWindowsUpdate {
                 invokeWUJob.Script = text6;
                 if (ScheduleJob != DateTime.MinValue) {
                     invokeWUJob.TriggerDate = ScheduleJob;
-                    WriteVerbose("Invoke-WUJob: " + text2 + " (" + ScheduleJob.ToString() + ") " + text6);
+                    WriteVerbose("Invoke-WUJob: " + compName + " (" + ScheduleJob + ") " + text6);
                 } else {
                     invokeWUJob.RunNow = true;
-                    WriteVerbose("Invoke-WUJob: " + text2 + " (Now) " + text6);
+                    WriteVerbose("Invoke-WUJob: " + compName + " (Now) " + text6);
                 }
 
                 WriteVerbose("powershell.exe -Command \"" + text6 + "\"");
