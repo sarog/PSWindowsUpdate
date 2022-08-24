@@ -21,18 +21,19 @@ using WUApiLib;
 
 namespace PSWindowsUpdate {
     public class WUTools : PSCmdlet {
+        // todo: 2022-08-22: change this
         private const string initVector = "SraNie_W-ban13!!";
         private const int keysize = 256;
 
         public static string EncryptString(string plainText, string passPhrase) {
-            var bytes1 = Encoding.UTF8.GetBytes("SraNie_W-ban13!!");
+            var bytes1 = Encoding.UTF8.GetBytes(initVector);
             var bytes2 = Encoding.UTF8.GetBytes(plainText);
-            var bytes3 = new PasswordDeriveBytes(passPhrase, (byte[])null).GetBytes(32);
+            var bytes3 = new PasswordDeriveBytes(passPhrase, null).GetBytes(32);
             var rijndaelManaged = new RijndaelManaged();
             rijndaelManaged.Mode = CipherMode.CBC;
             var encryptor = rijndaelManaged.CreateEncryptor(bytes3, bytes1);
             var memoryStream = new MemoryStream();
-            var cryptoStream = new CryptoStream((Stream)memoryStream, encryptor, CryptoStreamMode.Write);
+            var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write);
             cryptoStream.Write(bytes2, 0, bytes2.Length);
             cryptoStream.FlushFinalBlock();
             var array = memoryStream.ToArray();
@@ -42,14 +43,14 @@ namespace PSWindowsUpdate {
         }
 
         public static string DecryptString(string cipherText, string passPhrase) {
-            var bytes1 = Encoding.UTF8.GetBytes("SraNie_W-ban13!!");
+            var bytes1 = Encoding.UTF8.GetBytes(initVector);
             var buffer = Convert.FromBase64String(cipherText);
-            var bytes2 = new PasswordDeriveBytes(passPhrase, (byte[])null).GetBytes(32);
+            var bytes2 = new PasswordDeriveBytes(passPhrase, null).GetBytes(32);
             var rijndaelManaged = new RijndaelManaged();
             rijndaelManaged.Mode = CipherMode.CBC;
             var decryptor = rijndaelManaged.CreateDecryptor(bytes2, bytes1);
             var memoryStream = new MemoryStream(buffer);
-            var cryptoStream = new CryptoStream((Stream)memoryStream, decryptor, CryptoStreamMode.Read);
+            var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
             var numArray = new byte[buffer.Length];
             var count = cryptoStream.Read(numArray, 0, numArray.Length);
             memoryStream.Close();
@@ -76,12 +77,12 @@ namespace PSWindowsUpdate {
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 startInfo.FileName = "cmd";
                 startInfo.Arguments = !IsLocalHost(Computer)
-                    ? "/C shutdown -m " + Computer + " -f -r -t " + ((int)timeSpan.TotalSeconds).ToString()
-                    : "/C shutdown -f -r -t " + ((int)timeSpan.TotalSeconds).ToString();
+                    ? "/C shutdown -m " + Computer + " -f -r -t " + ((int)timeSpan.TotalSeconds)
+                    : "/C shutdown -f -r -t " + ((int)timeSpan.TotalSeconds);
                 str = startInfo.FileName + " " + startInfo.Arguments;
                 Process.Start(startInfo);
             } else {
-                str = "Restart time has expired: " + ScheduleReboot.ToString() + " < " + now.ToString();
+                str = "Restart time has expired: " + ScheduleReboot + " < " + now;
             }
 
             return str;
@@ -830,7 +831,7 @@ namespace PSWindowsUpdate {
 
         public void SetPSWUSettings(Hashtable PSWUSettings) {
             var path = PSWUModulePath() + "\\PSWUSettings.xml";
-            var str = PSSerializer.Serialize((object)PSWUSettings);
+            var str = PSSerializer.Serialize(PSWUSettings);
             try {
                 using (var streamWriter = new StreamWriter(path)) {
                     streamWriter.WriteLine(str);
@@ -860,10 +861,10 @@ namespace PSWindowsUpdate {
                 foreach (var psObjectProperty in PSObjectProperties) {
                     var cell = new TableHeaderCell();
                     cell.Text = psObjectProperty;
-                    row1.Cells.Add((TableCell)cell);
+                    row1.Cells.Add(cell);
                 }
 
-                table.Rows.AddAt(0, (TableRow)row1);
+                table.Rows.AddAt(0, row1);
                 foreach (var psObject in PSObjects) {
                     var row2 = new TableRow();
                     foreach (var psObjectProperty in PSObjectProperties) {
@@ -881,7 +882,7 @@ namespace PSWindowsUpdate {
                 foreach (var psObject in PSObjects) {
                     foreach (var psObjectProperty in PSObjectProperties) {
                         var row = new TableRow();
-                        row.Cells.Add(new TableCell() {
+                        row.Cells.Add(new TableCell {
                             Text = psObjectProperty
                         });
                         var cell = new TableCell();
@@ -896,14 +897,14 @@ namespace PSWindowsUpdate {
             }
 
             using (var writer = new StringWriter()) {
-                table.RenderControl(new HtmlTextWriter((TextWriter)writer));
+                table.RenderControl(new HtmlTextWriter(writer));
                 str1 += writer.ToString();
             }
 
             if (CmdletInfo != null) {
                 var str2 = str1 + "<p>";
                 foreach (var property in CmdletInfo.Properties) {
-                    str2 = str2 + property.Name.ToString() + ": " + CmdletInfo.Properties[property.Name].Value.ToString() + "<br />";
+                    str2 = str2 + property.Name + ": " + CmdletInfo.Properties[property.Name].Value + "<br />";
                 }
 
                 str1 = str2 + "</p>";
@@ -927,11 +928,11 @@ namespace PSWindowsUpdate {
             var pswuSettings = GetPSWUSettings();
             var hashtable = new Hashtable();
             foreach (var str1 in strArray) {
-                if (LocalPSWUSettings.ContainsKey((object)str1)) {
-                    hashtable.Add((object)str1, LocalPSWUSettings[(object)str1]);
-                } else if (pswuSettings.ContainsKey((object)str1)) {
+                if (LocalPSWUSettings.ContainsKey(str1)) {
+                    hashtable.Add(str1, LocalPSWUSettings[str1]);
+                } else if (pswuSettings.ContainsKey(str1)) {
                     if (str1 != "Properties") {
-                        hashtable.Add((object)str1, pswuSettings[(object)str1]);
+                        hashtable.Add(str1, pswuSettings[str1]);
                     }
                 } else {
                     var str2 = str1;
@@ -940,22 +941,22 @@ namespace PSWindowsUpdate {
                             if (!(str2 == "Properties")) {
                                 if (!(str2 == "Style")) {
                                     if (str2 == "Subject") {
-                                        hashtable.Add((object)"Subject", (object)(Environment.MachineName + ": Windows Update report " + DateTime.Now.ToString()));
+                                        hashtable.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
                                     } else {
                                         var errorRecord = new ErrorRecord(new Exception("Missing " + str1 + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                            str1, ErrorCategory.CloseError, (object)null);
-                                        psObject.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord));
+                                            str1, ErrorCategory.CloseError, null);
+                                        psObject.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                                         return psObject;
                                     }
                                 }
                             } else {
-                                hashtable.Add((object)"Properties", (object)"*");
+                                hashtable.Add("Properties", "*");
                             }
                         } else {
-                            hashtable.Add((object)"EnableSsl", (object)false);
+                            hashtable.Add("EnableSsl", false);
                         }
                     } else {
-                        hashtable.Add((object)"Port", (object)25);
+                        hashtable.Add("Port", 25);
                     }
                 }
             }
@@ -981,11 +982,11 @@ namespace PSWindowsUpdate {
             var pswuSettings = GetPSWUSettings();
             var hashtable = new Hashtable();
             foreach (var str1 in strArray) {
-                if (LocalPSWUSettings.ContainsKey((object)str1)) {
-                    hashtable.Add((object)str1, LocalPSWUSettings[(object)str1]);
-                } else if (pswuSettings.ContainsKey((object)str1)) {
+                if (LocalPSWUSettings.ContainsKey(str1)) {
+                    hashtable.Add(str1, LocalPSWUSettings[str1]);
+                } else if (pswuSettings.ContainsKey(str1)) {
                     if (str1 != "Properties") {
-                        hashtable.Add((object)str1, pswuSettings[(object)str1]);
+                        hashtable.Add(str1, pswuSettings[str1]);
                     }
                 } else {
                     var str2 = str1;
@@ -994,84 +995,84 @@ namespace PSWindowsUpdate {
                             if (!(str2 == "Properties")) {
                                 if (!(str2 == "Style")) {
                                     if (str2 == "Subject") {
-                                        hashtable.Add((object)"Subject", (object)(Environment.MachineName + ": Windows Update report " + DateTime.Now.ToString()));
+                                        hashtable.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
                                     } else {
                                         var errorRecord = new ErrorRecord(new Exception("Missing " + str1 + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                            str1, ErrorCategory.CloseError, (object)null);
-                                        psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord));
+                                            str1, ErrorCategory.CloseError, null);
+                                        psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                                         return psObject1;
                                     }
                                 }
                             } else {
-                                hashtable.Add((object)"Properties", (object)"*");
+                                hashtable.Add("Properties", "*");
                             }
                         } else {
-                            hashtable.Add((object)"EnableSsl", (object)false);
+                            hashtable.Add("EnableSsl", false);
                         }
                     } else {
-                        hashtable.Add((object)"Port", (object)25);
+                        hashtable.Add("Port", 25);
                     }
                 }
             }
 
-            psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("PSWUSettings", (object)hashtable));
+            psObject1.Properties.Add(new PSNoteProperty("PSWUSettings", hashtable));
             if (PSObjects != null) {
                 var PSObjectProperties = new Collection<string>();
-                if (hashtable[(object)"Properties"].ToString() == "*") {
+                if (hashtable["Properties"].ToString() == "*") {
                     foreach (var property in PSObjects[0].Properties) {
-                        if (!PSObjectProperties.Contains(property.Name.ToString())) {
-                            PSObjectProperties.Add(property.Name.ToString());
+                        if (!PSObjectProperties.Contains(property.Name)) {
+                            PSObjectProperties.Add(property.Name);
                         }
                     }
-                } else if (hashtable[(object)"Properties"].ToString() == "**") {
+                } else if (hashtable["Properties"].ToString() == "**") {
                     foreach (var psObject2 in PSObjects) {
                         foreach (var property in psObject2.Properties) {
-                            if (!PSObjectProperties.Contains(property.Name.ToString())) {
-                                PSObjectProperties.Add(property.Name.ToString());
+                            if (!PSObjectProperties.Contains(property.Name)) {
+                                PSObjectProperties.Add(property.Name);
                             }
                         }
                     }
                 } else {
-                    foreach (var obj in (object[])hashtable[(object)"Properties"]) {
+                    foreach (var obj in (object[])hashtable["Properties"]) {
                         PSObjectProperties.Add(obj.ToString());
                     }
                 }
 
-                var str = !hashtable.ContainsKey((object)"Style")
+                var str = !hashtable.ContainsKey("Style")
                     ? ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo)
-                    : ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable[(object)"Style"].ToString());
-                var message = new MailMessage(hashtable[(object)"From"].ToString(), hashtable[(object)"To"].ToString());
+                    : ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable["Style"].ToString());
+                var message = new MailMessage(hashtable["From"].ToString(), hashtable["To"].ToString());
                 var smtpClient = new SmtpClient();
-                smtpClient.Host = hashtable[(object)"SmtpServer"].ToString();
-                smtpClient.Port = Convert.ToInt32(hashtable[(object)"Port"].ToString());
-                smtpClient.EnableSsl = (bool)hashtable[(object)"EnableSsl"];
+                smtpClient.Host = hashtable["SmtpServer"].ToString();
+                smtpClient.Port = Convert.ToInt32(hashtable["Port"].ToString());
+                smtpClient.EnableSsl = (bool)hashtable["EnableSsl"];
                 smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
                 var credential = GetCredential();
                 if (credential.Username != null) {
                     smtpClient.UseDefaultCredentials = false;
                     var networkCredential = new NetworkCredential(credential.Username, credential.Password);
-                    smtpClient.Credentials = (ICredentialsByHost)networkCredential;
-                    message.Subject = hashtable[(object)"Subject"].ToString() + ".";
+                    smtpClient.Credentials = networkCredential;
+                    message.Subject = hashtable["Subject"] + ".";
                 } else {
-                    message.Subject = hashtable[(object)"Subject"].ToString();
+                    message.Subject = hashtable["Subject"].ToString();
                 }
 
                 message.Body = str;
-                message.BodyEncoding = (Encoding)new UTF8Encoding();
+                message.BodyEncoding = new UTF8Encoding();
                 message.IsBodyHtml = true;
                 try {
                     smtpClient.Send(message);
                 } catch (Exception ex) {
-                    var errorRecord = new ErrorRecord(ex, "SmtpException", ErrorCategory.CloseError, (object)null);
-                    psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord));
+                    var errorRecord = new ErrorRecord(ex, "SmtpException", ErrorCategory.CloseError, null);
+                    psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                     return psObject1;
                 }
 
                 return psObject1;
             }
 
-            var errorRecord1 = new ErrorRecord(new Exception("Missing Body"), "Body", ErrorCategory.CloseError, (object)null);
-            psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord1));
+            var errorRecord1 = new ErrorRecord(new Exception("Missing Body"), "Body", ErrorCategory.CloseError, null);
+            psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord1));
             return psObject1;
         }
 

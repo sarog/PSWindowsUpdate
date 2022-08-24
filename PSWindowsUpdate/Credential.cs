@@ -26,13 +26,13 @@ namespace PSWindowsUpdate {
         }
 
         public Credential()
-            : this((string)null) { }
+            : this(null) { }
 
         public Credential(string username)
-            : this(username, (string)null) { }
+            : this(username, null) { }
 
         public Credential(string username, string password)
-            : this(username, password, (string)null) { }
+            : this(username, password, null) { }
 
         public Credential(string username, string password, string target)
             : this(username, password, target, CredentialType.Generic) { }
@@ -138,7 +138,7 @@ namespace PSWindowsUpdate {
 
         public void Dispose() {
             Dispose(true);
-            GC.SuppressFinalize((object)this);
+            GC.SuppressFinalize(this);
         }
 
         ~Credential() {
@@ -177,6 +177,7 @@ namespace PSWindowsUpdate {
                 Type = (int)Type,
                 Persist = (int)PersistenceType
             };
+            
             if (!NativeMethods.CredWrite(ref userCredential, 0U)) {
                 return false;
             }
@@ -244,8 +245,8 @@ namespace PSWindowsUpdate {
         }
 
         public override string ToString() {
-            return string.Format("Username: {0}, Target: {1}, LastWriteTime: {2}, LastWriteTimeUtc: {3}, Type: {4}, PersistenceType: {5}", (object)Username, (object)Target,
-                (object)LastWriteTime, (object)LastWriteTimeUtc, (object)Type, (object)PersistenceType);
+            return string.Format("Username: {0}, Target: {1}, LastWriteTime: {2}, LastWriteTimeUtc: {3}, Type: {4}, PersistenceType: {5}", Username, Target,
+                LastWriteTime, LastWriteTimeUtc, Type, PersistenceType);
         }
     }
 }

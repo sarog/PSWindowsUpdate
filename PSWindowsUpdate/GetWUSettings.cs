@@ -1,13 +1,13 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Security.Principal;
+using Microsoft.Win32;
 
 namespace PSWindowsUpdate {
     [Cmdlet("Get", "WUSettings", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
-    [OutputType(new Type[] { typeof(WUSettings) })]
+    [OutputType(typeof(WUSettings))]
     public class GetWUSettings : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
@@ -42,17 +42,17 @@ namespace PSWindowsUpdate {
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[1] {
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Test smtp settings");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new string[1] {
                         "*"
                     });
                 }
@@ -60,8 +60,8 @@ namespace PSWindowsUpdate {
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1) {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
-                    SendReport = (SwitchParameter)false;
-                    WriteDebug(DateTime.Now.ToString() + " Disabling -SendReport");
+                    SendReport = false;
+                    WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
@@ -77,42 +77,43 @@ namespace PSWindowsUpdate {
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
             var hashtable1 = new Hashtable();
-            hashtable1.Add((object)0, (object)"0 - Not configured");
-            hashtable1.Add((object)1, (object)"1 - Disabled");
-            hashtable1.Add((object)2, (object)"2 - Notify before download");
-            hashtable1.Add((object)3, (object)"3 - Notify before installation");
-            hashtable1.Add((object)4, (object)"4 - Scheduled installation");
-            hashtable1.Add((object)5, (object)"5 - Users configure");
+            hashtable1.Add(0, "0 - Not configured");
+            hashtable1.Add(1, "1 - Disabled");
+            hashtable1.Add(2, "2 - Notify before download");
+            hashtable1.Add(3, "3 - Notify before installation");
+            hashtable1.Add(4, "4 - Scheduled installation");
+            hashtable1.Add(5, "5 - Users configure");
             var hashtable2 = new Hashtable();
-            hashtable2.Add((object)0, (object)"0 - Every Day");
-            hashtable2.Add((object)1, (object)"1 - Every Sunday");
-            hashtable2.Add((object)2, (object)"2 - Every Monday");
-            hashtable2.Add((object)3, (object)"3 - Every Tuesday");
-            hashtable2.Add((object)4, (object)"4 - Every Wednesday");
-            hashtable2.Add((object)5, (object)"5 - Every Thursday");
-            hashtable2.Add((object)6, (object)"6 - Every Friday");
-            hashtable2.Add((object)7, (object)"7 - Every Saturday");
-            foreach (var str1 in ComputerName) {
-                WriteDebug(DateTime.Now.ToString() + " " + str1 + ": Connecting...");
+            hashtable2.Add(0, "0 - Every Day");
+            hashtable2.Add(1, "1 - Every Sunday");
+            hashtable2.Add(2, "2 - Every Monday");
+            hashtable2.Add(3, "3 - Every Tuesday");
+            hashtable2.Add(4, "4 - Every Wednesday");
+            hashtable2.Add(5, "5 - Every Thursday");
+            hashtable2.Add(6, "6 - Every Friday");
+            hashtable2.Add(7, "7 - Every Saturday");
+            
+            foreach (var target in ComputerName) {
+                WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try {
-                    var pswuModule = WUToolsObj.GetPSWUModule(str1);
-                    WriteDebug(DateTime.Now.ToString() + " Module version: " + pswuModule.Properties["Version"].Value?.ToString());
-                    WriteDebug(DateTime.Now.ToString() + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value?.ToString());
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
-                if (ShouldProcess(str1, "(" + DateTime.Now.ToString() + ") Get Windows Update settings")) {
-                    var registryKey1 = !WUToolsObj.IsLocalHost(str1)
-                        ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, str1)
+                if (ShouldProcess(target, "(" + DateTime.Now + ") Get Windows Update settings")) {
+                    var registryKey1 = !WUToolsObj.IsLocalHost(target)
+                        ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
                         : RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
                     var registryKey2 = registryKey1.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\");
                     var registryKey3 = registryKey1.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\\");
                     if (registryKey2 != null) {
                         WriteVerbose("Some settings are managed by your system administrator.");
                         var sendToPipeline = new PSObject();
-                        sendToPipeline.Properties.Add((PSPropertyInfo)new PSNoteProperty("ComputerName", (object)str1));
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
                         foreach (var valueName in registryKey2.GetValueNames()) {
                             var obj = registryKey2.GetValue(valueName);
-                            sendToPipeline.Properties.Add((PSPropertyInfo)new PSNoteProperty(valueName, obj));
+                            sendToPipeline.Properties.Add(new PSNoteProperty(valueName, obj));
                         }
 
                         foreach (var valueName in registryKey3.GetValueNames()) {
@@ -126,10 +127,10 @@ namespace PSWindowsUpdate {
                                 key = hashtable1[key];
                             }
 
-                            sendToPipeline.Properties.Add((PSPropertyInfo)new PSNoteProperty(valueName, key));
+                            sendToPipeline.Properties.Add(new PSNoteProperty(valueName, key));
                         }
 
-                        WriteObject((object)sendToPipeline, true);
+                        WriteObject(sendToPipeline, true);
                         OutputObj.Add(sendToPipeline);
                     } else {
                         WriteVerbose("Settings not found.");
@@ -144,7 +145,7 @@ namespace PSWindowsUpdate {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now.ToString() + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
                 if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
@@ -185,7 +186,7 @@ namespace PSWindowsUpdate {
                             CoreProcessing();
                             flag = false;
                         } catch (Exception ex) {
-                            WriteDebug(DateTime.Now.ToString() + " Something goes wrong: " + ex.Message);
+                            WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
                     } else {
@@ -206,7 +207,7 @@ namespace PSWindowsUpdate {
                     }
 
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Leaving impersonated session");
+                    WriteDebug(now + " Leaving impersonated session");
                 }
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
@@ -215,7 +216,7 @@ namespace PSWindowsUpdate {
                     str4 = "RunAs";
                 }
 
-                WriteDebug(DateTime.Now.ToString() + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
+                WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
             } else {
                 flag = true;
             }
@@ -230,13 +231,13 @@ namespace PSWindowsUpdate {
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletStart", (object)CmdletStart));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletEnd", (object)CmdletEnd));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletLine", (object)MyInvocation.Line));
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Send report");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)"*");
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Send report");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
@@ -245,11 +246,9 @@ namespace PSWindowsUpdate {
                 }
             }
 
-            WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
+            WriteDebug(DateTime.Now + " CmdletEnd");
         }
 
-        protected override void StopProcessing() {
-            base.StopProcessing();
-        }
+
     }
 }

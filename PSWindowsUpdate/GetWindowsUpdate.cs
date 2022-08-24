@@ -392,28 +392,28 @@ namespace PSWindowsUpdate {
             }
 
             var computerName = ComputerName;
-            foreach (var text7 in computerName) {
-                WriteDebug(DateTime.Now.ToString() + " " + text7 + ": Connecting...");
+            foreach (var target in computerName) {
+                WriteDebug(DateTime.Now.ToString() + " " + target + ": Connecting...");
                 try {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(text7);
+                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
                     WriteDebug(DateTime.Now.ToString() + " Module version: " + pSWUModule.Properties["Version"].Value);
                     WriteDebug(DateTime.Now.ToString() + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
                 if ((bool)Download) {
-                    var errorRecord = WUToolsObj.CheckPSWUModule(text7);
+                    var errorRecord = WUToolsObj.CheckPSWUModule(target);
                     if (errorRecord != null) {
                         WriteError(errorRecord);
                         continue;
                     }
                 }
 
-                var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(text7);
+                var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(target);
                 WriteDebug(DateTime.Now.ToString() + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
                 if (wUApiUpdateSessionObj.Status) {
                     UpdateSessionObj = (UpdateSession)wUApiUpdateSessionObj.Object;
                     SearcherObj = UpdateSessionObj.CreateUpdateSearcher();
-                    var wUApiServiceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(text7);
+                    var wUApiServiceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(target);
                     WriteDebug(DateTime.Now.ToString() + " ServiceManagerObj mode: " + wUApiServiceManagerObj.Mode);
                     if (wUApiServiceManagerObj.Status) {
                         ServiceManagerObj = (UpdateServiceManager)wUApiServiceManagerObj.Object;
@@ -440,7 +440,7 @@ namespace PSWindowsUpdate {
                             if (!flag) {
                                 try {
                                     Thread.Sleep(500);
-                                    var serviceController = new ServiceController("Windows Update", text7);
+                                    var serviceController = new ServiceController("Windows Update", target);
                                     serviceController.Stop();
                                     serviceController.WaitForStatus(ServiceControllerStatus.Stopped);
                                     Thread.Sleep(500);
@@ -465,7 +465,7 @@ namespace PSWindowsUpdate {
                                                 WriteWarning(wUApiCodeDetails.HResult + ": " + wUApiCodeDetails.Description);
                                                 break;
                                         }
-                                    } else if (MyInvocation.BoundParameters.ContainsKey("Debuger")) {
+                                    } else if (Debuger) {
                                         var errorRecord2 = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
                                         ThrowTerminatingError(errorRecord2);
                                     }
@@ -500,22 +500,22 @@ namespace PSWindowsUpdate {
                                     text8 = ServiceID;
                                 } else {
                                     WriteDebug(DateTime.Now.ToString() + " Catch. Set source of updates to Default");
-                                    text8 = "default for " + text7 + ".";
+                                    text8 = "default for " + target + ".";
                                 }
                             }
                         }
 
                         if (text8 == "Windows Server Update Service") {
                             RegistryKey registryKey = null;
-                            registryKey = !WUToolsObj.IsLocalHost(text7)
-                                ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, text7)
+                            registryKey = !WUToolsObj.IsLocalHost(target)
+                                ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
                                 : RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
                             var registryKey2 = registryKey.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\");
                             var text9 = registryKey2.GetValue("WUServer").ToString();
                             text8 = text8 + " (" + text9 + ")";
                         }
 
-                        WriteVerbose(text7 + " (" + DateTime.Now.ToString() + "): Connecting to " + text8 + " server. Please wait...");
+                        WriteVerbose(target + " (" + DateTime.Now.ToString() + "): Connecting to " + text8 + " server. Please wait...");
                         ISearchResult searchResult;
                         try {
                             searchResult = SearcherObj.Search(text);
@@ -530,7 +530,7 @@ namespace PSWindowsUpdate {
                                         WriteWarning(wUApiCodeDetails2.HResult + ": " + wUApiCodeDetails2.Description);
                                         break;
                                 }
-                            } else if (MyInvocation.BoundParameters.ContainsKey("Debuger")) {
+                            } else if (Debuger) {
                                 var errorRecord3 = new ErrorRecord(ex2, "Debug", ErrorCategory.CloseError, null);
                                 ThrowTerminatingError(errorRecord3);
                             }
@@ -615,7 +615,7 @@ namespace PSWindowsUpdate {
 
                         var num3 = 0;
                         var activityId = 0;
-                        var activity = "Post search updates for " + text7;
+                        var activity = "Post search updates for " + target;
                         var statusDescription = "[" + num3 + "/" + count + "]";
                         var progressRecord = new ProgressRecord(activityId, activity, statusDescription);
                         var collection = new Collection<PSObject>();
@@ -796,7 +796,7 @@ namespace PSWindowsUpdate {
                             var pSObject = new PSObject(item);
                             pSObject.Properties.Add(new PSNoteProperty("Size", text11));
                             pSObject.Properties.Add(new PSNoteProperty("Status", text20));
-                            pSObject.Properties.Add(new PSNoteProperty("ComputerName", text7));
+                            pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
                             pSObject.Properties.Add(new PSNoteProperty("KB", text18));
                             pSObject.TypeNames.Clear();
                             pSObject.TypeNames.Add("PSWindowsUpdate.WindowsUpdate");
@@ -815,7 +815,7 @@ namespace PSWindowsUpdate {
                             text21 = !Hide ? "Show" : "Hide";
                             var num5 = 0;
                             var activityId2 = 1;
-                            var activity2 = text21 + " updates for " + text7;
+                            var activity2 = text21 + " updates for " + target;
                             var statusDescription2 = "[" + num5 + "/" + count2 + "]";
                             var progressRecord2 = new ProgressRecord(activityId2, activity2, statusDescription2);
                             foreach (var item2 in collection) {
@@ -827,7 +827,7 @@ namespace PSWindowsUpdate {
                                 num5++;
                                 if ((bool)AcceptAll) {
                                     flag3 = true;
-                                } else if (ShouldProcess(text7,
+                                } else if (ShouldProcess(target,
                                                "(" + DateTime.Now.ToString() + ") " + text21 + " " + update2.Title + "[" + item2.Properties["Size"].Value.ToString() + "]")) {
                                     flag3 = true;
                                 }
@@ -837,7 +837,7 @@ namespace PSWindowsUpdate {
                                         update2.IsHidden = Hide;
                                         item2.Properties.Add(new PSNoteProperty("HideResult", text21));
                                     } catch {
-                                        var errorRecord4 = new ErrorRecord(new Exception(text7 + ": You don't have permission to perform this task."), "0x80240044",
+                                        var errorRecord4 = new ErrorRecord(new Exception(target + ": You don't have permission to perform this task."), "0x80240044",
                                             ErrorCategory.CloseError, null);
                                         ThrowTerminatingError(errorRecord4);
                                     }
@@ -870,7 +870,7 @@ namespace PSWindowsUpdate {
                         if ((bool)Download || (bool)Install) {
                             var num8 = 0;
                             var activityId3 = 1;
-                            var activity3 = "Choose updates for " + text7;
+                            var activity3 = "Choose updates for " + target;
                             var statusDescription3 = "[" + num8 + "/" + count2 + "]";
                             var progressRecord3 = new ProgressRecord(activityId3, activity3, statusDescription3);
                             var text24 = "";
@@ -887,7 +887,7 @@ namespace PSWindowsUpdate {
                                 var flag4 = false;
                                 flag4 = (bool)AcceptAll || (AutoSelectOnly
                                     ? update3.AutoSelectOnWebSites ? true : false
-                                    : ShouldProcess(text7, "(" + DateTime.Now.ToString() + ") " + update3.Title + "[" + item3.Properties["Size"].Value.ToString() + "]")
+                                    : ShouldProcess(target, "(" + DateTime.Now.ToString() + ") " + update3.Title + "[" + item3.Properties["Size"].Value.ToString() + "]")
                                         ? true
                                         : false);
                                 var text25 = "";
@@ -950,7 +950,7 @@ namespace PSWindowsUpdate {
                                     item3.Properties.Add(new PSNoteProperty("Result", text26));
                                 }
 
-                                if (!flag4 || (WUToolsObj.IsLocalHost(text7) && !(ScheduleJob != DateTime.MinValue))) {
+                                if (!flag4 || (WUToolsObj.IsLocalHost(target) && !(ScheduleJob != DateTime.MinValue))) {
                                     text25 = !update3.IsDownloaded ? text25 + "-" : text25 + "D";
                                     text25 = !update3.IsInstalled ? text25 + "-" : text25 + "I";
                                 } else {
@@ -979,7 +979,7 @@ namespace PSWindowsUpdate {
                             var num11 = collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                             WriteObject(collection, true);
                             WriteVerbose("Accepted [" + num11 + "] Updates ready to Download");
-                            if (num11 > 0 && (!WUToolsObj.IsLocalHost(text7) || ScheduleJob != DateTime.MinValue)) {
+                            if (num11 > 0 && (!WUToolsObj.IsLocalHost(target) || ScheduleJob != DateTime.MinValue)) {
                                 var text29 = "";
                                 text29 = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
                                 text29 = text29 + " -Criteria \\\"" + text24 + "\\\"";
@@ -1131,7 +1131,7 @@ namespace PSWindowsUpdate {
 
                                 text29 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                                 var invokeWUJob = new InvokeWUJob();
-                                invokeWUJob.ComputerName = new string[1] { text7 };
+                                invokeWUJob.ComputerName = new string[1] { target };
                                 if (Credential != null) {
                                     invokeWUJob.Credential = Credential;
                                 }
@@ -1145,10 +1145,10 @@ namespace PSWindowsUpdate {
                                     }
 
                                     invokeWUJob.TriggerDate = ScheduleJob;
-                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + text7 + " (" + ScheduleJob.ToString() + "): ");
+                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob.ToString() + "): ");
                                 } else {
                                     invokeWUJob.RunNow = true;
-                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + text7 + " (Now): ");
+                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (Now): ");
                                 }
 
                                 WriteVerbose("powershell.exe -Command \"" + text29 + "\"");
@@ -1164,7 +1164,7 @@ namespace PSWindowsUpdate {
 
                             var num12 = 0;
                             var activityId4 = 1;
-                            var activity4 = "Download updates for " + text7;
+                            var activity4 = "Download updates for " + target;
                             var statusDescription4 = "[" + num12 + "/" + num11 + "]";
                             var progressRecord4 = new ProgressRecord(activityId4, activity4, statusDescription4);
                             foreach (var item5 in collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Accepted")) {
@@ -1207,7 +1207,7 @@ namespace PSWindowsUpdate {
                                             WriteDebug(DateTime.Now.ToString() + " Skip to next computer");
                                             break;
                                         }
-                                    } else if (MyInvocation.BoundParameters.ContainsKey("Debuger")) {
+                                    } else if (Debuger) {
                                         var errorRecord8 = new ErrorRecord(ex5, "Debug", ErrorCategory.CloseError, null);
                                         ThrowTerminatingError(errorRecord8);
                                     }
@@ -1270,7 +1270,7 @@ namespace PSWindowsUpdate {
                         NeedsReboot = false;
                         var num13 = 0;
                         var activityId5 = 1;
-                        var activity5 = "Install updates for " + text7;
+                        var activity5 = "Install updates for " + target;
                         var statusDescription5 = "[" + num13 + "/" + num6 + "]";
                         var progressRecord5 = new ProgressRecord(activityId5, activity5, statusDescription5);
                         foreach (var item6 in collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Downloaded")) {
@@ -1312,7 +1312,7 @@ namespace PSWindowsUpdate {
                                         WriteDebug(DateTime.Now.ToString() + " Skip to next computer");
                                         break;
                                     }
-                                } else if (MyInvocation.BoundParameters.ContainsKey("Debuger")) {
+                                } else if (Debuger) {
                                     var errorRecord9 = new ErrorRecord(ex6, "Debug", ErrorCategory.CloseError, null);
                                     ThrowTerminatingError(errorRecord9);
                                 }
@@ -1375,7 +1375,7 @@ namespace PSWindowsUpdate {
                         if (num7 > 0 && (bool)SendHistory) {
                             var text32 = "Get-WUHistory -SendReport -Last " + num7 + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                             var invokeWUJob2 = new InvokeWUJob();
-                            invokeWUJob2.ComputerName = new string[1] { text7 };
+                            invokeWUJob2.ComputerName = new string[1] { target };
                             if (Credential != null) {
                                 invokeWUJob2.Credential = Credential;
                             }
@@ -1384,10 +1384,10 @@ namespace PSWindowsUpdate {
                             invokeWUJob2.TaskName = "PSWindowsUpdate_History";
                             if (NeedsReboot) {
                                 invokeWUJob2.TriggerAtStart = true;
-                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + text7 + " (AtStart): powershell.exe -Command \"" + text32 + "\"");
+                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" + text32 + "\"");
                             } else {
                                 invokeWUJob2.RunNow = true;
-                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + text7 + " (Now): powershell.exe -Command \"" + text32 + "\"");
+                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" + text32 + "\"");
                             }
 
                             var enumerable2 = invokeWUJob2.Invoke();
@@ -1547,7 +1547,7 @@ namespace PSWindowsUpdate {
 
                         text33 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                         var invokeWUJob3 = new InvokeWUJob();
-                        invokeWUJob3.ComputerName = new string[1] { text7 };
+                        invokeWUJob3.ComputerName = new string[1] { target };
                         if (Credential != null) {
                             invokeWUJob3.Credential = Credential;
                         }
@@ -1557,11 +1557,11 @@ namespace PSWindowsUpdate {
                         invokeWUJob3.Debuger = true;
                         if (NeedsReboot) {
                             invokeWUJob3.TriggerAtStart = true;
-                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + text7 + " (AtStart): ");
+                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (AtStart): ");
                         } else {
                             ScheduleJob = DateTime.Now.AddMinutes(5.0);
                             invokeWUJob3.TriggerDate = ScheduleJob;
-                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + text7 + " (" + ScheduleJob.ToString() + "): ");
+                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob.ToString() + "): ");
                         }
 
                         WriteVerbose("powershell.exe -Command \"" + text33 + "\"");
@@ -1720,8 +1720,6 @@ namespace PSWindowsUpdate {
             WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
         }
 
-        protected override void StopProcessing() {
-            base.StopProcessing();
-        }
+
     }
 }

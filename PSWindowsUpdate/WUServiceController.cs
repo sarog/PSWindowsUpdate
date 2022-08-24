@@ -51,7 +51,7 @@ namespace PSWindowsUpdate {
 
                 serviceController.Dispose();
             } catch (Exception ex) {
-                Console.WriteLine((object)ex);
+                Console.WriteLine(ex);
             }
         }
     }

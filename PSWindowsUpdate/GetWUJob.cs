@@ -9,7 +9,7 @@ using TaskScheduler;
 
 namespace PSWindowsUpdate {
     [Cmdlet("Get", "WUJob", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
-    [OutputType(new Type[] { typeof(WUJob) })]
+    [OutputType(typeof(WUJob))]
     public class GetWUJob : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
@@ -56,17 +56,17 @@ namespace PSWindowsUpdate {
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[1] {
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Test smtp settings");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new string[1] {
                         "*"
                     });
                 }
@@ -74,8 +74,8 @@ namespace PSWindowsUpdate {
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1) {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
-                    SendReport = (SwitchParameter)false;
-                    WriteDebug(DateTime.Now.ToString() + " Disabling -SendReport");
+                    SendReport = false;
+                    WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
@@ -90,29 +90,28 @@ namespace PSWindowsUpdate {
 
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
-            if (string.Equals(invocationName.ToString(), "Clear-WUJob", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(invocationName, "Clear-WUJob", StringComparison.OrdinalIgnoreCase)) {
                 ClearExpired = true;
             }
 
             var taskScheduler =
-                (global::TaskScheduler.TaskScheduler)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
-            var computerName = ComputerName;
-            foreach (var text in computerName) {
-                WriteDebug(DateTime.Now.ToString() + " " + text + ": Connecting...");
+                (TaskScheduler.TaskScheduler)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
+            foreach (var target in ComputerName) {
+                WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(text);
-                    WriteDebug(DateTime.Now.ToString() + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now.ToString() + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
                 for (var j = 1; j <= 3; j++) {
                     try {
                         if (Credential != null) {
-                            WriteVerbose("Try to connect " + text + ". Test " + j);
-                            taskScheduler.Connect(text, UserName, Domain, Password);
+                            WriteVerbose("Try to connect " + target + ". Test " + j);
+                            taskScheduler.Connect(target, UserName, Domain, Password);
                         } else {
-                            WriteVerbose("Try to connect " + text + ". Test " + j);
-                            taskScheduler.Connect(text, Type.Missing, Type.Missing, Type.Missing);
+                            WriteVerbose("Try to connect " + target + ". Test " + j);
+                            taskScheduler.Connect(target, Type.Missing, Type.Missing, Type.Missing);
                         }
                     } catch (COMException ex) {
                         if (j >= 3) {
@@ -123,11 +122,11 @@ namespace PSWindowsUpdate {
                                 if (num == 2) {
                                     WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult, ErrorCategory.CloseError, null));
                                 }
-                            } else if (MyInvocation.BoundParameters.ContainsKey("Debuger")) {
+                            } else if (Debuger) {
                                 var errorRecord = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
                                 ThrowTerminatingError(errorRecord);
                             } else {
-                                WriteError(new ErrorRecord(new Exception(text + ": Unknown failure. Try debug."), "Unknown", ErrorCategory.CloseError, null));
+                                WriteError(new ErrorRecord(new Exception(target + ": Unknown failure. Try debug."), "Unknown", ErrorCategory.CloseError, null));
                             }
                         } else {
                             Thread.Sleep(500);
@@ -136,14 +135,14 @@ namespace PSWindowsUpdate {
                 }
 
                 try {
-                    var num2 = 0;
+                    var taskCount = 0;
                     var folder = taskScheduler.GetFolder("\\");
                     if (!MyInvocation.BoundParameters.ContainsKey("TaskName")) {
                         var tasks = folder.GetTasks(1);
                         foreach (IRegisteredTask item in tasks) {
                             if (item.Definition.RegistrationInfo.Source == "PSWindowsUpdate") {
                                 var pSObject = new PSObject(item);
-                                pSObject.Properties.Add(new PSNoteProperty("ComputerName", text));
+                                pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
                                 switch (item.State) {
                                     case _TASK_STATE.TASK_STATE_DISABLED:
                                         pSObject.Properties.Add(new PSNoteProperty("StateName", "Disabled"));
@@ -165,13 +164,13 @@ namespace PSWindowsUpdate {
                                 pSObject.TypeNames.Clear();
                                 pSObject.TypeNames.Add("PSWindowsUpdate.WUJob");
                                 WriteObject(pSObject);
-                                num2++;
+                                taskCount++;
                             }
                         }
                     } else {
                         var task = folder.GetTask(TaskName);
                         var pSObject2 = new PSObject(task);
-                        pSObject2.Properties.Add(new PSNoteProperty("ComputerName", text));
+                        pSObject2.Properties.Add(new PSNoteProperty("ComputerName", target));
                         switch (task.State) {
                             case _TASK_STATE.TASK_STATE_DISABLED:
                                 pSObject2.Properties.Add(new PSNoteProperty("StateName", "Disabled"));
@@ -193,10 +192,10 @@ namespace PSWindowsUpdate {
                         pSObject2.TypeNames.Clear();
                         pSObject2.TypeNames.Add("PSWindowsUpdate.WUJob");
                         WriteObject(pSObject2);
-                        num2++;
+                        taskCount++;
                     }
 
-                    WriteVerbose("Found " + num2 + " tasks");
+                    WriteVerbose("Found " + taskCount + " tasks");
                     if (MyInvocation.BoundParameters.ContainsKey("ClearExpired")) {
                         continue;
                     }
@@ -204,12 +203,12 @@ namespace PSWindowsUpdate {
                     var tasks2 = folder.GetTasks(1);
                     foreach (IRegisteredTask item2 in tasks2) {
                         if (item2.Definition.RegistrationInfo.Source == "PSWindowsUpdate" && DateTime.Parse(item2.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
-                            item2.State != _TASK_STATE.TASK_STATE_RUNNING && ShouldProcess(text, "Clear expired task: " + item2.Name)) {
+                            item2.State != _TASK_STATE.TASK_STATE_RUNNING && ShouldProcess(target, "Clear expired task: " + item2.Name)) {
                             folder.DeleteTask(item2.Name, 0);
                         }
                     }
                 } catch {
-                    var errorRecord2 = new ErrorRecord(new Exception("Cant find task " + TaskName + " on " + text), "WUJob", ErrorCategory.ResourceUnavailable, null);
+                    var errorRecord2 = new ErrorRecord(new Exception("Cant find task " + TaskName + " on " + target), "WUJob", ErrorCategory.ResourceUnavailable, null);
                     WriteError(errorRecord2);
                 }
             }
@@ -221,7 +220,7 @@ namespace PSWindowsUpdate {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now.ToString() + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
                 if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
@@ -262,7 +261,7 @@ namespace PSWindowsUpdate {
                             CoreProcessing();
                             flag = false;
                         } catch (Exception ex) {
-                            WriteDebug(DateTime.Now.ToString() + " Something goes wrong: " + ex.Message);
+                            WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
                     } else {
@@ -283,7 +282,7 @@ namespace PSWindowsUpdate {
                     }
 
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Leaving impersonated session");
+                    WriteDebug(now + " Leaving impersonated session");
                 }
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
@@ -292,7 +291,7 @@ namespace PSWindowsUpdate {
                     str4 = "RunAs";
                 }
 
-                WriteDebug(DateTime.Now.ToString() + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
+                WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
             } else {
                 flag = true;
             }
@@ -307,13 +306,13 @@ namespace PSWindowsUpdate {
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletStart", (object)CmdletStart));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletEnd", (object)CmdletEnd));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletLine", (object)MyInvocation.Line));
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Send report");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)"*");
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Send report");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
@@ -322,11 +321,7 @@ namespace PSWindowsUpdate {
                 }
             }
 
-            WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
-        }
-
-        protected override void StopProcessing() {
-            base.StopProcessing();
+            WriteDebug(DateTime.Now + " CmdletEnd");
         }
     }
 }

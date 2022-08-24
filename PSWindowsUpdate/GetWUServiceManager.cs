@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Management.Automation;
@@ -9,7 +8,7 @@ using WUApiLib;
 
 namespace PSWindowsUpdate {
     [Cmdlet("Get", "WUServiceManager", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
-    [OutputType(new Type[] { typeof(ServiceManager) })]
+    [OutputType(typeof(ServiceManager))]
     public class GetWUServiceManager : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
@@ -49,30 +48,24 @@ namespace PSWindowsUpdate {
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[5] {
-                        "ComputerName",
-                        "Name",
-                        "ServiceID",
-                        "IsManaged",
-                        "IsDefaultAUService"
-                    });
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Test smtp settings");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new ServiceManager());
                 }
 
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1) {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
-                    SendReport = (SwitchParameter)false;
-                    WriteDebug(DateTime.Now.ToString() + " Disabling -SendReport");
+                    SendReport = false;
+                    WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
@@ -86,25 +79,23 @@ namespace PSWindowsUpdate {
         }
 
         private void CoreProcessing() {
-            var invocationName = MyInvocation.InvocationName;
-            foreach (var Computer in ComputerName) {
+            foreach (var target in ComputerName) {
                 var now = DateTime.Now;
-                WriteDebug(now.ToString() + " " + Computer + ": Connecting...");
+                WriteDebug(now + " " + target + ": Connecting...");
                 try {
-                    var pswuModule = WUToolsObj.GetPSWUModule(Computer);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Module version: " + pswuModule.Properties["Version"].Value?.ToString());
+                    WriteDebug(now + " Module version: " + pswuModule.Properties["Version"].Value);
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value?.ToString());
+                    WriteDebug(now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
-                var target = Computer;
                 now = DateTime.Now;
-                var action = "(" + now.ToString() + ") Get Windows Update ServiceManager";
+                var action = "(" + now + ") Get Windows Update ServiceManager";
                 if (ShouldProcess(target, action)) {
-                    var serviceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(Computer);
+                    var serviceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(target);
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " ServiceManagerObj mode: " + serviceManagerObj.Mode);
+                    WriteDebug(now + " ServiceManagerObj mode: " + serviceManagerObj.Mode);
                     if (serviceManagerObj.Status) {
                         ServiceManagerObj = (UpdateServiceManager)serviceManagerObj.Object;
                         var source = new Collection<PSObject>();
@@ -113,12 +104,12 @@ namespace PSWindowsUpdate {
                             now = DateTime.Now;
                             strArray[0] = now.ToString();
                             strArray[1] = " ";
-                            strArray[2] = Computer;
+                            strArray[2] = target;
                             strArray[3] = ": Found service ";
                             strArray[4] = service.Name;
                             WriteDebug(string.Concat(strArray));
-                            var psObject = new PSObject((object)service);
-                            psObject.Properties.Add((PSPropertyInfo)new PSNoteProperty("ComputerName", (object)Computer));
+                            var psObject = new PSObject(service);
+                            psObject.Properties.Add(new PSNoteProperty("ComputerName", target));
                             psObject.TypeNames.Clear();
                             psObject.TypeNames.Add("PSWindowsUpdate.ServiceManager");
                             source.Add(psObject);
@@ -127,12 +118,12 @@ namespace PSWindowsUpdate {
                         var collection1 = new Collection<PSObject>();
                         var collection2 = ServiceID == null
                             ? source
-                            : new Collection<PSObject>((IList<PSObject>)source.Where<PSObject>((Func<PSObject, bool>)(x => x.Properties["ServiceID"].Value.ToString() == ServiceID))
-                                .ToList<PSObject>());
-                        WriteObject((object)collection2, true);
-                        OutputObj = new Collection<PSObject>((IList<PSObject>)OutputObj.Concat<PSObject>((IEnumerable<PSObject>)collection2).ToList<PSObject>());
-                    } else if ((bool)Debuger) {
-                        WriteError(new ErrorRecord(serviceManagerObj.Exception, "Debug", ErrorCategory.CloseError, (object)null));
+                            : new Collection<PSObject>(source.Where(x => x.Properties["ServiceID"].Value.ToString() == ServiceID)
+                                .ToList());
+                        WriteObject(collection2, true);
+                        OutputObj = new Collection<PSObject>(OutputObj.Concat(collection2).ToList());
+                    } else if (Debuger) {
+                        WriteError(new ErrorRecord(serviceManagerObj.Exception, "Debug", ErrorCategory.CloseError, null));
                     } else {
                         WriteError(serviceManagerObj.Error);
                     }
@@ -146,7 +137,7 @@ namespace PSWindowsUpdate {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now.ToString() + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
                 if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
@@ -187,7 +178,7 @@ namespace PSWindowsUpdate {
                             CoreProcessing();
                             flag = false;
                         } catch (Exception ex) {
-                            WriteDebug(DateTime.Now.ToString() + " Something goes wrong: " + ex.Message);
+                            WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
                     } else {
@@ -208,7 +199,7 @@ namespace PSWindowsUpdate {
                     }
 
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Leaving impersonated session");
+                    WriteDebug(now + " Leaving impersonated session");
                 }
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
@@ -217,7 +208,7 @@ namespace PSWindowsUpdate {
                     str4 = "RunAs";
                 }
 
-                WriteDebug(DateTime.Now.ToString() + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
+                WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
             } else {
                 flag = true;
             }
@@ -232,19 +223,13 @@ namespace PSWindowsUpdate {
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletStart", (object)CmdletStart));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletEnd", (object)CmdletEnd));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletLine", (object)MyInvocation.Line));
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Send report");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[5] {
-                        "ComputerName",
-                        "Name",
-                        "ServiceID",
-                        "IsManaged",
-                        "IsDefaultAUService"
-                    });
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Send report");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new ServiceManager());
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
@@ -253,11 +238,7 @@ namespace PSWindowsUpdate {
                 }
             }
 
-            WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
-        }
-
-        protected override void StopProcessing() {
-            base.StopProcessing();
+            WriteDebug(DateTime.Now + " CmdletEnd");
         }
     }
 }

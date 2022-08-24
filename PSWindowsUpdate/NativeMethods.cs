@@ -33,7 +33,7 @@ namespace PSWindowsUpdate {
         internal static IEnumerable<CREDENTIAL> CredEnumerate() {
             int count;
             IntPtr pCredentials;
-            if (!CredEnumerate((string)null, 0, out count, out pCredentials)) {
+            if (!CredEnumerate(null, 0, out count, out pCredentials)) {
                 throw new Exception("Failed to enumerate credentials");
             }
 
@@ -42,7 +42,7 @@ namespace PSWindowsUpdate {
                 source[index] = Marshal.ReadIntPtr(pCredentials, index * Marshal.SizeOf(typeof(IntPtr)));
             }
 
-            return ((IEnumerable<IntPtr>)source).Select<IntPtr, CREDENTIAL>((Func<IntPtr, CREDENTIAL>)(ptr => (CREDENTIAL)Marshal.PtrToStructure(ptr, typeof(CREDENTIAL))));
+            return source.Select(ptr => (CREDENTIAL)Marshal.PtrToStructure(ptr, typeof(CREDENTIAL)));
         }
 
         internal struct CREDENTIAL {

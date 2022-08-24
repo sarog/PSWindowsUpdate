@@ -57,7 +57,7 @@ namespace PSWindowsUpdate {
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
@@ -65,10 +65,10 @@ namespace PSWindowsUpdate {
             WUToolsObj = new WUTools();
             WUBitsObj = new WUBits();
             OutputObj = new Collection<PSObject>();
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[1] {
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Test smtp settings");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new string[1] {
                         "*"
                     });
                 }
@@ -76,8 +76,8 @@ namespace PSWindowsUpdate {
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1) {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
-                    SendReport = (SwitchParameter)false;
-                    WriteDebug(DateTime.Now.ToString() + " Disabling -SendReport");
+                    SendReport = false;
+                    WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
@@ -92,15 +92,15 @@ namespace PSWindowsUpdate {
 
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
-            var computerName = ComputerName;
-            foreach (var text in computerName) {
+            var computerNames = ComputerName;
+            foreach (var target in computerNames) {
                 if (!Regex.IsMatch(KBArticleID, "KB", RegexOptions.IgnoreCase)) {
                     KBArticleID = "KB" + KBArticleID;
                 }
 
-                var text2 = "http://www.catalog.update.microsoft.com/Search.aspx?q=" + KBArticleID;
-                WriteDebug(DateTime.Now.ToString() + " " + text2);
-                var text3 = WUToolsObj.InvokeRestMethod(text2, WUTools.HttpWebRequestMethod.GET, null, null);
+                var reqUrl = "http://www.catalog.update.microsoft.com/Search.aspx?q=" + KBArticleID;
+                WriteDebug(DateTime.Now + " " + reqUrl);
+                var text3 = WUToolsObj.InvokeRestMethod(reqUrl, WUTools.HttpWebRequestMethod.GET, null, null);
                 var psarray = new object[1] { text3 };
                 var hTMLDocument = (HTMLDocument)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("25336920-03F9-11CF-8FD0-00AA00686F13")));
                 var iHTMLDocument = (IHTMLDocument2)hTMLDocument;
@@ -111,7 +111,7 @@ namespace PSWindowsUpdate {
                 WriteVerbose("Found [" + count + "] Updates in Microsoft Update Catalog");
                 var num = 0;
                 var activityId = 1;
-                var activity = "Choose updates for " + text;
+                var activity = "Choose updates for " + target;
                 var statusDescription = "[" + num + "/" + count + "]";
                 var progressRecord = new ProgressRecord(activityId, activity, statusDescription);
                 var collection = new Collection<PSObject>();
@@ -120,64 +120,64 @@ namespace PSWindowsUpdate {
                     var pSObject = new PSObject();
                     pSObject.Properties.Add(new PSNoteProperty("X", 1));
                     var groups = item.Groups;
-                    var value = groups["id"].Value;
-                    pSObject.Properties.Add(new PSNoteProperty("Identity", value));
+                    var updateId = groups["id"].Value;
+                    pSObject.Properties.Add(new PSNoteProperty("Identity", updateId));
                     var elementById = hTMLDocument.getElementById(groups["id"].Value + "_link");
-                    var innerText = elementById.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("Title", innerText));
+                    var updateTitle = elementById.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("Title", updateTitle));
                     var elementById2 = hTMLDocument.getElementById(groups["id"].Value + "_C2_R" + num2);
-                    var innerText2 = elementById2.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("Product", innerText2));
+                    var product = elementById2.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("Product", product));
                     var elementById3 = hTMLDocument.getElementById(groups["id"].Value + "_C3_R" + num2);
-                    var innerText3 = elementById3.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("Classification", innerText3));
+                    var classification = elementById3.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("Classification", classification));
                     var elementById4 = hTMLDocument.getElementById(groups["id"].Value + "_C4_R" + num2);
-                    var innerText4 = elementById4.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("LastUpdated", innerText4));
+                    var lastUpdated = elementById4.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("LastUpdated", lastUpdated));
                     var elementById5 = hTMLDocument.getElementById(groups["id"].Value + "_C5_R" + num2);
-                    var innerText5 = elementById5.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("Version", innerText5));
+                    var updateVersion = elementById5.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("Version", updateVersion));
                     var elementById6 = hTMLDocument.getElementById(groups["id"].Value + "_size");
-                    var innerText6 = elementById6.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("Size", innerText6));
+                    var updateSize = elementById6.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("Size", updateSize));
                     var elementById7 = hTMLDocument.getElementById(groups["id"].Value + "_originalSize");
-                    var innerText7 = elementById7.innerText;
-                    pSObject.Properties.Add(new PSNoteProperty("OriginalSize", innerText7));
-                    progressRecord.StatusDescription = "[" + num + "/" + count + "] " + innerText + " " + innerText6;
+                    var originalSize = elementById7.innerText;
+                    pSObject.Properties.Add(new PSNoteProperty("OriginalSize", originalSize));
+                    progressRecord.StatusDescription = "[" + num + "/" + count + "] " + updateTitle + " " + updateSize;
                     progressRecord.PercentComplete = num * 100 / count;
                     WriteProgress(progressRecord);
                     num++;
-                    WriteDebug(DateTime.Now.ToString() + " Show update to accept: " + innerText);
+                    WriteDebug(DateTime.Now + " Show update to accept: " + updateTitle);
                     var flag = false;
-                    flag = (bool)AcceptAll || (ShouldProcess(text, "(" + DateTime.Now.ToString() + ") " + innerText + "[" + innerText6 + "]") ? true : false);
-                    var text4 = "";
-                    var text5 = "";
+                    flag = AcceptAll || (ShouldProcess(target, "(" + DateTime.Now + ") " + updateTitle + "[" + updateSize + "]") ? true : false);
+                    var pStatus = "";
+                    var pResult = "";
                     if (flag) {
-                        text4 += "A";
-                        text5 = "Accepted";
-                        WriteDebug(DateTime.Now.ToString() + " " + text5);
-                        pSObject.Properties.Add(new PSNoteProperty("ChooseResult", text5));
-                        pSObject.Properties.Add(new PSNoteProperty("Status", text4));
-                        pSObject.Properties.Add(new PSNoteProperty("Result", text5));
+                        pStatus += "A";
+                        pResult = "Accepted";
+                        WriteDebug(DateTime.Now + " " + pResult);
+                        pSObject.Properties.Add(new PSNoteProperty("ChooseResult", pResult));
+                        pSObject.Properties.Add(new PSNoteProperty("Status", pStatus));
+                        pSObject.Properties.Add(new PSNoteProperty("Result", pResult));
                         var requestUrl = "http://www.catalog.update.microsoft.com/DownloadDialog.aspx";
                         var dictionary = new Dictionary<string, string>();
-                        dictionary.Add("updateIDs", "[{\"uidInfo\":\"" + value + "\",\"updateID\":\"" + value + "\",\"size\":0}]");
-                        WriteDebug(DateTime.Now.ToString() + " " + dictionary["updateIDs"].ToString());
+                        dictionary.Add("updateIDs", "[{\"uidInfo\":\"" + updateId + "\",\"updateID\":\"" + updateId + "\",\"size\":0}]");
+                        WriteDebug(DateTime.Now + " " + dictionary["updateIDs"]);
                         var input = WUToolsObj.InvokeRestMethod(requestUrl, WUTools.HttpWebRequestMethod.POST, dictionary, null);
                         var regex2 = new Regex("(?<url>http[s]?\\://download\\.windowsupdate\\.com/[^\\'\\\"]*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
                         var matchCollection2 = regex2.Matches(input);
-                        var text6 = matchCollection2[0].Groups["url"].Value.ToString();
-                        var fileName = Path.GetFileName(text6);
-                        pSObject.Properties.Add(new PSNoteProperty("DownloadUrl", text6));
+                        var downloadUrl = matchCollection2[0].Groups["url"].Value;
+                        var fileName = Path.GetFileName(downloadUrl);
+                        pSObject.Properties.Add(new PSNoteProperty("DownloadUrl", downloadUrl));
                         pSObject.Properties.Add(new PSNoteProperty("FileName", fileName));
-                        WriteDebug(DateTime.Now.ToString() + " " + text6);
+                        WriteDebug(DateTime.Now + " " + downloadUrl);
                     } else {
-                        text4 += "R";
-                        text5 = "Rejected";
-                        WriteDebug(DateTime.Now.ToString() + " " + text5);
-                        pSObject.Properties.Add(new PSNoteProperty("ChooseResult", text5));
-                        pSObject.Properties.Add(new PSNoteProperty("Status", text4));
-                        pSObject.Properties.Add(new PSNoteProperty("Result", text5));
+                        pStatus += "R";
+                        pResult = "Rejected";
+                        WriteDebug(DateTime.Now + " " + pResult);
+                        pSObject.Properties.Add(new PSNoteProperty("ChooseResult", pResult));
+                        pSObject.Properties.Add(new PSNoteProperty("Status", pStatus));
+                        pSObject.Properties.Add(new PSNoteProperty("Result", pResult));
                         pSObject.Properties.Add(new PSNoteProperty("DownloadUrl", null));
                         pSObject.Properties.Add(new PSNoteProperty("FileName", null));
                     }
@@ -188,20 +188,20 @@ namespace PSWindowsUpdate {
                     num2++;
                 }
 
-                var num3 = collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Accepted").Count();
+                var num3 = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                 WriteObject(collection, true);
                 WriteVerbose("Accepted [" + num3 + "] Updates ready to Download");
                 var num4 = 0;
                 var activityId2 = 1;
-                var activity2 = "Download updates for " + text;
+                var activity2 = "Download updates for " + target;
                 var statusDescription2 = "[" + num4 + "/" + num3 + "]";
                 var progressRecord2 = new ProgressRecord(activityId2, activity2, statusDescription2);
-                foreach (var item2 in collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Accepted")) {
+                foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted")) {
                     item2.Properties.Add(new PSNoteProperty("X", 2));
                     var source = item2.Properties["DownloadUrl"].Value.ToString();
                     var path = item2.Properties["FileName"].Value.ToString();
                     var text7 = Path.Combine(Destination, path);
-                    WriteDebug(DateTime.Now.ToString() + " " + text7);
+                    WriteDebug(DateTime.Now + " " + text7);
                     var text8 = item2.Properties["Title"].Value.ToString();
                     var text9 = item2.Properties["Size"].Value.ToString();
                     progressRecord2.StatusDescription = "[" + num4 + "/" + num3 + "] " + text8 + " " + text9;
@@ -210,43 +210,43 @@ namespace PSWindowsUpdate {
                     num4++;
                     if (!Directory.Exists(Destination)) {
                         Directory.CreateDirectory(Destination);
-                        WriteDebug(DateTime.Now.ToString() + " Creatig destination: " + Destination);
+                        WriteDebug(DateTime.Now + " Creatig destination: " + Destination);
                     }
 
                     if (Directory.Exists(Destination)) {
                         if (File.Exists(text7)) {
-                            WriteDebug(DateTime.Now.ToString() + " File exist and will be overwited: " + text7);
+                            WriteDebug(DateTime.Now + " File exist and will be overwited: " + text7);
                         }
 
                         var text10 = WUBitsObj.StartBitsTransfer(source, text7);
-                        WriteDebug(DateTime.Now.ToString() + " " + text10);
-                        var text11 = item2.Properties["Status"].Value.ToString();
+                        WriteDebug(DateTime.Now + " " + text10);
+                        var status = item2.Properties["Status"].Value.ToString();
                         switch (text10) {
                             case "ERROR":
-                                text11 += "E";
+                                status += "E";
                                 item2.Properties.Add(new PSNoteProperty("DownloadResult", "Error"));
-                                item2.Properties.Add(new PSNoteProperty("Status", text11));
+                                item2.Properties.Add(new PSNoteProperty("Status", status));
                                 item2.Properties.Add(new PSNoteProperty("Result", "Error"));
                                 break;
                             case "CANCELLED":
-                                text11 += "C";
+                                status += "C";
                                 item2.Properties.Add(new PSNoteProperty("DownloadResult", "Cancelled"));
-                                item2.Properties.Add(new PSNoteProperty("Status", text11));
+                                item2.Properties.Add(new PSNoteProperty("Status", status));
                                 item2.Properties.Add(new PSNoteProperty("Result", "Cancelled"));
                                 break;
                             case "ACKNOWLEDGED":
-                                text11 += "D";
+                                status += "D";
                                 item2.Properties.Add(new PSNoteProperty("DownloadResult", "Downloaded"));
-                                item2.Properties.Add(new PSNoteProperty("Status", text11));
+                                item2.Properties.Add(new PSNoteProperty("Status", status));
                                 item2.Properties.Add(new PSNoteProperty("Result", "Downloaded"));
                                 break;
                         }
                     }
                 }
 
-                var num5 = collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
-                WriteObject(collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Downloaded"), true);
-                WriteVerbose("Downloaded [" + num5 + "] Updates");
+                var dlCount = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
+                WriteObject(collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded"), true);
+                WriteVerbose("Downloaded [" + dlCount + "] Updates");
             }
         }
 
@@ -256,7 +256,7 @@ namespace PSWindowsUpdate {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now.ToString() + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
                 if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
@@ -297,7 +297,7 @@ namespace PSWindowsUpdate {
                             CoreProcessing();
                             flag = false;
                         } catch (Exception ex) {
-                            WriteDebug(DateTime.Now.ToString() + " Something goes wrong: " + ex.Message);
+                            WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
                     } else {
@@ -318,7 +318,7 @@ namespace PSWindowsUpdate {
                     }
 
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Leaving impersonated session");
+                    WriteDebug(now + " Leaving impersonated session");
                 }
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
@@ -327,7 +327,7 @@ namespace PSWindowsUpdate {
                     str4 = "RunAs";
                 }
 
-                WriteDebug(DateTime.Now.ToString() + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
+                WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
             } else {
                 flag = true;
             }
@@ -342,13 +342,13 @@ namespace PSWindowsUpdate {
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletStart", (object)CmdletStart));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletEnd", (object)CmdletEnd));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletLine", (object)MyInvocation.Line));
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Send report");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)"*");
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Send report");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
@@ -357,11 +357,7 @@ namespace PSWindowsUpdate {
                 }
             }
 
-            WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
-        }
-
-        protected override void StopProcessing() {
-            base.StopProcessing();
+            WriteDebug(DateTime.Now + " CmdletEnd");
         }
     }
 }

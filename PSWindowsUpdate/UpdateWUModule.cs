@@ -47,17 +47,17 @@ namespace PSWindowsUpdate {
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[1] {
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Test smtp settings");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new string[1] {
                         "*"
                     });
                 }
@@ -65,8 +65,8 @@ namespace PSWindowsUpdate {
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1) {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
-                    SendReport = (SwitchParameter)false;
-                    WriteDebug(DateTime.Now.ToString() + " Disabling -SendReport");
+                    SendReport = false;
+                    WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
@@ -81,69 +81,69 @@ namespace PSWindowsUpdate {
 
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
-            if ((bool)Local) {
+            if (Local) {
                 var pswuModule = WUToolsObj.GetPSWUModule(Environment.MachineName);
                 try {
                     var version1 = (Version)pswuModule.Properties["Version"].Value;
                     var version2 = (Version)pswuModule.Properties["PSWUDllVersion"].Value;
-                    WriteVerbose(Environment.MachineName + ": Local module: " + version1.ToString() + " (" + version2.ToString() + ")");
+                    WriteVerbose(Environment.MachineName + ": Local module: " + version1 + " (" + version2 + ")");
                 } catch { }
             }
 
-            foreach (var str in ComputerName) {
+            foreach (var target in ComputerName) {
                 var now = DateTime.Now;
-                WriteDebug(now.ToString() + " " + str + ": Connecting...");
+                WriteDebug(now + " " + target + ": Connecting...");
                 try {
-                    var pswuModule = WUToolsObj.GetPSWUModule(str);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Module version: " + pswuModule.Properties["Version"].Value?.ToString());
+                    WriteDebug(now + " Module version: " + pswuModule.Properties["Version"].Value);
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value?.ToString());
+                    WriteDebug(now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
-                var pswuModule1 = WUToolsObj.GetPSWUModule(str);
+                var pswuModule1 = WUToolsObj.GetPSWUModule(target);
                 try {
                     var version3 = (Version)pswuModule1.Properties["Version"].Value;
                     var version4 = (Version)pswuModule1.Properties["PSWUDllVersion"].Value;
-                    WriteVerbose(str + ": Remote module: " + version3.ToString() + " (" + version4.ToString() + ")");
+                    WriteVerbose(target + ": Remote module: " + version3 + " (" + version4 + ")");
                 } catch {
-                    WriteDebug(DateTime.Now.ToString() + " Can't get PSWU module from " + str);
+                    WriteDebug(DateTime.Now + " Can't get PSWU module from " + target);
                 }
 
-                if (ShouldProcess(str, "(" + DateTime.Now.ToString() + ") Update PSWindowsUpdate module")) {
+                if (ShouldProcess(target, "(" + DateTime.Now + ") Update PSWindowsUpdate module")) {
                     string script;
-                    if ((bool)Online) {
+                    if (Online) {
                         WriteVerbose("Installing module...");
                         script =
                             "Invoke-Command -ComputerName $Computer -Command { Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force; Install-Module -Name PSWindowsUpdate -Force -Verbose } -Authentication Negotiate"
-                                .Replace("$Computer", str);
-                        WriteDebug(DateTime.Now.ToString() + " Online mode: " + script);
+                                .Replace("$Computer", target);
+                        WriteDebug(DateTime.Now + " Online mode: " + script);
                     } else {
                         WriteVerbose("Cloning module...");
                         script =
                             "$ModuleBase = (Get-Module PSWindowsUpdate -ListAvailable | Sort Version -Descending | Select -First 1).ModuleBase\r\n$Destination = '\\\\$Computer\\' + $($ModuleBase -replace ':','$') \r\n\r\nCopy-Item $ModuleBase -Destination $Destination -Force\r\nCopy-Item ($ModuleBase + '\\*') -Destination $Destination -Force\r\n\r\nInvoke-Command -ComputerName $Computer -Command { ipmo PSWindowsUpdate; Enable-WURemoting -Verbose } -Authentication Negotiate"
-                                .Replace("$Computer", str);
-                        WriteDebug(DateTime.Now.ToString() + " Local mode: " + script);
+                                .Replace("$Computer", target);
+                        WriteDebug(DateTime.Now + " Local mode: " + script);
                     }
 
                     var errorRecord = (ErrorRecord)null;
                     using (var powerShell = PowerShell.Create()) {
                         powerShell.AddScript(script);
                         powerShell.Invoke();
-                        WriteObject((object)powerShell.Streams.Verbose);
-                        WriteObject((object)powerShell.Streams.Error);
+                        WriteObject(powerShell.Streams.Verbose);
+                        WriteObject(powerShell.Streams.Error);
                         if (powerShell.Streams.Error.Count > 0) {
                             errorRecord = powerShell.Streams.Error[0];
                         }
                     }
 
-                    var pswuModule2 = WUToolsObj.GetPSWUModule(str);
+                    var pswuModule2 = WUToolsObj.GetPSWUModule(target);
                     try {
                         var version5 = (Version)pswuModule2.Properties["Version"].Value;
                         var version6 = (Version)pswuModule2.Properties["PSWUDllVersion"].Value;
-                        WriteVerbose(str + ": Remote module: " + version5.ToString() + " (" + version6.ToString() + ")");
+                        WriteVerbose(target + ": Remote module: " + version5 + " (" + version6 + ")");
                     } catch {
-                        WriteDebug(DateTime.Now.ToString() + " Can't get PSWU module from " + str);
+                        WriteDebug(DateTime.Now + " Can't get PSWU module from " + target);
                     }
                 }
             }
@@ -259,8 +259,6 @@ namespace PSWindowsUpdate {
             WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
         }
 
-        protected override void StopProcessing() {
-            base.StopProcessing();
-        }
+
     }
 }

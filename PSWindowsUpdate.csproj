@@ -132,5 +132,11 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE" />
+    <Content Include="PSWindowsUpdate.psd1" />
+    <Content Include="PSWindowsUpdate.psm1" />
+    <Content Include="README" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

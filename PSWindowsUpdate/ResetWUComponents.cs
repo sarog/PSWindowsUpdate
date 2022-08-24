@@ -76,17 +76,17 @@ namespace PSWindowsUpdate {
 
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
-            foreach (var Computer in ComputerName) {
+            foreach (var target in ComputerName) {
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Step 1: Stop Windows Update services");
                 Console.ForegroundColor = ConsoleColor.White;
-                WUToolsObj.StopService(Computer, "BITS");
+                WUToolsObj.StopService(target, "BITS");
                 WriteVerbose("Background Intelligent Transfer Service (BITS)");
-                WUToolsObj.StopService(Computer, "wuauserv");
+                WUToolsObj.StopService(target, "wuauserv");
                 WriteVerbose("Windows Update (wuauserv)");
-                WUToolsObj.StopService(Computer, "appidsvc");
+                WUToolsObj.StopService(target, "appidsvc");
                 WriteVerbose("Application Identity (appidsvc)");
-                WUToolsObj.StopService(Computer, "cryptsvc");
+                WUToolsObj.StopService(target, "cryptsvc");
                 WriteVerbose("Cryptographic Services (cryptsvc)");
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Step 2: Delete the qmgr*.dat files");
@@ -243,13 +243,13 @@ namespace PSWindowsUpdate {
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Step 9: Start Windows Update services");
                 Console.ForegroundColor = ConsoleColor.White;
-                WUToolsObj.StartService(Computer, "cryptsvc");
+                WUToolsObj.StartService(target, "cryptsvc");
                 WriteVerbose("Cryptographic Services (cryptsvc)");
-                WUToolsObj.StartService(Computer, "appidsvc");
+                WUToolsObj.StartService(target, "appidsvc");
                 WriteVerbose("Application Identity (appidsvc)");
-                WUToolsObj.StartService(Computer, "wuauserv");
+                WUToolsObj.StartService(target, "wuauserv");
                 WriteVerbose("Windows Update (wuauserv)");
-                WUToolsObj.StartService(Computer, "BITS");
+                WUToolsObj.StartService(target, "BITS");
                 WriteVerbose("Background Intelligent Transfer Service (BITS)");
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Step 10: Start Windows Update services");
@@ -369,8 +369,6 @@ namespace PSWindowsUpdate {
             WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
         }
 
-        protected override void StopProcessing() {
-            base.StopProcessing();
-        }
+
     }
 }
