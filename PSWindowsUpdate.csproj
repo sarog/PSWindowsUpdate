@@ -133,10 +133,7 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="genbitsdll.bat" />
     <Content Include="LICENSE" />
-    <Content Include="PSWindowsUpdate.psd1" />
-    <Content Include="PSWindowsUpdate.psm1" />
     <Content Include="README.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
