@@ -8,6 +8,7 @@ using System.Threading;
 using TaskScheduler;
 
 namespace PSWindowsUpdate {
+    
     [Cmdlet("Get", "WUJob", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
     [OutputType(typeof(WUJob))]
     public class GetWUJob : PSCmdlet {
@@ -94,8 +95,7 @@ namespace PSWindowsUpdate {
                 ClearExpired = true;
             }
 
-            var taskScheduler =
-                (TaskScheduler.TaskScheduler)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
+            var taskScheduler = (TaskScheduler.TaskScheduler)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
             foreach (var target in ComputerName) {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try {

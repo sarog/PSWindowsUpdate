@@ -21,7 +21,7 @@ namespace PSWindowsUpdate {
                 serviceController.WaitForStatus(ServiceControllerStatus.Running);
                 serviceController.Dispose();
             } catch (Exception ex) {
-                Console.WriteLine((object)ex);
+                Console.WriteLine(ex);
             }
         }
 
@@ -36,7 +36,7 @@ namespace PSWindowsUpdate {
 
                 serviceController.Dispose();
             } catch (Exception ex) {
-                Console.WriteLine((object)ex);
+                Console.WriteLine(ex);
             }
         }
 

@@ -59,14 +59,14 @@ namespace PSWindowsUpdate {
             var computerName = ComputerName;
             foreach (var target in computerName) {
                 var netFwPolicy = (INetFwPolicy2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FwPolicy2"));
-                var flag = false;
+                var rule1Enabled = false;
                 foreach (INetFwRule rule in netFwPolicy.Rules) {
                     if (rule.Name == "PSWindowsUpdate (RPC Dynamics Ports)") {
-                        flag = true;
+                        rule1Enabled = true;
                     }
                 }
 
-                if (!flag) {
+                if (!rule1Enabled) {
                     WriteVerbose("Create firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
                     var netFwRule2 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
                     netFwRule2.Grouping = "PSWindowsUpdate";
@@ -78,7 +78,7 @@ namespace PSWindowsUpdate {
                     netFwRule2.ApplicationName = "%SystemRoot%\\System32\\dllhost.exe";
                     netFwRule2.Name = "PSWindowsUpdate (RPC Dynamics Ports)";
                     netFwPolicy.Rules.Add(netFwRule2);
-                } else if (!netFwPolicy.get_IsRuleGroupCurrentlyEnabled("PSWindowsUpdate")) {
+                } else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"]) {
                     WriteVerbose("Enable firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
                     netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
                 } else {
@@ -86,14 +86,14 @@ namespace PSWindowsUpdate {
                 }
 
                 if (WinRMPublic) {
-                    var flag2 = false;
+                    var rule2Enabled = false;
                     foreach (INetFwRule rule2 in netFwPolicy.Rules) {
                         if (rule2.Name == "PSWindowsUpdate (WinRM Public)") {
-                            flag2 = true;
+                            rule2Enabled = true;
                         }
                     }
 
-                    if (!flag2) {
+                    if (!rule2Enabled) {
                         WriteVerbose("Create firewall rule: PSWindowsUpdate (WinRM Public)");
                         var netFwRule4 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
                         netFwRule4.Grouping = "PSWindowsUpdate";
@@ -105,7 +105,7 @@ namespace PSWindowsUpdate {
                         netFwRule4.ApplicationName = "System";
                         netFwRule4.Name = "PSWindowsUpdate (WinRM Public)";
                         netFwPolicy.Rules.Add(netFwRule4);
-                    } else if (!netFwPolicy.get_IsRuleGroupCurrentlyEnabled("PSWindowsUpdate")) {
+                    } else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"]) {
                         WriteVerbose("Enable firewall rule: PSWindowsUpdate (WinRM Public)");
                         netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
                     } else {
@@ -113,14 +113,14 @@ namespace PSWindowsUpdate {
                     }
                 }
 
-                if (!netFwPolicy.get_IsRuleGroupCurrentlyEnabled("Remote Scheduled Tasks Management")) {
+                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Remote Scheduled Tasks Management"]) {
                     WriteVerbose("Enable firewall rules: Remote Scheduled Tasks Management");
                     netFwPolicy.EnableRuleGroup(int.MaxValue, "Remote Scheduled Tasks Management", true);
                 } else {
                     WriteDebug(DateTime.Now + " Remote Scheduled Tasks Management firewall rules are enabled");
                 }
 
-                if (!netFwPolicy.get_IsRuleGroupCurrentlyEnabled("Windows Management Instrumentation (WMI)")) {
+                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Windows Management Instrumentation (WMI)"]) {
                     WriteVerbose("Enable firewall rules: Windows Management Instrumentation (WMI)");
                     netFwPolicy.EnableRuleGroup(int.MaxValue, "Windows Management Instrumentation (WMI)", true);
                 } else {
@@ -194,8 +194,7 @@ namespace PSWindowsUpdate {
                     var wUApiCodeDetails = wUTools.GetWUApiCodeDetails(ex.ErrorCode);
                     if (wUApiCodeDetails != null) {
                         var codeType = wUApiCodeDetails.CodeType;
-                        var num3 = codeType;
-                        if (num3 == 2) {
+                        if (codeType == 2) {
                             WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult, ErrorCategory.CloseError, null));
                         }
                     } else if (Debuger) {

@@ -7,13 +7,13 @@ using System.Security.Principal;
 namespace PSWindowsUpdate {
     [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
     public class WUImpersonator : IDisposable {
-        private WindowsImpersonationContext impersonationContext = (WindowsImpersonationContext)null;
+        private WindowsImpersonationContext impersonationContext;
 
         public WUImpersonator(BuiltinUser builtinUser)
             : this(string.Empty, "NT AUTHORITY", string.Empty, LogonSessionType.Service, builtinUser: BuiltinUser.LocalService) { }
 
         public WUImpersonator(string username, string domain, string password)
-            : this(username, domain, password, LogonSessionType.Interactive, LogonProvider.Default, BuiltinUser.None) { }
+            : this(username, domain, password, LogonSessionType.Interactive) { }
 
         public WUImpersonator(
             string userName,

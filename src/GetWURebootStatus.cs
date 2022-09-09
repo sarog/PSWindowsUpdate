@@ -1,17 +1,18 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Management.Automation;
 using System.Security.Principal;
+using Microsoft.Win32;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    
     [Cmdlet("Get", "WURebootStatus", ConfirmImpact = ConfirmImpact.Medium, DefaultParameterSetName = "ManualReboot", SupportsShouldProcess = true)]
-    [OutputType(new Type[] { typeof(RebootStatus) })]
+    [OutputType(typeof(RebootStatus))]
     public class GetWURebootStatus : PSCmdlet {
+        
         private Hashtable _PSWUSettings = new Hashtable();
 
         [Parameter]
@@ -110,14 +111,14 @@ namespace PSWindowsUpdate {
                 dateTime = DateTime.Now;
                 var action = "(" + dateTime + ") Get Windows Update reboot status";
                 if (ShouldProcess(target, action)) {
-                    bool sendToPipeline1;
+                    bool rebootRequired;
                     if (WUToolsObj.IsLocalHost(target)) {
                         var apiSystemInfoObj = WUToolsObj.GetWUApiSystemInfoObj(target);
                         dateTime = DateTime.Now;
                         WriteDebug(dateTime + " SystemInfoObj mode: " + apiSystemInfoObj.Mode);
                         if (apiSystemInfoObj.Status) {
                             SystemInfoObj = (SystemInformation)apiSystemInfoObj.Object;
-                            sendToPipeline1 = SystemInfoObj.RebootRequired;
+                            rebootRequired = SystemInfoObj.RebootRequired;
                         } else {
                             if (Debuger) {
                                 WriteError(new ErrorRecord(apiSystemInfoObj.Exception, "Debug", ErrorCategory.CloseError, null));
@@ -128,27 +129,29 @@ namespace PSWindowsUpdate {
                             continue;
                         }
                     } else {
-                        sendToPipeline1 = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
+                        rebootRequired = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
                             .OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update\\").GetSubKeyNames().Contains("RebootRequired");
                     }
+                    
+                    var rebootStatus = new PSObject();
+                    rebootStatus.Properties.Add(new PSNoteProperty("ComputerName", target));
+                    rebootStatus.Properties.Add(new PSNoteProperty("RebootRequired", rebootRequired));
 
-                    var sendToPipeline2 = new PSObject();
-                    sendToPipeline2.Properties.Add(new PSNoteProperty("ComputerName", target));
-                    sendToPipeline2.Properties.Add(new PSNoteProperty("RebootRequired", sendToPipeline1));
                     if (ScheduleReboot != DateTime.MinValue) {
-                        sendToPipeline2.Properties.Add(new PSNoteProperty("RebootScheduled", ScheduleReboot));
+                        rebootStatus.Properties.Add(new PSNoteProperty("RebootScheduled", ScheduleReboot));
                     } else {
-                        sendToPipeline2.Properties.Add(new PSNoteProperty("RebootScheduled", null));
+                        rebootStatus.Properties.Add(new PSNoteProperty("RebootScheduled", null));
                     }
 
                     if (Silent) {
-                        WriteObject(sendToPipeline1, true);
+                        WriteObject(rebootRequired, true);
                     } else {
-                        WriteObject(sendToPipeline2, true);
+                        WriteObject(rebootStatus, true);
                     }
 
-                    OutputObj.Add(sendToPipeline2);
-                    if (sendToPipeline1) {
+                    OutputObj.Add(rebootStatus);
+
+                    if (rebootRequired) {
                         if (ScheduleReboot != DateTime.MinValue) {
                             var strArray = new string[5];
                             dateTime = DateTime.Now;

@@ -480,8 +480,8 @@ namespace PSWindowsUpdate {
                     continue;
                 }
 
-                var num5 = 0;
-                var num6 = 0;
+                var totalDownloaded = 0;
+                var totalInstalled = 0;
                 var text8 = "";
                 if (Download || Install) {
                     var num7 = 0;
@@ -559,21 +559,21 @@ namespace PSWindowsUpdate {
                         WriteVerbose("Choosed pre Search Criteria: " + text9);
                     }
 
-                    var num10 = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
+                    var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                     WriteObject(collection, true);
-                    WriteVerbose("Accepted [" + num10 + "] Updates ready to Download");
+                    WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
                     var num11 = 0;
                     var activityId3 = 1;
                     var activity3 = "Download updates for " + target;
-                    var statusDescription3 = "[" + num11 + "/" + num10 + "]";
+                    var statusDescription3 = "[" + num11 + "/" + totalAccepted + "]";
                     var progressRecord3 = new ProgressRecord(activityId3, activity3, statusDescription3);
                     foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted")) {
                         item2.Properties.Add(new PSNoteProperty("X", 2));
                         var update = (IUpdate)item2.BaseObject;
                         var updateCollection = (UpdateCollection)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
                         updateCollection.Add(update);
-                        progressRecord3.StatusDescription = "[" + num11 + "/" + num10 + "] " + update.Title + " " + item2.Properties["Size"].Value;
-                        progressRecord3.PercentComplete = num11 * 100 / num10;
+                        progressRecord3.StatusDescription = "[" + num11 + "/" + totalAccepted + "] " + update.Title + " " + item2.Properties["Size"].Value;
+                        progressRecord3.PercentComplete = num11 * 100 / totalAccepted;
                         WriteProgress(progressRecord3);
                         num11++;
                         WriteDebug(DateTime.Now + " Show update to download: " + update.Title);
@@ -592,7 +592,7 @@ namespace PSWindowsUpdate {
                             var flag3 = false;
                             if (wUApiCodeDetails != null) {
                                 switch (wUApiCodeDetails.CodeType) {
-                                    case 2:
+                                    case 2: // WUTools.CodeType.Error
                                         WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult, ErrorCategory.CloseError, null));
                                         flag3 = true;
                                         break;
@@ -652,8 +652,8 @@ namespace PSWindowsUpdate {
 
                     progressRecord3.RecordType = ProgressRecordType.Completed;
                     WriteProgress(progressRecord3);
-                    num5 = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
-                    WriteVerbose("Downloaded [" + num5 + "] Updates ready to Install");
+                    totalDownloaded = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
+                    WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
                     if (!Install) {
                         WriteDebug(DateTime.Now + " Return downloaded update list");
                         OutputObj = new Collection<PSObject>(collection.ToList());
@@ -669,15 +669,15 @@ namespace PSWindowsUpdate {
                 var num12 = 0;
                 var activityId4 = 1;
                 var activity4 = "Install updates for " + target;
-                var statusDescription4 = "[" + num12 + "/" + num5 + "]";
+                var statusDescription4 = "[" + num12 + "/" + totalDownloaded + "]";
                 var progressRecord4 = new ProgressRecord(activityId4, activity4, statusDescription4);
                 foreach (var item3 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded")) {
                     item3.Properties.Add(new PSNoteProperty("X", 3));
                     var update2 = (IUpdate)item3.BaseObject;
                     var updateCollection2 = (UpdateCollection)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
                     updateCollection2.Add(update2);
-                    progressRecord4.StatusDescription = "[" + num12 + "/" + num5 + "] " + update2.Title + " " + item3.Properties["Size"].Value;
-                    progressRecord4.PercentComplete = num12 * 100 / num5;
+                    progressRecord4.StatusDescription = "[" + num12 + "/" + totalDownloaded + "] " + update2.Title + " " + item3.Properties["Size"].Value;
+                    progressRecord4.PercentComplete = num12 * 100 / totalDownloaded;
                     WriteProgress(progressRecord4);
                     num12++;
                     WriteDebug(DateTime.Now + " Show update to install: " + update2.Title);
@@ -693,19 +693,19 @@ namespace PSWindowsUpdate {
                         WriteDebug(DateTime.Now + " Installed");
                     } catch (COMException ex4) {
                         var wUApiCodeDetails2 = WUToolsObj.GetWUApiCodeDetails(ex4.ErrorCode);
-                        var flag4 = false;
+                        var skip = false;
                         if (wUApiCodeDetails2 != null) {
                             switch (wUApiCodeDetails2.CodeType) {
                                 case 2:
                                     WriteError(new ErrorRecord(new Exception(wUApiCodeDetails2.Description), wUApiCodeDetails2.HResult, ErrorCategory.CloseError, null));
-                                    flag4 = true;
+                                    skip = true;
                                     break;
                                 case 3:
                                     WriteWarning(wUApiCodeDetails2.HResult + ": " + wUApiCodeDetails2.Description);
                                     break;
                             }
 
-                            if (flag4) {
+                            if (skip) {
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
@@ -723,30 +723,30 @@ namespace PSWindowsUpdate {
                         WriteDebug(DateTime.Now + " Reboot is required");
                     }
 
-                    var value2 = "";
+                    var installResult = "";
                     switch (installationResult.ResultCode) {
                         case OperationResultCode.orcNotStarted:
-                            value2 = "NotStarted";
+                            installResult = "NotStarted";
                             break;
                         case OperationResultCode.orcInProgress:
-                            value2 = "InProgress";
+                            installResult = "InProgress";
                             break;
                         case OperationResultCode.orcSucceeded:
-                            value2 = "Installed";
+                            installResult = "Installed";
                             break;
                         case OperationResultCode.orcSucceededWithErrors:
-                            value2 = "InstalledWithErrors";
+                            installResult = "InstalledWithErrors";
                             break;
                         case OperationResultCode.orcFailed:
-                            value2 = "Failed";
+                            installResult = "Failed";
                             break;
                         case OperationResultCode.orcAborted:
-                            value2 = "Aborted";
+                            installResult = "Aborted";
                             break;
                     }
 
-                    item3.Properties.Add(new PSNoteProperty("InstallResult", value2));
-                    item3.Properties.Add(new PSNoteProperty("Result", value2));
+                    item3.Properties.Add(new PSNoteProperty("InstallResult", installResult));
+                    item3.Properties.Add(new PSNoteProperty("Result", installResult));
                     var text15 = "";
                     text15 = !(item3.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text15 + "R" : text15 + "A";
                     text15 = !(item3.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text15 + "F" : text15 + "D";
@@ -765,15 +765,15 @@ namespace PSWindowsUpdate {
 
                 progressRecord4.RecordType = ProgressRecordType.Completed;
                 WriteProgress(progressRecord4);
-                num6 = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
-                WriteVerbose("Installed [" + num6 + "] Updates");
+                totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
+                WriteVerbose("Installed [" + totalInstalled + "] Updates");
                 WriteDebug(DateTime.Now + " Return installed update list");
                 OutputObj = new Collection<PSObject>(collection.ToList());
-                if (num6 <= 0 || !SendHistory) {
+                if (totalInstalled <= 0 || !SendHistory) {
                     continue;
                 }
 
-                var pCommand = "Get-WUHistory -SendReport -Last " + num6 + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                var pCommand = "Get-WUHistory -SendReport -Last " + totalInstalled + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                 var invokeWUJob = new InvokeWUJob();
                 invokeWUJob.ComputerName = new string[1] { target };
                 if (Credential != null) {

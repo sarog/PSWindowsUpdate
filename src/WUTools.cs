@@ -20,7 +20,9 @@ using System.Web.UI.WebControls;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    
     public class WUTools : PSCmdlet {
+        
         // todo: 2022-08-22: change this
         private const string initVector = "SraNie_W-ban13!!";
         private const int keysize = 256;
@@ -28,6 +30,7 @@ namespace PSWindowsUpdate {
         public static string EncryptString(string plainText, string passPhrase) {
             var bytes1 = Encoding.UTF8.GetBytes(initVector);
             var bytes2 = Encoding.UTF8.GetBytes(plainText);
+            // todo: replace with Rfc2898DeriveBytes
             var bytes3 = new PasswordDeriveBytes(passPhrase, null).GetBytes(32);
             var rijndaelManaged = new RijndaelManaged();
             rijndaelManaged.Mode = CipherMode.CBC;
@@ -45,6 +48,7 @@ namespace PSWindowsUpdate {
         public static string DecryptString(string cipherText, string passPhrase) {
             var bytes1 = Encoding.UTF8.GetBytes(initVector);
             var buffer = Convert.FromBase64String(cipherText);
+            // todo: replace with Rfc2898DeriveBytes
             var bytes2 = new PasswordDeriveBytes(passPhrase, null).GetBytes(32);
             var rijndaelManaged = new RijndaelManaged();
             rijndaelManaged.Mode = CipherMode.CBC;
@@ -223,11 +227,11 @@ namespace PSWindowsUpdate {
         public ErrorRecord ParseException(string Computer, Exception e) {
             return !Regex.IsMatch(e.Message, "800706BA", RegexOptions.IgnoreCase)
                 ? !Regex.IsMatch(e.Message, "80070005", RegexOptions.IgnoreCase)
-                    ? new ErrorRecord(new Exception(Computer + ": Unknown failure. "), "Unknown", ErrorCategory.PermissionDenied, (object)null)
+                    ? new ErrorRecord(new Exception(Computer + ": Unknown failure. "), "Unknown", ErrorCategory.PermissionDenied, null)
                     : new ErrorRecord(new Exception(Computer + ": Access denied. You don't have permission to perform this task."), "80070005", ErrorCategory.PermissionDenied,
-                        (object)null)
+                        null)
                 : new ErrorRecord(new Exception(Computer + ": Connection failure, check firewall on destination machine."), "800706BA", ErrorCategory.ResourceUnavailable,
-                    (object)null);
+                    null);
         }
 
         public string InvokeRestMethod(
@@ -719,12 +723,12 @@ namespace PSWindowsUpdate {
                     ? !(Math.Round(Size, 0) < 1073741824M)
                         ? !(Math.Round(Size, 0) < 1099511627776M)
                             ? !(Math.Round(Size, 0) < 1125899906842624M)
-                                ? Math.Round(Size / 1125899906842624M, 0).ToString() + "PB"
-                                : Math.Round(Size / 1099511627776M, 0).ToString() + "TB"
-                            : Math.Round(Size / 1073741824M, 0).ToString() + "GB"
-                        : Math.Round(Size / 1048576M, 0).ToString() + "MB"
-                    : Math.Round(Size / 1024M, 0).ToString() + "KB"
-                : Math.Round(Size, 0).ToString() + "B";
+                                ? Math.Round(Size / 1125899906842624M, 0) + "PB"
+                                : Math.Round(Size / 1099511627776M, 0) + "TB"
+                            : Math.Round(Size / 1073741824M, 0) + "GB"
+                        : Math.Round(Size / 1048576M, 0) + "MB"
+                    : Math.Round(Size / 1024M, 0) + "KB"
+                : Math.Round(Size, 0) + "B";
         }
 
         public PSObject GetPSWUModule(string Computer) {
@@ -752,11 +756,11 @@ namespace PSWindowsUpdate {
                 try {
                     pswuModule = collection[0];
                 } catch {
-                    pswuModule.Properties.Add((PSPropertyInfo)new PSNoteProperty("PSWindowsUpdate", (object)null));
-                    pswuModule.Properties.Add((PSPropertyInfo)new PSNoteProperty("PSWUModuleDll", (object)null));
+                    pswuModule.Properties.Add(new PSNoteProperty("PSWindowsUpdate", null));
+                    pswuModule.Properties.Add(new PSNoteProperty("PSWUModuleDll", null));
                 }
             } else {
-                pswuModule.Properties.Add((PSPropertyInfo)new PSNoteProperty("Error", (object)errorRecord));
+                pswuModule.Properties.Add(new PSNoteProperty("Error", errorRecord));
             }
 
             return pswuModule;
@@ -778,11 +782,11 @@ namespace PSWindowsUpdate {
                 var version2 = (Version)pswuModule.Properties["Version"].Value;
                 return version2 < version1
                     ? new ErrorRecord(
-                        new Exception("To Invoke-WUJob you need PSWindowsUpdate " + version1.ToString() + " on destination machine! Current module version is " +
-                                      version2.ToString()), "LowModuleVersion", ErrorCategory.ResourceUnavailable, (object)null)
-                    : (ErrorRecord)null;
+                        new Exception("To Invoke-WUJob you need PSWindowsUpdate " + version1 + " on destination machine! Current module version is " +
+                                      version2), "LowModuleVersion", ErrorCategory.ResourceUnavailable, null)
+                    : null;
             } catch {
-                return new ErrorRecord(new Exception("PSWindowsUpdate module missing on destination machine"), "ModuleMissing", ErrorCategory.ResourceUnavailable, (object)null);
+                return new ErrorRecord(new Exception("PSWindowsUpdate module missing on destination machine"), "ModuleMissing", ErrorCategory.ResourceUnavailable, null);
             }
         }
 
@@ -915,7 +919,7 @@ namespace PSWindowsUpdate {
 
         public PSObject TestMail(Hashtable LocalPSWUSettings) {
             var psObject = new PSObject();
-            var strArray = new string[8] {
+            var mailOptionTypes = new string[8] {
                 "SmtpServer",
                 "Port",
                 "EnableSsl",
@@ -926,37 +930,36 @@ namespace PSWindowsUpdate {
                 "Style"
             };
             var pswuSettings = GetPSWUSettings();
-            var hashtable = new Hashtable();
-            foreach (var str1 in strArray) {
-                if (LocalPSWUSettings.ContainsKey(str1)) {
-                    hashtable.Add(str1, LocalPSWUSettings[str1]);
-                } else if (pswuSettings.ContainsKey(str1)) {
-                    if (str1 != "Properties") {
-                        hashtable.Add(str1, pswuSettings[str1]);
+            var mailSettings = new Hashtable();
+            foreach (var optionName in mailOptionTypes) {
+                if (LocalPSWUSettings.ContainsKey(optionName)) {
+                    mailSettings.Add(optionName, LocalPSWUSettings[optionName]);
+                } else if (pswuSettings.ContainsKey(optionName)) {
+                    if (optionName != "Properties") {
+                        mailSettings.Add(optionName, pswuSettings[optionName]);
                     }
                 } else {
-                    var str2 = str1;
-                    if (!(str2 == "Port")) {
-                        if (!(str2 == "EnableSsl")) {
-                            if (!(str2 == "Properties")) {
-                                if (!(str2 == "Style")) {
-                                    if (str2 == "Subject") {
-                                        hashtable.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
+                    if (!(optionName == "Port")) {
+                        if (!(optionName == "EnableSsl")) {
+                            if (!(optionName == "Properties")) {
+                                if (!(optionName == "Style")) {
+                                    if (optionName == "Subject") {
+                                        mailSettings.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
                                     } else {
-                                        var errorRecord = new ErrorRecord(new Exception("Missing " + str1 + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                            str1, ErrorCategory.CloseError, null);
+                                        var errorRecord = new ErrorRecord(new Exception("Missing " + optionName + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
+                                            optionName, ErrorCategory.CloseError, null);
                                         psObject.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                                         return psObject;
                                     }
                                 }
                             } else {
-                                hashtable.Add("Properties", "*");
+                                mailSettings.Add("Properties", "*");
                             }
                         } else {
-                            hashtable.Add("EnableSsl", false);
+                            mailSettings.Add("EnableSsl", false);
                         }
                     } else {
-                        hashtable.Add("Port", 25);
+                        mailSettings.Add("Port", 25);
                     }
                 }
             }
@@ -969,7 +972,7 @@ namespace PSWindowsUpdate {
             Collection<PSObject> PSObjects,
             PSObject CmdletInfo = null) {
             var psObject1 = new PSObject();
-            var strArray = new string[8] {
+            var mailOptionTypes = new string[8] {
                 "SmtpServer",
                 "Port",
                 "EnableSsl",
@@ -980,51 +983,50 @@ namespace PSWindowsUpdate {
                 "Style"
             };
             var pswuSettings = GetPSWUSettings();
-            var hashtable = new Hashtable();
-            foreach (var str1 in strArray) {
-                if (LocalPSWUSettings.ContainsKey(str1)) {
-                    hashtable.Add(str1, LocalPSWUSettings[str1]);
-                } else if (pswuSettings.ContainsKey(str1)) {
-                    if (str1 != "Properties") {
-                        hashtable.Add(str1, pswuSettings[str1]);
+            var mailSettings = new Hashtable();
+            foreach (var optionName in mailOptionTypes) {
+                if (LocalPSWUSettings.ContainsKey(optionName)) {
+                    mailSettings.Add(optionName, LocalPSWUSettings[optionName]);
+                } else if (pswuSettings.ContainsKey(optionName)) {
+                    if (optionName != "Properties") {
+                        mailSettings.Add(optionName, pswuSettings[optionName]);
                     }
                 } else {
-                    var str2 = str1;
-                    if (!(str2 == "Port")) {
-                        if (!(str2 == "EnableSsl")) {
-                            if (!(str2 == "Properties")) {
-                                if (!(str2 == "Style")) {
-                                    if (str2 == "Subject") {
-                                        hashtable.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
+                    if (!(optionName == "Port")) {
+                        if (!(optionName == "EnableSsl")) {
+                            if (!(optionName == "Properties")) {
+                                if (!(optionName == "Style")) {
+                                    if (optionName == "Subject") {
+                                        mailSettings.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
                                     } else {
-                                        var errorRecord = new ErrorRecord(new Exception("Missing " + str1 + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                            str1, ErrorCategory.CloseError, null);
+                                        var errorRecord = new ErrorRecord(new Exception("Missing " + optionName + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
+                                            optionName, ErrorCategory.CloseError, null);
                                         psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                                         return psObject1;
                                     }
                                 }
                             } else {
-                                hashtable.Add("Properties", "*");
+                                mailSettings.Add("Properties", "*");
                             }
                         } else {
-                            hashtable.Add("EnableSsl", false);
+                            mailSettings.Add("EnableSsl", false);
                         }
                     } else {
-                        hashtable.Add("Port", 25);
+                        mailSettings.Add("Port", 25);
                     }
                 }
             }
 
-            psObject1.Properties.Add(new PSNoteProperty("PSWUSettings", hashtable));
+            psObject1.Properties.Add(new PSNoteProperty("PSWUSettings", mailSettings));
             if (PSObjects != null) {
                 var PSObjectProperties = new Collection<string>();
-                if (hashtable["Properties"].ToString() == "*") {
+                if (mailSettings["Properties"].ToString() == "*") {
                     foreach (var property in PSObjects[0].Properties) {
                         if (!PSObjectProperties.Contains(property.Name)) {
                             PSObjectProperties.Add(property.Name);
                         }
                     }
-                } else if (hashtable["Properties"].ToString() == "**") {
+                } else if (mailSettings["Properties"].ToString() == "**") {
                     foreach (var psObject2 in PSObjects) {
                         foreach (var property in psObject2.Properties) {
                             if (!PSObjectProperties.Contains(property.Name)) {
@@ -1033,28 +1035,28 @@ namespace PSWindowsUpdate {
                         }
                     }
                 } else {
-                    foreach (var obj in (object[])hashtable["Properties"]) {
+                    foreach (var obj in (object[])mailSettings["Properties"]) {
                         PSObjectProperties.Add(obj.ToString());
                     }
                 }
 
-                var str = !hashtable.ContainsKey("Style")
+                var str = !mailSettings.ContainsKey("Style")
                     ? ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo)
-                    : ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable["Style"].ToString());
-                var message = new MailMessage(hashtable["From"].ToString(), hashtable["To"].ToString());
+                    : ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, mailSettings["Style"].ToString());
+                var message = new MailMessage(mailSettings["From"].ToString(), mailSettings["To"].ToString());
                 var smtpClient = new SmtpClient();
-                smtpClient.Host = hashtable["SmtpServer"].ToString();
-                smtpClient.Port = Convert.ToInt32(hashtable["Port"].ToString());
-                smtpClient.EnableSsl = (bool)hashtable["EnableSsl"];
+                smtpClient.Host = mailSettings["SmtpServer"].ToString();
+                smtpClient.Port = Convert.ToInt32(mailSettings["Port"].ToString());
+                smtpClient.EnableSsl = (bool)mailSettings["EnableSsl"];
                 smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
                 var credential = GetCredential();
                 if (credential.Username != null) {
                     smtpClient.UseDefaultCredentials = false;
                     var networkCredential = new NetworkCredential(credential.Username, credential.Password);
                     smtpClient.Credentials = networkCredential;
-                    message.Subject = hashtable["Subject"] + ".";
+                    message.Subject = mailSettings["Subject"] + ".";
                 } else {
-                    message.Subject = hashtable["Subject"].ToString();
+                    message.Subject = mailSettings["Subject"].ToString();
                 }
 
                 message.Body = str;
@@ -1078,10 +1080,10 @@ namespace PSWindowsUpdate {
 
         public WUApiCode GetWUApiCodeDetails(int ErrorCode) {
             WUApiCode wuApiCode;
-            return new Dictionary<string, WUApiCode>() {
+            return new Dictionary<string, WUApiCode> {
                 {
                     "0x00000000",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 1,
                         HResult = "0x00000000",
                         Message = "",
@@ -1089,7 +1091,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240001",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240001",
                         Message = "WU_S_SERVICE_STOP",
@@ -1097,7 +1099,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240002",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240002",
                         Message = "WU_S_SELFUPDATE",
@@ -1105,7 +1107,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240003",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240003",
                         Message = "WU_S_UPDATE_ERROR",
@@ -1113,7 +1115,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240004",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240004",
                         Message = "WU_S_MARKED_FOR_DISCONNECT",
@@ -1121,7 +1123,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240005",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240005",
                         Message = "WU_S_REBOOT_REQUIRED",
@@ -1129,7 +1131,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240006",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240006",
                         Message = "WU_S_ALREADY_INSTALLED",
@@ -1137,7 +1139,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240007",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240007",
                         Message = "WU_S_ALREADY_UNINSTALLED",
@@ -1145,7 +1147,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00240008",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00240008",
                         Message = "WU_S_ALREADY_DOWNLOADED",
@@ -1153,7 +1155,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x00242015",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x00242015",
                         Message = "WU_S_UH_INSTALLSTILLPENDING",
@@ -1161,7 +1163,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80040154",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80040154",
                         Message = "REGDB_E_CLASSNOTREG",
@@ -1169,7 +1171,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80070005",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80070005",
                         Message = "ERROR_ACCESS_DENIED",
@@ -1177,7 +1179,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x800706BE",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x800706BE",
                         Message = "RPC_S_SERVER_UNAVAILABLE",
@@ -1185,7 +1187,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80072EE2",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80072EE2",
                         Message = "ERROR_INTERNET_TIMEOUT",
@@ -1193,7 +1195,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240001",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240001",
                         Message = "WU_E_NO_SERVICE",
@@ -1201,7 +1203,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240002",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240002",
                         Message = "WU_E_MAX_CAPACITY_REACHED",
@@ -1209,7 +1211,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240003",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240003",
                         Message = "WU_E_UNKNOWN_ID",
@@ -1217,7 +1219,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240004",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240004",
                         Message = "WU_E_NOT_INITIALIZED",
@@ -1225,7 +1227,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240005",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240005",
                         Message = "WU_E_RANGEOVERLAP",
@@ -1233,7 +1235,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240006",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240006",
                         Message = "WU_E_TOOMANYRANGES",
@@ -1241,7 +1243,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240007",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240007",
                         Message = "WU_E_INVALIDINDEX",
@@ -1249,7 +1251,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240008",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240008",
                         Message = "WU_E_ITEMNOTFOUND",
@@ -1257,7 +1259,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240009",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240009",
                         Message = "WU_E_OPERATIONINPROGRESS",
@@ -1265,7 +1267,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024000A",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024000A",
                         Message = "WU_E_COULDNOTCANCE",
@@ -1273,7 +1275,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024000B",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024000B",
                         Message = "WU_E_CALL_CANCELLED",
@@ -1281,7 +1283,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024000C",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024000C",
                         Message = "WU_E_NOOP",
@@ -1289,7 +1291,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024000D",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024000D",
                         Message = "WU_E_XML_MISSINGDATA",
@@ -1297,7 +1299,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024000E",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024000E",
                         Message = "WU_E_XML_INVALID",
@@ -1305,7 +1307,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024000F",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024000F",
                         Message = "WU_E_CYCLE_DETECTED",
@@ -1313,7 +1315,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240010",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240010",
                         Message = "WU_E_TOO_DEEP_RELATION",
@@ -1321,7 +1323,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240011",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240011",
                         Message = "WU_E_INVALID_RELATIONSHIP",
@@ -1329,7 +1331,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240012",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240012",
                         Message = "WU_E_REG_VALUE_INVALID",
@@ -1337,7 +1339,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240013",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240013",
                         Message = "WU_E_DUPLICATE_ITEM",
@@ -1345,7 +1347,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240014",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240014",
                         Message = "WU_E_INVALID_INSTALL_REQUESTED",
@@ -1353,7 +1355,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240016",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240016",
                         Message = "WU_E_INSTALL_NOT_ALLOWED",
@@ -1361,7 +1363,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240017",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240017",
                         Message = "WU_E_NOT_APPLICABLE",
@@ -1369,7 +1371,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240018",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240018",
                         Message = "WU_E_NO_USERTOKEN",
@@ -1377,7 +1379,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240019",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240019",
                         Message = "WU_E_EXCLUSIVE_INSTALL_CONFLICT",
@@ -1385,7 +1387,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024001A",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024001A",
                         Message = "WU_E_POLICY_NOT_SET",
@@ -1393,7 +1395,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024001B",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024001B",
                         Message = "WU_E_SELFUPDATE_IN_PROGRESS",
@@ -1401,7 +1403,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024001D",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024001D",
                         Message = "WU_E_INVALID_UPDATE",
@@ -1409,7 +1411,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024001E",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024001E",
                         Message = "WU_E_SERVICE_STOP",
@@ -1417,7 +1419,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024001F",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024001F",
                         Message = "WU_E_NO_CONNECTION",
@@ -1425,7 +1427,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240020",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240020",
                         Message = "WU_E_NO_INTERACTIVE_USER",
@@ -1433,7 +1435,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240021",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240021",
                         Message = "WU_E_TIME_OUT",
@@ -1441,7 +1443,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240022",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240022",
                         Message = "WU_E_ALL_UPDATES_FAILED",
@@ -1449,7 +1451,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240023",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240023",
                         Message = "WU_E_EULAS_DECLINED",
@@ -1457,7 +1459,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240024",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240024",
                         Message = "WU_E_NO_UPDATE",
@@ -1465,7 +1467,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240025",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240025",
                         Message = "WU_E_USER_ACCESS_DISABLED",
@@ -1473,7 +1475,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240026",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240026",
                         Message = "WU_E_INVALID_UPDATE_TYPE",
@@ -1481,7 +1483,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240027",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240027",
                         Message = "WU_E_URL_TOO_LONG",
@@ -1489,7 +1491,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240028",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240028",
                         Message = "WU_E_UNINSTALL_NOT_ALLOWED",
@@ -1497,7 +1499,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240029",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240029",
                         Message = "WU_E_INVALID_PRODUCT_LICENSE",
@@ -1505,7 +1507,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024002A",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024002A",
                         Message = "WU_E_MISSING_HANDLER",
@@ -1513,7 +1515,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024002B",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024002B",
                         Message = "WU_E_LEGACYSERVER",
@@ -1521,7 +1523,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024002C",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024002C",
                         Message = "WU_E_BIN_SOURCE_ABSENT",
@@ -1529,7 +1531,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024002D",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024002D",
                         Message = "WU_E_SOURCE_ABSENT",
@@ -1537,7 +1539,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024002E",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024002E",
                         Message = "WU_E_WU_DISABLED",
@@ -1545,7 +1547,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024002F",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024002F",
                         Message = "WU_E_CALL_CANCELLED_BY_POLICY",
@@ -1553,7 +1555,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240030",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240030",
                         Message = "WU_E_INVALID_PROXY_SERVER",
@@ -1561,7 +1563,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240031",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240031",
                         Message = "WU_E_INVALID_FILE",
@@ -1569,7 +1571,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240032",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240032",
                         Message = "WU_E_INVALID_CRITERIA",
@@ -1577,7 +1579,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240033",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240033",
                         Message = "WU_E_EULA_UNAVAILABLE",
@@ -1585,7 +1587,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240034",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240034",
                         Message = "WU_E_DOWNLOAD_FAILED",
@@ -1593,7 +1595,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240035",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240035",
                         Message = "WU_E_UPDATE_NOT_PROCESSED",
@@ -1601,7 +1603,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240036",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240036",
                         Message = "WU_E_INVALID_OPERATION",
@@ -1609,7 +1611,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240037",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240037",
                         Message = "WU_E_NOT_SUPPORTED",
@@ -1617,7 +1619,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240039",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240039",
                         Message = "WU_E_TOO_MANY_RESYNC",
@@ -1625,7 +1627,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240040",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240040",
                         Message = "WU_E_NO_SERVER_CORE_SUPPORT",
@@ -1633,7 +1635,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240041",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240041",
                         Message = "WU_E_SYSPREP_IN_PROGRESS",
@@ -1641,7 +1643,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240042",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240042",
                         Message = "WU_E_UNKNOWN_SERVICE",
@@ -1649,7 +1651,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240043",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240043",
                         Message = "WU_E_NO_UI_SUPPORT",
@@ -1657,7 +1659,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240044",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240044",
                         Message = "WU_E_PER_MACHINE_UPDATE_ACCESS_DENIED",
@@ -1665,7 +1667,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240045",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240045",
                         Message = "WU_E_UNSUPPORTED_SEARCHSCOPE",
@@ -1673,7 +1675,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240046",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240046",
                         Message = "WU_E_BAD_FILE_URL",
@@ -1681,7 +1683,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240047",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240047",
                         Message = "WU_E_NOTSUPPORTED",
@@ -1689,7 +1691,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240048",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240048",
                         Message = "WU_E_INVALID_NOTIFICATION_INFO",
@@ -1697,7 +1699,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240049",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240049",
                         Message = "WU_E_OUTOFRANGE",
@@ -1705,7 +1707,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024004A",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024004A",
                         Message = "WU_E_SETUP_IN_PROGRESS",
@@ -1713,7 +1715,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80240FFF",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80240FFF",
                         Message = "WU_E_UNEXPECTED",
@@ -1721,7 +1723,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80244016",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80244016",
                         Message = "WU_E_PT_HTTP_STATUS_BAD_REQUEST",
@@ -1729,7 +1731,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80244017",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80244017",
                         Message = "WU_E_PT_HTTP_STATUS_DENIED",
@@ -1737,7 +1739,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80244018",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80244018",
                         Message = "WU_E_PT_HTTP_STATUS_FORBIDDEN",
@@ -1745,7 +1747,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80244019",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80244019",
                         Message = "WU_E_PT_HTTP_STATUS_NOT_FOUND",
@@ -1753,7 +1755,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024401A",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024401A",
                         Message = "WU_E_PT_HTTP_STATUS_BAD_METHOD",
@@ -1761,7 +1763,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024401B",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024401B",
                         Message = "WU_E_PT_HTTP_STATUS_PROXY_AUTH_REQ",
@@ -1769,7 +1771,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x8024401C",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x8024401C",
                         Message = "WU_E_PT_HTTP_STATUS_REQUEST_TIMEOUT",
@@ -1777,7 +1779,7 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80244022",
-                    new WUApiCode() {
+                    new WUApiCode {
                         CodeType = 2,
                         HResult = "0x80244022",
                         Message = "WU_E_PT_HTTP_STATUS_SERVICE_UNAVAIL",
@@ -1785,8 +1787,8 @@ namespace PSWindowsUpdate {
                     }
                 }, {
                     "0x80248014",
-                    new WUApiCode() {
-                        CodeType = 2,
+                    new WUApiCode {
+                        CodeType = 2, // CodeType.Error,
                         HResult = "0x80248014",
                         Message = "WU_E_DS_UNKNOWNSERVICE",
                         Description =
@@ -1795,7 +1797,7 @@ namespace PSWindowsUpdate {
                 }
             }.TryGetValue("0x" + Convert.ToString(ErrorCode, 16), out wuApiCode)
                 ? wuApiCode
-                : (WUApiCode)null;
+                : null;
         }
 
         public enum HttpWebRequestMethod {

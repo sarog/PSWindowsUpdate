@@ -116,12 +116,12 @@ namespace PSWindowsUpdate {
                 var universalTime = now.ToUniversalTime();
                 var Seed1 = (int)Math.Floor((double)((long)(universalTime - dateTime1).TotalMinutes / num1));
                 var Seed2 = (int)Math.Floor((double)((long)(universalTime.AddMinutes(-1 * num1) - dateTime1).TotalMinutes / num1));
-                var num2 = new Random(Seed1).Next();
-                var num3 = new Random(Seed2).Next();
+                var randPass1 = new Random(Seed1).Next();
+                var randPass2 = new Random(Seed2).Next();
                 now = DateTime.Now;
-                WriteDebug(now + " " + num2);
+                WriteDebug(now + " " + randPass1);
                 now = DateTime.Now;
-                WriteDebug(now + " " + num3);
+                WriteDebug(now + " " + randPass2);
                 var psObject = new PSObject();
                 psObject.Properties.Add(new PSNoteProperty("ComputerName", target));
                 if (MyInvocation.BoundParameters.ContainsKey("SaveAsSystem")) {
@@ -129,11 +129,11 @@ namespace PSWindowsUpdate {
                     WriteDebug(now + " Catched encrypted string: " + SaveAsSystem);
                     string str2;
                     try {
-                        str2 = WUTools.DecryptString(SaveAsSystem, num2.ToString());
+                        str2 = WUTools.DecryptString(SaveAsSystem, randPass1.ToString());
                     } catch (Exception ex1) {
                         WriteDebug(DateTime.Now + " Cant decrypt with current secret.");
                         try {
-                            str2 = WUTools.DecryptString(SaveAsSystem, num3.ToString());
+                            str2 = WUTools.DecryptString(SaveAsSystem, randPass2.ToString());
                         } catch (Exception ex2) {
                             WriteDebug(DateTime.Now + " Cant decrypt with previous secret. Job is too old.");
                             WriteError(new ErrorRecord(new Exception("Cant decrypt with previous secret. Job is too old."), "Decrypt", ErrorCategory.CloseError, null));
@@ -160,7 +160,7 @@ namespace PSWindowsUpdate {
                     WriteDebug(now + " Save credential to Credential Manager");
                     WUToolsObj.SaveCredential(SmtpCredential.GetNetworkCredential().UserName, SmtpCredential.GetNetworkCredential().Password);
                     if (!MyInvocation.BoundParameters.ContainsKey("SaveAsSystem")) {
-                        var str4 = WUTools.EncryptString(SmtpCredential.GetNetworkCredential().UserName + "|" + SmtpCredential.GetNetworkCredential().Password, num2.ToString());
+                        var str4 = WUTools.EncryptString(SmtpCredential.GetNetworkCredential().UserName + "|" + SmtpCredential.GetNetworkCredential().Password, randPass1.ToString());
                         now = DateTime.Now;
                         WriteDebug(now + " Encrypted string to SaveAsSystem: " + str4);
                         var str5 = "$DebugPreference = 'continue'; Set-PSWUSettings -SaveAsSystem '" + str4 + "'";

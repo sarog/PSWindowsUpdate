@@ -12,7 +12,9 @@ using MSHTML;
 
 namespace PSWindowsUpdate {
     [Cmdlet("Get", "WUOfflineMSU", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
+    [OutputType(typeof(OfflineMSU))]
     public class GetWUOfflineMSU : PSCmdlet {
+        
         private Hashtable _PSWUSettings = new Hashtable();
 
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
@@ -98,6 +100,7 @@ namespace PSWindowsUpdate {
                     KBArticleID = "KB" + KBArticleID;
                 }
 
+                // todo: switch between http/https
                 var reqUrl = "http://www.catalog.update.microsoft.com/Search.aspx?q=" + KBArticleID;
                 WriteDebug(DateTime.Now + " " + reqUrl);
                 var text3 = WUToolsObj.InvokeRestMethod(reqUrl, WUTools.HttpWebRequestMethod.GET, null, null);
@@ -188,13 +191,13 @@ namespace PSWindowsUpdate {
                     num2++;
                 }
 
-                var num3 = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
+                var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                 WriteObject(collection, true);
-                WriteVerbose("Accepted [" + num3 + "] Updates ready to Download");
+                WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
                 var num4 = 0;
                 var activityId2 = 1;
                 var activity2 = "Download updates for " + target;
-                var statusDescription2 = "[" + num4 + "/" + num3 + "]";
+                var statusDescription2 = "[" + num4 + "/" + totalAccepted + "]";
                 var progressRecord2 = new ProgressRecord(activityId2, activity2, statusDescription2);
                 foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted")) {
                     item2.Properties.Add(new PSNoteProperty("X", 2));
@@ -204,8 +207,8 @@ namespace PSWindowsUpdate {
                     WriteDebug(DateTime.Now + " " + text7);
                     var text8 = item2.Properties["Title"].Value.ToString();
                     var text9 = item2.Properties["Size"].Value.ToString();
-                    progressRecord2.StatusDescription = "[" + num4 + "/" + num3 + "] " + text8 + " " + text9;
-                    progressRecord2.PercentComplete = num4 * 100 / num3;
+                    progressRecord2.StatusDescription = "[" + num4 + "/" + totalAccepted + "] " + text8 + " " + text9;
+                    progressRecord2.PercentComplete = num4 * 100 / totalAccepted;
                     WriteProgress(progressRecord2);
                     num4++;
                     if (!Directory.Exists(Destination)) {

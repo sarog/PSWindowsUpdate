@@ -1,7 +1,5 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Management.Automation;
@@ -10,11 +8,13 @@ using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Microsoft.Win32;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    
     [Cmdlet("Get", "WindowsUpdate", ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "Default", SupportsShouldProcess = true)]
-    [OutputType(new Type[] { typeof(WindowsUpdate) })]
+    [OutputType(typeof(WindowsUpdate))]
     public class GetWindowsUpdate : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
@@ -84,11 +84,11 @@ namespace PSWindowsUpdate {
         [Parameter]
         public string Criteria { get; set; }
 
-        [ValidateSet(new string[] { "Driver", "Software" }, IgnoreCase = true)]
+        [ValidateSet("Driver", "Software", IgnoreCase = true)]
         [Parameter]
         public string UpdateType { get; set; }
 
-        [ValidateSet(new string[] { "Installation", "Uninstallation" }, IgnoreCase = true)]
+        [ValidateSet("Installation", "Uninstallation", IgnoreCase = true)]
         [Parameter]
         public string DeploymentAction { get; set; }
 
@@ -128,9 +128,7 @@ namespace PSWindowsUpdate {
         [Parameter]
         public SwitchParameter ShowPreSearchCriteria { get; set; }
 
-        [ValidateSet(new string[] {
-            "Critical Updates", "Definition Updates", "Drivers", "Feature Packs", "Security Updates", "Service Packs", "Tools", "Update Rollups", "Updates", "Upgrades", "Microsoft"
-        })]
+        [ValidateSet("Critical Updates", "Definition Updates", "Drivers", "Feature Packs", "Security Updates", "Service Packs", "Tools", "Update Rollups", "Updates", "Upgrades", "Microsoft")]
         [Parameter]
         public string[] RootCategories { get; set; }
 
@@ -143,7 +141,7 @@ namespace PSWindowsUpdate {
         [Parameter]
         public string Title { get; set; }
 
-        [ValidateSet(new string[] { "Critical", "Important", "Moderate", "Low", "Unspecified" })]
+        [ValidateSet("Critical", "Important", "Moderate", "Low", "Unspecified")]
         [Parameter]
         public string[] Severity { get; set; }
 
@@ -156,11 +154,11 @@ namespace PSWindowsUpdate {
         [Parameter]
         public string NotTitle { get; set; }
 
-        [ValidateSet(new string[] { "Critical", "Important", "Moderate", "Low", "Unspecified" })]
+        [ValidateSet("Critical", "Important", "Moderate", "Low", "Unspecified")]
         [Parameter]
         public string[] NotSeverity { get; set; }
 
-        [Alias(new string[] { "Silent" })]
+        [Alias("Silent")]
         [Parameter]
         public SwitchParameter IgnoreUserInput { get; set; }
 
@@ -200,31 +198,31 @@ namespace PSWindowsUpdate {
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
                 ThrowTerminatingError(new ErrorRecord(new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
-                    ErrorCategory.PermissionDenied, (object)null));
+                    ErrorCategory.PermissionDenied, null));
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if ((bool)SendReport) {
-                WriteDebug(DateTime.Now.ToString() + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[5] {
+            if (SendReport) {
+                WriteDebug(DateTime.Now + " Test smtp settings");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new WindowsUpdate() /*new string[5] {
                         "ComputerName",
                         "Status",
                         "KB",
                         "Size",
                         "Title"
-                    });
+                    }*/);
                 }
 
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1) {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
-                    SendReport = (SwitchParameter)false;
-                    WriteDebug(DateTime.Now.ToString() + " Disabling -SendReport");
+                    SendReport = false;
+                    WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
@@ -239,129 +237,129 @@ namespace PSWindowsUpdate {
 
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now.ToString() + " ParameterSetName: " + ParameterSetName);
-            if (string.Equals(invocationName.ToString(), "Install-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
+            WriteDebug(DateTime.Now + " ParameterSetName: " + ParameterSetName);
+            if (string.Equals(invocationName, "Install-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
                 Download = true;
                 Install = true;
             }
 
-            if (string.Equals(invocationName.ToString(), "Download-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(invocationName, "Download-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
                 Download = true;
             }
 
-            if (string.Equals(invocationName.ToString(), "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(invocationName, "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
                 Hide = true;
             }
 
-            if (string.Equals(invocationName.ToString(), "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(invocationName.ToString(), "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
+            if (string.Equals(invocationName, "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(invocationName, "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
                 Hide = false;
                 WithHidden = true;
             }
 
-            string text;
+            string searchCriteria;
             if (Criteria != null) {
-                text = Criteria;
-                WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: " + text);
+                searchCriteria = Criteria;
+                WriteDebug(DateTime.Now + " Set pre search criteria: " + searchCriteria);
             } else {
-                if ((bool)IsInstalled) {
-                    text = "IsInstalled = 1";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsInstalled = 1");
+                if (IsInstalled) {
+                    searchCriteria = "IsInstalled = 1";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: IsInstalled = 1");
                 } else {
-                    text = "IsInstalled = 0";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsInstalled = 0");
+                    searchCriteria = "IsInstalled = 0";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: IsInstalled = 0");
                 }
 
                 if (UpdateType != null) {
-                    text = text + " and Type = '" + UpdateType + "'";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: Type = '" + UpdateType + "'");
+                    searchCriteria = searchCriteria + " and Type = '" + UpdateType + "'";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: Type = '" + UpdateType + "'");
                 }
 
-                if ((bool)IsHidden) {
-                    text += " and IsHidden = 1";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsHidden = 1");
-                } else if ((bool)WithHidden) {
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsHidden = 1 or IsHidden = 0");
+                if (IsHidden) {
+                    searchCriteria += " and IsHidden = 1";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: IsHidden = 1");
+                } else if (WithHidden) {
+                    WriteDebug(DateTime.Now + " Set pre search criteria: IsHidden = 1 or IsHidden = 0");
                 } else {
-                    text += " and IsHidden = 0";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsHidden = 0");
+                    searchCriteria += " and IsHidden = 0";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: IsHidden = 0");
                 }
 
-                if ((bool)IgnoreRebootRequired) {
-                    text += " and RebootRequired = 0";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: RebootRequired = 0");
+                if (IgnoreRebootRequired) {
+                    searchCriteria += " and RebootRequired = 0";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: RebootRequired = 0");
                 }
 
                 if (DeploymentAction != null) {
-                    text = text + " and DeploymentAction = '" + DeploymentAction + "'";
-                    WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: DeploymentAction = '" + DeploymentAction + "'");
+                    searchCriteria = searchCriteria + " and DeploymentAction = '" + DeploymentAction + "'";
+                    WriteDebug(DateTime.Now + " Set pre search criteria: DeploymentAction = '" + DeploymentAction + "'");
                 }
 
                 if (MyInvocation.BoundParameters.ContainsKey("IsAssigned")) {
-                    if ((bool)IsAssigned) {
-                        text += " and IsAssigned = 1";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsAssigned = 1");
+                    if (IsAssigned) {
+                        searchCriteria += " and IsAssigned = 1";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: IsAssigned = 1");
                     } else {
-                        text += " and IsAssigned = 0";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsAssigned = 0");
+                        searchCriteria += " and IsAssigned = 0";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: IsAssigned = 0");
                     }
                 }
 
                 if (MyInvocation.BoundParameters.ContainsKey("IsPresent")) {
-                    if ((bool)IsPresent) {
-                        text += " and IsPresent = 1";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsPresent = 1");
+                    if (IsPresent) {
+                        searchCriteria += " and IsPresent = 1";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: IsPresent = 1");
                     } else {
-                        text += " and IsPresent = 0";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: IsPresent = 0");
+                        searchCriteria += " and IsPresent = 0";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: IsPresent = 0");
                     }
                 }
 
                 if (MyInvocation.BoundParameters.ContainsKey("BrowseOnly")) {
-                    if ((bool)BrowseOnly) {
-                        text += " and BrowseOnly = 1";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: BrowseOnly = 1");
+                    if (BrowseOnly) {
+                        searchCriteria += " and BrowseOnly = 1";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: BrowseOnly = 1");
                     } else {
-                        text += " and BrowseOnly = 0";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: BrowseOnly = 0");
+                        searchCriteria += " and BrowseOnly = 0";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: BrowseOnly = 0");
                     }
                 }
 
                 if (MyInvocation.BoundParameters.ContainsKey("AutoSelectOnWebSites")) {
-                    if ((bool)AutoSelectOnWebSites) {
-                        text += " and AutoSelectOnWebSites = 1";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: AutoSelectOnWebSites = 1");
+                    if (AutoSelectOnWebSites) {
+                        searchCriteria += " and AutoSelectOnWebSites = 1";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: AutoSelectOnWebSites = 1");
                     } else {
-                        text += " and AutoSelectOnWebSites = 0";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: AutoSelectOnWebSites = 0");
+                        searchCriteria += " and AutoSelectOnWebSites = 0";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: AutoSelectOnWebSites = 0");
                     }
                 }
 
                 if (NotUpdateID != null) {
                     var notUpdateID = NotUpdateID;
-                    foreach (var text2 in notUpdateID) {
-                        text = text + " and UpdateID != '" + text2 + "'";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: NotUpdateID = " + text2);
+                    foreach (var uID in notUpdateID) {
+                        searchCriteria = searchCriteria + " and UpdateID != '" + uID + "'";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: NotUpdateID = " + uID);
                     }
                 }
 
                 if (UpdateID != null) {
-                    var text3 = text;
-                    text = "";
+                    var text3 = searchCriteria;
+                    searchCriteria = "";
                     var num = 0;
                     var updateID = UpdateID;
                     foreach (var text4 in updateID) {
                         if (num > 0) {
-                            text += " or ";
-                            WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: or ");
+                            searchCriteria += " or ";
+                            WriteDebug(DateTime.Now + " Set pre search criteria: or ");
                         }
 
                         if (RevisionNumber > 0) {
-                            text = text + "(" + text3 + " and UpdateID = '" + text4 + "' and RevisionNumber = " + RevisionNumber + ")";
-                            WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: UpdateID = " + text4 + "and RevisionNumber = " + RevisionNumber);
+                            searchCriteria = searchCriteria + "(" + text3 + " and UpdateID = '" + text4 + "' and RevisionNumber = " + RevisionNumber + ")";
+                            WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + text4 + "and RevisionNumber = " + RevisionNumber);
                         } else {
-                            text = text + "(" + text3 + " and UpdateID = '" + text4 + "')";
-                            WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: UpdateID = " + text4);
+                            searchCriteria = searchCriteria + "(" + text3 + " and UpdateID = '" + text4 + "')";
+                            WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + text4);
                         }
 
                         num++;
@@ -369,38 +367,38 @@ namespace PSWindowsUpdate {
                 }
 
                 if (CategoryIDs != null) {
-                    var text5 = text;
-                    text = "";
+                    var text5 = searchCriteria;
+                    searchCriteria = "";
                     var num2 = 0;
                     var categoryIDs = CategoryIDs;
-                    foreach (var text6 in categoryIDs) {
+                    foreach (var catID in categoryIDs) {
                         if (num2 > 0) {
-                            text += " or ";
-                            WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: or ");
+                            searchCriteria += " or ";
+                            WriteDebug(DateTime.Now + " Set pre search criteria: or ");
                         }
 
-                        text = text + "(" + text5 + " and CategoryIDs contains '" + text6 + "')";
-                        WriteDebug(DateTime.Now.ToString() + " Set pre search criteria: CategoryIDs = " + text6);
+                        searchCriteria = searchCriteria + "(" + text5 + " and CategoryIDs contains '" + catID + "')";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: CategoryIDs = " + catID);
                         num2++;
                     }
                 }
             }
 
-            WriteDebug(DateTime.Now.ToString() + " Search criteria is: " + text);
-            if ((bool)ShowPreSearchCriteria) {
-                Host.UI.WriteLine(ConsoleColor.Green, Host.UI.RawUI.BackgroundColor, "PreSearchCriteria: " + text);
+            WriteDebug(DateTime.Now + " Search criteria is: " + searchCriteria);
+            if (ShowPreSearchCriteria) {
+                Host.UI.WriteLine(ConsoleColor.Green, Host.UI.RawUI.BackgroundColor, "PreSearchCriteria: " + searchCriteria);
             }
 
             var computerName = ComputerName;
             foreach (var target in computerName) {
-                WriteDebug(DateTime.Now.ToString() + " " + target + ": Connecting...");
+                WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try {
                     var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                    WriteDebug(DateTime.Now.ToString() + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now.ToString() + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
                 } catch { }
 
-                if ((bool)Download) {
+                if (Download) {
                     var errorRecord = WUToolsObj.CheckPSWUModule(target);
                     if (errorRecord != null) {
                         WriteError(errorRecord);
@@ -409,26 +407,26 @@ namespace PSWindowsUpdate {
                 }
 
                 var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(target);
-                WriteDebug(DateTime.Now.ToString() + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
+                WriteDebug(DateTime.Now + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
                 if (wUApiUpdateSessionObj.Status) {
                     UpdateSessionObj = (UpdateSession)wUApiUpdateSessionObj.Object;
                     SearcherObj = UpdateSessionObj.CreateUpdateSearcher();
                     var wUApiServiceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(target);
-                    WriteDebug(DateTime.Now.ToString() + " ServiceManagerObj mode: " + wUApiServiceManagerObj.Mode);
+                    WriteDebug(DateTime.Now + " ServiceManagerObj mode: " + wUApiServiceManagerObj.Mode);
                     if (wUApiServiceManagerObj.Status) {
                         ServiceManagerObj = (UpdateServiceManager)wUApiServiceManagerObj.Object;
                         var text8 = "";
-                        if ((bool)WindowsUpdate) {
-                            WriteDebug(DateTime.Now.ToString() + " Set source of updates to Windows Update");
+                        if (WindowsUpdate) {
+                            WriteDebug(DateTime.Now + " Set source of updates to Windows Update");
                             SearcherObj.ServerSelection = ServerSelection.ssWindowsUpdate;
                             text8 = "Windows Update";
-                        } else if ((bool)MicrosoftUpdate) {
-                            WriteDebug(DateTime.Now.ToString() + " Set source of updates to Microsof Update");
+                        } else if (MicrosoftUpdate) {
+                            WriteDebug(DateTime.Now + " Set source of updates to Microsof Update");
                             ServiceID = "7971f918-a847-4430-9279-4a52d1efe18d";
                             var flag = false;
                             foreach (IUpdateService2 service in ServiceManagerObj.Services) {
                                 if (service.ServiceID == ServiceID) {
-                                    WriteDebug(DateTime.Now.ToString() + " Search for ServiceID. Set source of updates to " + service.Name);
+                                    WriteDebug(DateTime.Now + " Search for ServiceID. Set source of updates to " + service.Name);
                                     SearcherObj.ServerSelection = ServerSelection.ssOthers;
                                     SearcherObj.ServiceID = ServiceID;
                                     text8 = service.Name;
@@ -447,7 +445,7 @@ namespace PSWindowsUpdate {
                                     serviceController.Start();
                                     serviceController.WaitForStatus(ServiceControllerStatus.Running);
                                     ServiceManagerObj.AddService2("7971f918-a847-4430-9279-4a52d1efe18d", 2, null);
-                                    WriteDebug(DateTime.Now.ToString() + " Register WUA Microsof Update service");
+                                    WriteDebug(DateTime.Now + " Register WUA Microsof Update service");
                                     Thread.Sleep(500);
                                     serviceController.Stop();
                                     serviceController.WaitForStatus(ServiceControllerStatus.Stopped);
@@ -480,26 +478,26 @@ namespace PSWindowsUpdate {
                                 foreach (IUpdateService2 service2 in ServiceManagerObj.Services) {
                                     if (ServiceID != null) {
                                         if (service2.ServiceID == ServiceID) {
-                                            WriteDebug(DateTime.Now.ToString() + " Try ServiceID. Set source of updates to " + service2.Name);
+                                            WriteDebug(DateTime.Now + " Try ServiceID. Set source of updates to " + service2.Name);
                                             SearcherObj.ServerSelection = ServerSelection.ssOthers;
                                             SearcherObj.ServiceID = ServiceID;
                                             text8 = service2.Name;
                                             break;
                                         }
                                     } else if (service2.IsDefaultAUService) {
-                                        WriteDebug(DateTime.Now.ToString() + " Try Default. Set source of updates to " + service2.Name);
+                                        WriteDebug(DateTime.Now + " Try Default. Set source of updates to " + service2.Name);
                                         text8 = service2.Name;
                                         break;
                                     }
                                 }
                             } catch {
                                 if (ServiceID != null) {
-                                    WriteDebug(DateTime.Now.ToString() + " Catch ServiceID. Set source of updates to " + ServiceID);
+                                    WriteDebug(DateTime.Now + " Catch ServiceID. Set source of updates to " + ServiceID);
                                     SearcherObj.ServerSelection = ServerSelection.ssOthers;
                                     SearcherObj.ServiceID = ServiceID;
                                     text8 = ServiceID;
                                 } else {
-                                    WriteDebug(DateTime.Now.ToString() + " Catch. Set source of updates to Default");
+                                    WriteDebug(DateTime.Now + " Catch. Set source of updates to Default");
                                     text8 = "default for " + target + ".";
                                 }
                             }
@@ -515,10 +513,10 @@ namespace PSWindowsUpdate {
                             text8 = text8 + " (" + text9 + ")";
                         }
 
-                        WriteVerbose(target + " (" + DateTime.Now.ToString() + "): Connecting to " + text8 + " server. Please wait...");
+                        WriteVerbose(target + " (" + DateTime.Now + "): Connecting to " + text8 + " server. Please wait...");
                         ISearchResult searchResult;
                         try {
-                            searchResult = SearcherObj.Search(text);
+                            searchResult = SearcherObj.Search(searchCriteria);
                         } catch (COMException ex2) {
                             var wUApiCodeDetails2 = WUToolsObj.GetWUApiCodeDetails(ex2.ErrorCode);
                             if (wUApiCodeDetails2 != null) {
@@ -535,7 +533,7 @@ namespace PSWindowsUpdate {
                                 ThrowTerminatingError(errorRecord3);
                             }
 
-                            WriteDebug(DateTime.Now.ToString() + " Skip to next computer");
+                            WriteDebug(DateTime.Now + " Skip to next computer");
                             continue;
                         }
 
@@ -555,47 +553,47 @@ namespace PSWindowsUpdate {
                                 switch (text10) {
                                     case "Critical Updates":
                                         index = 0;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Definition Updates":
                                         index = 1;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Drivers":
                                         index = 2;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Feature Packs":
                                         index = 3;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Security Updates":
                                         index = 4;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Service Packs":
                                         index = 5;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Tools":
                                         index = 6;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Update Rollups":
                                         index = 7;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Updates":
                                         index = 8;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Upgrades":
                                         index = 9;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                     case "Microsoft":
                                         index = 10;
-                                        WriteDebug(DateTime.Now.ToString() + " RootCategory: " + text10 + " - " + index);
+                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
                                         break;
                                 }
 
@@ -620,7 +618,7 @@ namespace PSWindowsUpdate {
                         var progressRecord = new ProgressRecord(activityId, activity, statusDescription);
                         var collection = new Collection<PSObject>();
                         foreach (IUpdate item in updateCollection) {
-                            WriteDebug(DateTime.Now.ToString() + " " + item.Title);
+                            WriteDebug(DateTime.Now + " " + item.Title);
                             var text11 = WUToolsObj.ConvertSize(item.MaxDownloadSize);
                             progressRecord.StatusDescription = "[" + num3 + "/" + count + "] " + item.Title + " " + text11;
                             progressRecord.PercentComplete = num3 * 100 / count;
@@ -633,9 +631,9 @@ namespace PSWindowsUpdate {
                                     text12 = text12 + category3.Name + "|";
                                 }
 
-                                WriteDebug(DateTime.Now.ToString() + " " + text12);
+                                WriteDebug(DateTime.Now + " " + text12);
                                 if (Category != null) {
-                                    WriteDebug(DateTime.Now.ToString() + " Set post search criteria: Categories = " + string.Join(", ", Category));
+                                    WriteDebug(DateTime.Now + " Set post search criteria: Categories = " + string.Join(", ", Category));
                                     var category2 = Category;
                                     foreach (var pattern in category2) {
                                         if (!Regex.IsMatch(text12, pattern, RegexOptions.IgnoreCase)) {
@@ -649,7 +647,7 @@ namespace PSWindowsUpdate {
                                 }
 
                                 if (NotCategory != null && flag2) {
-                                    WriteDebug(DateTime.Now.ToString() + " Set post search criteria: NotCategories = " + string.Join(", ", NotCategory));
+                                    WriteDebug(DateTime.Now + " Set post search criteria: NotCategories = " + string.Join(", ", NotCategory));
                                     var notCategory = NotCategory;
                                     foreach (var pattern2 in notCategory) {
                                         if (Regex.IsMatch(text12, pattern2, RegexOptions.IgnoreCase)) {
@@ -659,15 +657,15 @@ namespace PSWindowsUpdate {
                                     }
                                 }
 
-                                WriteDebug(DateTime.Now.ToString() + " UpdateAccess: " + flag2);
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
                             }
 
                             if (KBArticleID != null && flag2) {
                                 var text13 = string.Join(", ", KBArticleID);
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: KBArticleIDs = " + text13);
+                                WriteDebug(DateTime.Now + " Set post search criteria: KBArticleIDs = " + text13);
                                 if (item.KBArticleIDs.Count > 0) {
                                     foreach (string kBArticleID in item.KBArticleIDs) {
-                                        if (!Regex.IsMatch(text13, kBArticleID.ToString(), RegexOptions.IgnoreCase)) {
+                                        if (!Regex.IsMatch(text13, kBArticleID, RegexOptions.IgnoreCase)) {
                                             flag2 = false;
                                             break;
                                         }
@@ -676,12 +674,12 @@ namespace PSWindowsUpdate {
                                     flag2 = false;
                                 }
 
-                                WriteDebug(DateTime.Now.ToString() + " UpdateAccess: " + flag2);
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
                             }
 
                             if (NotKBArticleID != null && flag2) {
                                 var text15 = string.Join(", ", NotKBArticleID);
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: NotKBArticleID = " + text15);
+                                WriteDebug(DateTime.Now + " Set post search criteria: NotKBArticleID = " + text15);
                                 if (item.KBArticleIDs.Count > 0) {
                                     foreach (string kBArticleID2 in item.KBArticleIDs) {
                                         if (Regex.IsMatch(text15, kBArticleID2, RegexOptions.IgnoreCase)) {
@@ -691,88 +689,88 @@ namespace PSWindowsUpdate {
                                     }
                                 }
 
-                                WriteDebug(DateTime.Now.ToString() + " UpdateAccess: " + flag2);
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
                             }
 
                             if (Title != null && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: Title = " + Title);
-                                if (!Regex.IsMatch(item.Title.ToString(), Title, RegexOptions.IgnoreCase)) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: Title = " + Title);
+                                if (!Regex.IsMatch(item.Title, Title, RegexOptions.IgnoreCase)) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess: " + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
                                 }
                             }
 
                             if (NotTitle != null && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: NotTitle = " + NotTitle);
-                                if (Regex.IsMatch(item.Title.ToString(), NotTitle, RegexOptions.IgnoreCase)) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: NotTitle = " + NotTitle);
+                                if (Regex.IsMatch(item.Title, NotTitle, RegexOptions.IgnoreCase)) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess: " + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
                                 }
                             }
 
                             if (Severity != null && flag2) {
                                 var text16 = string.Join(", ", Severity);
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: Severity = " + text16);
+                                WriteDebug(DateTime.Now + " Set post search criteria: Severity = " + text16);
                                 if (Severity.Contains("Unspecified")) {
                                     Severity = string.Join(",", Severity).Replace("Unspecified", "").Split(',');
                                 }
 
                                 if (!Severity.Contains(Convert.ToString((object)item.MsrcSeverity))) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
                             if (NotSeverity != null && flag2) {
                                 var text17 = string.Join(", ", NotSeverity);
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: NotSeverity = " + text17);
+                                WriteDebug(DateTime.Now + " Set post search criteria: NotSeverity = " + text17);
                                 if (NotSeverity.Contains("Unspecified")) {
                                     NotSeverity = string.Join(",", NotSeverity).Replace("Unspecified", "").Split(',');
                                 }
 
                                 if (NotSeverity.Contains(Convert.ToString((object)item.MsrcSeverity))) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
                             if (MaxSize > 0 && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: MaxDownloadSize <= " + MaxSize);
-                                if ((decimal)MaxSize <= item.MaxDownloadSize) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: MaxDownloadSize <= " + MaxSize);
+                                if (MaxSize <= item.MaxDownloadSize) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
                             if (MinSize > 0 && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: MaxDownloadSize >= " + MinSize);
-                                if ((decimal)MinSize >= item.MaxDownloadSize) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: MaxDownloadSize >= " + MinSize);
+                                if (MinSize >= item.MaxDownloadSize) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
-                            if ((bool)IgnoreUserInput && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: CanRequestUserInput");
+                            if (IgnoreUserInput && flag2) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: CanRequestUserInput");
                                 if (item.InstallationBehavior.CanRequestUserInput) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
-                            if ((bool)IgnoreRebootRequired && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: RebootBehavior");
+                            if (IgnoreRebootRequired && flag2) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: RebootBehavior");
                                 if (item.InstallationBehavior.RebootBehavior != 0) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
-                            if ((bool)AutoSelectOnly && flag2) {
-                                WriteDebug(DateTime.Now.ToString() + " Set post search criteria: AutoSelectOnWebsites");
+                            if (AutoSelectOnly && flag2) {
+                                WriteDebug(DateTime.Now + " Set post search criteria: AutoSelectOnWebsites");
                                 if (!item.AutoSelectOnWebSites) {
                                     flag2 = false;
-                                    WriteDebug(DateTime.Now.ToString() + " UpdateAccess" + flag2);
+                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
                                 }
                             }
 
@@ -780,7 +778,7 @@ namespace PSWindowsUpdate {
                                 continue;
                             }
 
-                            WriteDebug(DateTime.Now.ToString() + " Update was not filtered");
+                            WriteDebug(DateTime.Now + " Update was not filtered");
                             var text18 = "";
                             foreach (string kBArticleID3 in item.KBArticleIDs) {
                                 text18 = !(text18 == "") ? text18 + ", KB" + kBArticleID3 : text18 + "KB" + kBArticleID3;
@@ -808,9 +806,9 @@ namespace PSWindowsUpdate {
                         var count2 = collection.Count;
                         WriteVerbose("Found [" + count2 + "] Updates in post search criteria");
                         if (MyInvocation.BoundParameters.ContainsKey("Hide") ||
-                            string.Equals(MyInvocation.InvocationName.ToString(), "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(MyInvocation.InvocationName.ToString(), "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(MyInvocation.InvocationName.ToString(), "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
+                            string.Equals(MyInvocation.InvocationName, "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(MyInvocation.InvocationName, "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(MyInvocation.InvocationName, "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase)) {
                             var text21 = "";
                             text21 = !Hide ? "Show" : "Hide";
                             var num5 = 0;
@@ -821,14 +819,14 @@ namespace PSWindowsUpdate {
                             foreach (var item2 in collection) {
                                 var update2 = (IUpdate)item2.BaseObject;
                                 var flag3 = false;
-                                progressRecord2.StatusDescription = "[" + num5 + "/" + count2 + "] " + update2.Title + " " + item2.Properties["Size"].Value.ToString();
+                                progressRecord2.StatusDescription = "[" + num5 + "/" + count2 + "] " + update2.Title + " " + item2.Properties["Size"].Value;
                                 progressRecord2.PercentComplete = num5 * 100 / count2;
                                 WriteProgress(progressRecord2);
                                 num5++;
-                                if ((bool)AcceptAll) {
+                                if (AcceptAll) {
                                     flag3 = true;
                                 } else if (ShouldProcess(target,
-                                               "(" + DateTime.Now.ToString() + ") " + text21 + " " + update2.Title + "[" + item2.Properties["Size"].Value.ToString() + "]")) {
+                                               "(" + DateTime.Now + ") " + text21 + " " + update2.Title + "[" + item2.Properties["Size"].Value + "]")) {
                                     flag3 = true;
                                 }
 
@@ -858,16 +856,16 @@ namespace PSWindowsUpdate {
                         }
 
                         if (!Download && !Install) {
-                            WriteDebug(DateTime.Now.ToString() + " Return update list only");
+                            WriteDebug(DateTime.Now + " Return update list only");
                             WriteObject(collection);
                             OutputObj = new Collection<PSObject>(collection);
                             continue;
                         }
 
-                        var num6 = 0;
-                        var num7 = 0;
+                        var totalDownloaded = 0;
+                        var totalInstalled = 0;
                         var text23 = "";
-                        if ((bool)Download || (bool)Install) {
+                        if (Download || Install) {
                             var num8 = 0;
                             var activityId3 = 1;
                             var activity3 = "Choose updates for " + target;
@@ -879,30 +877,30 @@ namespace PSWindowsUpdate {
                                 item3.TypeNames.Clear();
                                 item3.TypeNames.Add("PSWindowsUpdate.WindowsUpdateJob");
                                 var update3 = (IUpdate)item3.BaseObject;
-                                progressRecord3.StatusDescription = "[" + num8 + "/" + count2 + "] " + update3.Title + " " + item3.Properties["Size"].Value.ToString();
+                                progressRecord3.StatusDescription = "[" + num8 + "/" + count2 + "] " + update3.Title + " " + item3.Properties["Size"].Value;
                                 progressRecord3.PercentComplete = num8 * 100 / count2;
                                 WriteProgress(progressRecord3);
                                 num8++;
-                                WriteDebug(DateTime.Now.ToString() + " Show update to accept: " + update3.Title);
+                                WriteDebug(DateTime.Now + " Show update to accept: " + update3.Title);
                                 var flag4 = false;
-                                flag4 = (bool)AcceptAll || (AutoSelectOnly
+                                flag4 = AcceptAll || (AutoSelectOnly
                                     ? update3.AutoSelectOnWebSites ? true : false
-                                    : ShouldProcess(target, "(" + DateTime.Now.ToString() + ") " + update3.Title + "[" + item3.Properties["Size"].Value.ToString() + "]")
+                                    : ShouldProcess(target, "(" + DateTime.Now + ") " + update3.Title + "[" + item3.Properties["Size"].Value + "]")
                                         ? true
                                         : false);
                                 var text25 = "";
                                 var text26 = "";
                                 if (flag4) {
                                     if (!update3.EulaAccepted) {
-                                        WriteDebug(DateTime.Now.ToString() + " EulaAccepted");
+                                        WriteDebug(DateTime.Now + " EulaAccepted");
                                         try {
                                             update3.AcceptEula();
                                         } catch (Exception exception) {
-                                            if ((bool)Debuger) {
+                                            if (Debuger) {
                                                 var errorRecord5 = new ErrorRecord(exception, "Debug", ErrorCategory.CloseError, null);
                                                 WriteError(errorRecord5);
                                             } else {
-                                                WriteDebug(DateTime.Now.ToString() + " Can't accept Eula.");
+                                                WriteDebug(DateTime.Now + " Can't accept Eula.");
                                             }
                                         }
                                     }
@@ -924,7 +922,7 @@ namespace PSWindowsUpdate {
                                     if (flag4) {
                                         text25 += "A";
                                         text26 = "Accepted";
-                                        WriteDebug(DateTime.Now.ToString() + " " + text26);
+                                        WriteDebug(DateTime.Now + " " + text26);
                                         item3.Properties.Add(new PSNoteProperty("ChooseResult", text26));
                                         item3.Properties.Add(new PSNoteProperty("Result", text26));
                                     }
@@ -945,7 +943,7 @@ namespace PSWindowsUpdate {
 
                                     text25 += "R";
                                     text26 = "Rejected";
-                                    WriteDebug(DateTime.Now.ToString() + " " + text26);
+                                    WriteDebug(DateTime.Now + " " + text26);
                                     item3.Properties.Add(new PSNoteProperty("ChooseResult", text26));
                                     item3.Properties.Add(new PSNoteProperty("Result", text26));
                                 }
@@ -954,11 +952,11 @@ namespace PSWindowsUpdate {
                                     text25 = !update3.IsDownloaded ? text25 + "-" : text25 + "D";
                                     text25 = !update3.IsInstalled ? text25 + "-" : text25 + "I";
                                 } else {
-                                    if ((bool)Download || (bool)Install) {
+                                    if (Download || Install) {
                                         text25 += "?";
                                     }
 
-                                    if ((bool)Install) {
+                                    if (Install) {
                                         text25 += "?";
                                     }
                                 }
@@ -972,14 +970,14 @@ namespace PSWindowsUpdate {
 
                             progressRecord3.RecordType = ProgressRecordType.Completed;
                             WriteProgress(progressRecord3);
-                            if ((bool)ShowPreSearchCriteria) {
+                            if (ShowPreSearchCriteria) {
                                 WriteVerbose("Choosed pre Search Criteria: " + text24);
                             }
 
-                            var num11 = collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Accepted").Count();
+                            var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                             WriteObject(collection, true);
-                            WriteVerbose("Accepted [" + num11 + "] Updates ready to Download");
-                            if (num11 > 0 && (!WUToolsObj.IsLocalHost(target) || ScheduleJob != DateTime.MinValue)) {
+                            WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
+                            if (totalAccepted > 0 && (!WUToolsObj.IsLocalHost(target) || ScheduleJob != DateTime.MinValue)) {
                                 var text29 = "";
                                 text29 = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
                                 text29 = text29 + " -Criteria \\\"" + text24 + "\\\"";
@@ -988,15 +986,15 @@ namespace PSWindowsUpdate {
                                         text29 = text29 + " -NotUpdateID " + text23;
                                     }
 
-                                    if ((bool)IsInstalled) {
+                                    if (IsInstalled) {
                                         text29 += " -IsInstalled";
                                     }
 
-                                    if ((bool)IsHidden) {
+                                    if (IsHidden) {
                                         text29 += " -IsHidden";
                                     }
 
-                                    if ((bool)WithHidden) {
+                                    if (WithHidden) {
                                         text29 += " -WithHidden";
                                     }
 
@@ -1068,15 +1066,15 @@ namespace PSWindowsUpdate {
                                         text29 = text29 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
                                     }
 
-                                    if ((bool)IgnoreUserInput) {
+                                    if (IgnoreUserInput) {
                                         text29 += " -IgnoreUserInput";
                                     }
 
-                                    if ((bool)IgnoreRebootRequired) {
+                                    if (IgnoreRebootRequired) {
                                         text29 += " -IgnoreRebootRequired";
                                     }
 
-                                    if ((bool)AutoSelectOnly) {
+                                    if (AutoSelectOnly) {
                                         text29 += " -AutoSelectOnly";
                                     }
 
@@ -1089,35 +1087,35 @@ namespace PSWindowsUpdate {
                                     }
                                 }
 
-                                if ((bool)Download) {
+                                if (Download) {
                                     text29 += " -Download";
                                 }
 
-                                if ((bool)Install) {
+                                if (Install) {
                                     text29 += " -Install";
                                 }
 
-                                if ((bool)IgnoreReboot) {
+                                if (IgnoreReboot) {
                                     text29 += " -IgnoreReboot";
-                                } else if ((bool)AutoReboot) {
+                                } else if (AutoReboot) {
                                     text29 += " -AutoReboot";
                                 } else if (ScheduleReboot != DateTime.MinValue) {
-                                    text29 = text29 + " -ScheduleReboot '" + ScheduleReboot.ToString() + "'";
+                                    text29 = text29 + " -ScheduleReboot '" + ScheduleReboot + "'";
                                 }
 
-                                if ((bool)WindowsUpdate) {
+                                if (WindowsUpdate) {
                                     text29 += " -WindowsUpdate";
-                                } else if ((bool)MicrosoftUpdate) {
+                                } else if (MicrosoftUpdate) {
                                     text29 += " -MicrosoftUpdate";
                                 } else if (ServiceID != null) {
                                     text29 = text29 + " -ServiceID '" + ServiceID + "'";
                                 }
 
-                                if ((bool)SendReport) {
+                                if (SendReport) {
                                     text29 += " -SendReport";
                                 }
 
-                                if ((bool)SendHistory) {
+                                if (SendHistory) {
                                     text29 += " -SendHistory";
                                 }
 
@@ -1145,7 +1143,7 @@ namespace PSWindowsUpdate {
                                     }
 
                                     invokeWUJob.TriggerDate = ScheduleJob;
-                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob.ToString() + "): ");
+                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
                                 } else {
                                     invokeWUJob.RunNow = true;
                                     WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (Now): ");
@@ -1157,7 +1155,7 @@ namespace PSWindowsUpdate {
                                     WriteObject(item4);
                                 }
 
-                                WriteDebug(DateTime.Now.ToString() + " Return invoked update list");
+                                WriteDebug(DateTime.Now + " Return invoked update list");
                                 OutputObj = new Collection<PSObject>(collection.ToList());
                                 continue;
                             }
@@ -1165,29 +1163,29 @@ namespace PSWindowsUpdate {
                             var num12 = 0;
                             var activityId4 = 1;
                             var activity4 = "Download updates for " + target;
-                            var statusDescription4 = "[" + num12 + "/" + num11 + "]";
+                            var statusDescription4 = "[" + num12 + "/" + totalAccepted + "]";
                             var progressRecord4 = new ProgressRecord(activityId4, activity4, statusDescription4);
-                            foreach (var item5 in collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Accepted")) {
+                            foreach (var item5 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted")) {
                                 item5.Properties.Add(new PSNoteProperty("X", 2));
                                 var update4 = (IUpdate)item5.BaseObject;
                                 var updateCollection3 =
                                     (UpdateCollection)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
                                 updateCollection3.Add(update4);
-                                progressRecord4.StatusDescription = "[" + num12 + "/" + num11 + "] " + update4.Title + " " + item5.Properties["Size"].Value.ToString();
-                                progressRecord4.PercentComplete = num12 * 100 / num11;
+                                progressRecord4.StatusDescription = "[" + num12 + "/" + totalAccepted + "] " + update4.Title + " " + item5.Properties["Size"].Value;
+                                progressRecord4.PercentComplete = num12 * 100 / totalAccepted;
                                 WriteProgress(progressRecord4);
                                 num12++;
-                                WriteDebug(DateTime.Now.ToString() + " Show update to download: " + update4.Title);
+                                WriteDebug(DateTime.Now + " Show update to download: " + update4.Title);
                                 IUpdateDownloader updateDownloader = UpdateSessionObj.CreateUpdateDownloader();
                                 updateDownloader.Updates = updateCollection3;
-                                if ((bool)ForceDownload) {
+                                if (ForceDownload) {
                                     updateDownloader.IsForced = true;
                                 }
 
                                 IDownloadResult downloadResult;
                                 try {
                                     downloadResult = updateDownloader.Download();
-                                    WriteDebug(DateTime.Now.ToString() + " Downloaded");
+                                    WriteDebug(DateTime.Now + " Downloaded");
                                 } catch (COMException ex5) {
                                     var wUApiCodeDetails3 = WUToolsObj.GetWUApiCodeDetails(ex5.ErrorCode);
                                     var flag5 = false;
@@ -1204,7 +1202,7 @@ namespace PSWindowsUpdate {
                                         }
 
                                         if (flag5) {
-                                            WriteDebug(DateTime.Now.ToString() + " Skip to next computer");
+                                            WriteDebug(DateTime.Now + " Skip to next computer");
                                             break;
                                         }
                                     } else if (Debuger) {
@@ -1212,7 +1210,7 @@ namespace PSWindowsUpdate {
                                         ThrowTerminatingError(errorRecord8);
                                     }
 
-                                    WriteDebug(DateTime.Now.ToString() + " Skip to next update");
+                                    WriteDebug(DateTime.Now + " Skip to next update");
                                     continue;
                                 }
 
@@ -1254,10 +1252,10 @@ namespace PSWindowsUpdate {
 
                             progressRecord4.RecordType = ProgressRecordType.Completed;
                             WriteProgress(progressRecord4);
-                            num6 = collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
-                            WriteVerbose("Downloaded [" + num6 + "] Updates ready to Install");
+                            totalDownloaded = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
+                            WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
                             if (!Install) {
-                                WriteDebug(DateTime.Now.ToString() + " Return downloaded update list");
+                                WriteDebug(DateTime.Now + " Return downloaded update list");
                                 OutputObj = new Collection<PSObject>(collection.ToList());
                                 continue;
                             }
@@ -1271,29 +1269,29 @@ namespace PSWindowsUpdate {
                         var num13 = 0;
                         var activityId5 = 1;
                         var activity5 = "Install updates for " + target;
-                        var statusDescription5 = "[" + num13 + "/" + num6 + "]";
+                        var statusDescription5 = "[" + num13 + "/" + totalDownloaded + "]";
                         var progressRecord5 = new ProgressRecord(activityId5, activity5, statusDescription5);
-                        foreach (var item6 in collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Downloaded")) {
+                        foreach (var item6 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded")) {
                             item6.Properties.Add(new PSNoteProperty("X", 3));
                             var update5 = (IUpdate)item6.BaseObject;
                             var updateCollection4 =
                                 (UpdateCollection)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
                             updateCollection4.Add(update5);
-                            progressRecord5.StatusDescription = "[" + num13 + "/" + num6 + "] " + update5.Title + " " + item6.Properties["Size"].Value.ToString();
-                            progressRecord5.PercentComplete = num13 * 100 / num6;
+                            progressRecord5.StatusDescription = "[" + num13 + "/" + totalDownloaded + "] " + update5.Title + " " + item6.Properties["Size"].Value;
+                            progressRecord5.PercentComplete = num13 * 100 / totalDownloaded;
                             WriteProgress(progressRecord5);
                             num13++;
-                            WriteDebug(DateTime.Now.ToString() + " Show update to install: " + update5.Title);
+                            WriteDebug(DateTime.Now + " Show update to install: " + update5.Title);
                             var updateInstaller = UpdateSessionObj.CreateUpdateInstaller();
                             updateInstaller.Updates = updateCollection4;
-                            if ((bool)ForceInstall) {
+                            if (ForceInstall) {
                                 updateInstaller.IsForced = true;
                             }
 
                             IInstallationResult installationResult;
                             try {
                                 installationResult = updateInstaller.Install();
-                                WriteDebug(DateTime.Now.ToString() + " Installed");
+                                WriteDebug(DateTime.Now + " Installed");
                             } catch (COMException ex6) {
                                 var wUApiCodeDetails4 = WUToolsObj.GetWUApiCodeDetails(ex6.ErrorCode);
                                 var flag6 = false;
@@ -1309,7 +1307,7 @@ namespace PSWindowsUpdate {
                                     }
 
                                     if (flag6) {
-                                        WriteDebug(DateTime.Now.ToString() + " Skip to next computer");
+                                        WriteDebug(DateTime.Now + " Skip to next computer");
                                         break;
                                     }
                                 } else if (Debuger) {
@@ -1317,13 +1315,13 @@ namespace PSWindowsUpdate {
                                     ThrowTerminatingError(errorRecord9);
                                 }
 
-                                WriteDebug(DateTime.Now.ToString() + " Skip to next update");
+                                WriteDebug(DateTime.Now + " Skip to next update");
                                 continue;
                             }
 
                             if (!NeedsReboot) {
                                 NeedsReboot = installationResult.RebootRequired;
-                                WriteDebug(DateTime.Now.ToString() + " Reboot is required");
+                                WriteDebug(DateTime.Now + " Reboot is required");
                             }
 
                             var value3 = "";
@@ -1368,12 +1366,12 @@ namespace PSWindowsUpdate {
 
                         progressRecord5.RecordType = ProgressRecordType.Completed;
                         WriteProgress(progressRecord5);
-                        num7 = collection.Where((PSObject x) => x.Properties["Result"].Value.ToString() == "Installed").Count();
-                        WriteVerbose("Installed [" + num7 + "] Updates");
-                        WriteDebug(DateTime.Now.ToString() + " Return installed update list");
+                        totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
+                        WriteVerbose("Installed [" + totalInstalled + "] Updates");
+                        WriteDebug(DateTime.Now + " Return installed update list");
                         OutputObj = new Collection<PSObject>(collection.ToList());
-                        if (num7 > 0 && (bool)SendHistory) {
-                            var text32 = "Get-WUHistory -SendReport -Last " + num7 + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                        if (totalInstalled > 0 && SendHistory) {
+                            var text32 = "Get-WUHistory -SendReport -Last " + totalInstalled + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                             var invokeWUJob2 = new InvokeWUJob();
                             invokeWUJob2.ComputerName = new string[1] { target };
                             if (Credential != null) {
@@ -1403,15 +1401,15 @@ namespace PSWindowsUpdate {
                         RecurseCycle--;
                         var text33 = "";
                         text33 = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
-                        if ((bool)IsInstalled) {
+                        if (IsInstalled) {
                             text33 += " -IsInstalled";
                         }
 
-                        if ((bool)IsHidden) {
+                        if (IsHidden) {
                             text33 += " -IsHidden";
                         }
 
-                        if ((bool)WithHidden) {
+                        if (WithHidden) {
                             text33 += " -WithHidden";
                         }
 
@@ -1489,15 +1487,15 @@ namespace PSWindowsUpdate {
                             text33 = text33 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
                         }
 
-                        if ((bool)IgnoreUserInput) {
+                        if (IgnoreUserInput) {
                             text33 += " -IgnoreUserInput";
                         }
 
-                        if ((bool)IgnoreRebootRequired) {
+                        if (IgnoreRebootRequired) {
                             text33 += " -IgnoreRebootRequired";
                         }
 
-                        if ((bool)AutoSelectOnly) {
+                        if (AutoSelectOnly) {
                             text33 += " -AutoSelectOnly";
                         }
 
@@ -1509,35 +1507,35 @@ namespace PSWindowsUpdate {
                             text33 = text33 + " -MinSize " + MinSize;
                         }
 
-                        if ((bool)Download) {
+                        if (Download) {
                             text33 += " -Download";
                         }
 
-                        if ((bool)Install) {
+                        if (Install) {
                             text33 += " -Install";
                         }
 
-                        if ((bool)IgnoreReboot) {
+                        if (IgnoreReboot) {
                             text33 += " -IgnoreReboot";
-                        } else if ((bool)AutoReboot) {
+                        } else if (AutoReboot) {
                             text33 += " -AutoReboot";
                         } else if (ScheduleReboot != DateTime.MinValue) {
-                            text33 = text33 + " -ScheduleReboot '" + ScheduleReboot.ToString() + "'";
+                            text33 = text33 + " -ScheduleReboot '" + ScheduleReboot + "'";
                         }
 
-                        if ((bool)WindowsUpdate) {
+                        if (WindowsUpdate) {
                             text33 += " -WindowsUpdate";
-                        } else if ((bool)MicrosoftUpdate) {
+                        } else if (MicrosoftUpdate) {
                             text33 += " -MicrosoftUpdate";
                         } else if (ServiceID != null) {
                             text33 = text33 + " -ServiceID '" + ServiceID + "'";
                         }
 
-                        if ((bool)SendReport) {
+                        if (SendReport) {
                             text33 += " -SendReport";
                         }
 
-                        if ((bool)SendHistory) {
+                        if (SendHistory) {
                             text33 += " -SendHistory";
                         }
 
@@ -1561,7 +1559,7 @@ namespace PSWindowsUpdate {
                         } else {
                             ScheduleJob = DateTime.Now.AddMinutes(5.0);
                             invokeWUJob3.TriggerDate = ScheduleJob;
-                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob.ToString() + "): ");
+                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
                         }
 
                         WriteVerbose("powershell.exe -Command \"" + text33 + "\"");
@@ -1569,14 +1567,14 @@ namespace PSWindowsUpdate {
                         foreach (var item8 in enumerable3) {
                             WriteObject(item8);
                         }
-                    } else if ((bool)Debuger) {
+                    } else if (Debuger) {
                         var errorRecord10 = new ErrorRecord(wUApiServiceManagerObj.Exception, "Debug", ErrorCategory.CloseError, null);
                         WriteError(errorRecord10);
                     } else {
                         var error = wUApiServiceManagerObj.Error;
                         WriteError(error);
                     }
-                } else if ((bool)Debuger) {
+                } else if (Debuger) {
                     var errorRecord11 = new ErrorRecord(wUApiUpdateSessionObj.Exception, "Debug", ErrorCategory.CloseError, null);
                     WriteError(errorRecord11);
                 } else {
@@ -1592,7 +1590,7 @@ namespace PSWindowsUpdate {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now.ToString() + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
                 if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
@@ -1633,7 +1631,7 @@ namespace PSWindowsUpdate {
                             CoreProcessing();
                             flag = false;
                         } catch (Exception ex) {
-                            WriteDebug(DateTime.Now.ToString() + " Something goes wrong: " + ex.Message);
+                            WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
                     } else {
@@ -1654,7 +1652,7 @@ namespace PSWindowsUpdate {
                     }
 
                     now = DateTime.Now;
-                    WriteDebug(now.ToString() + " Leaving impersonated session");
+                    WriteDebug(now + " Leaving impersonated session");
                 }
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
@@ -1663,7 +1661,7 @@ namespace PSWindowsUpdate {
                     str4 = "RunAs";
                 }
 
-                WriteDebug(DateTime.Now.ToString() + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
+                WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
             } else {
                 flag = true;
             }
@@ -1678,13 +1676,13 @@ namespace PSWindowsUpdate {
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletStart", (object)CmdletStart));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletEnd", (object)CmdletEnd));
-            CmdletInfo.Properties.Add((PSPropertyInfo)new PSNoteProperty("CmdletLine", (object)MyInvocation.Line));
-            if ((bool)SendReport && OutputObj.Count > 0) {
-                WriteDebug(DateTime.Now.ToString() + " Send report");
-                if (!PSWUSettings.ContainsKey((object)"Properties")) {
-                    PSWUSettings.Add((object)"Properties", (object)new string[5] {
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            if (SendReport && OutputObj.Count > 0) {
+                WriteDebug(DateTime.Now + " Send report");
+                if (!PSWUSettings.ContainsKey("Properties")) {
+                    PSWUSettings.Add("Properties", new string[5] {
                         "ComputerName",
                         "Status",
                         "KB",
@@ -1701,23 +1699,23 @@ namespace PSWindowsUpdate {
 
             if (NeedsReboot) {
                 if (ScheduleReboot != DateTime.MinValue) {
-                    WriteDebug(DateTime.Now.ToString() + " Schedule Reboot " + ScheduleReboot.ToString());
+                    WriteDebug(DateTime.Now + " Schedule Reboot " + ScheduleReboot);
                     WriteVerbose(WUToolsObj.ScheduleReboot("localhost", ScheduleReboot));
-                } else if ((bool)AutoReboot) {
-                    WriteDebug(DateTime.Now.ToString() + " Auto Reboot");
+                } else if (AutoReboot) {
+                    WriteDebug(DateTime.Now + " Auto Reboot");
                     WriteVerbose(WUToolsObj.RunReboot("localhost"));
-                } else if ((bool)IgnoreReboot) {
+                } else if (IgnoreReboot) {
                     Host.UI.WriteLine(ConsoleColor.White, Host.UI.RawUI.BackgroundColor, "Reboot is required, but do it manually.");
                 } else {
                     Host.UI.WriteLine(ConsoleColor.White, Host.UI.RawUI.BackgroundColor, "Reboot is required. Do it now? [Y / N] (default is 'N')");
                     if (Console.ReadLine().ToUpper() == "Y") {
-                        WriteDebug(DateTime.Now.ToString() + " Manually Reboot");
+                        WriteDebug(DateTime.Now + " Manually Reboot");
                         WriteVerbose(WUToolsObj.RunReboot("localhost"));
                     }
                 }
             }
 
-            WriteDebug(DateTime.Now.ToString() + " CmdletEnd");
+            WriteDebug(DateTime.Now + " CmdletEnd");
         }
 
 

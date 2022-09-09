@@ -46,11 +46,11 @@ namespace PSWindowsUpdate {
             var methodParameters = new CimMethodParametersCollection();
             methodParameters.Add(CimMethodParameter.Create("Updates", updates, CimFlags.None));
             if (downloadOnly) {
-                methodParameters.Add(CimMethodParameter.Create("DownloadOnly", (object)true, CimFlags.None));
+                methodParameters.Add(CimMethodParameter.Create("DownloadOnly", true, CimFlags.None));
             }
 
             if (rebootRequired) {
-                methodParameters.Add(CimMethodParameter.Create("RebootRequired", (object)true, CimFlags.None));
+                methodParameters.Add(CimMethodParameter.Create("RebootRequired", true, CimFlags.None));
             }
 
             var instance = new CimInstance(className, namespaceName);

@@ -4,12 +4,15 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{31C18EBF-C6E4-45E7-AECF-7FE9913ACB15}</ProjectGuid>
+    <TargetFramework>net452</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>PSWindowsUpdate</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <ApplicationVersion>2.2.0.3</ApplicationVersion>
     <FileAlignment>512</FileAlignment>
     <LangVersion>8</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -44,55 +47,54 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PSWindowsUpdate\AddWUServiceManager.cs" />
-    <Compile Include="PSWindowsUpdate\EnableWURemoting.cs" />
-    <Compile Include="PSWindowsUpdate\GetWindowsUpdate_v2.cs" />
-    <Compile Include="PSWindowsUpdate\GetWindowsUpdate.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUApiVersion.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUHistory.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUInstallerStatus.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUJob.cs" />
-    <Compile Include="PSWindowsUpdate\GetWULastResults.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUOfflineMSU.cs" />
-    <Compile Include="PSWindowsUpdate\GetWURebootStatus.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUServiceManager.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUSettings.cs" />
-    <Compile Include="PSWindowsUpdate\GetWUTest.cs" />
-    <Compile Include="PSWindowsUpdate\InvokeWUJob.cs" />
-    <Compile Include="PSWindowsUpdate\WUBits.cs" />
-    <Compile Include="PSWindowsUpdate\WUCimSession.cs" />
-    <Compile Include="PSWindowsUpdate\WindowsUpdate.cs" />
-    <Compile Include="PSWindowsUpdate\AgentInfo.cs" />
-    <Compile Include="PSWindowsUpdate\History.cs" />
-    <Compile Include="PSWindowsUpdate\InstallerStatus.cs" />
-    <Compile Include="PSWindowsUpdate\WUJob.cs" />
-    <Compile Include="PSWindowsUpdate\LastResults.cs" />
-    <Compile Include="PSWindowsUpdate\OfflineMSU.cs" />
-    <Compile Include="PSWindowsUpdate\RebootStatus.cs" />
-    <Compile Include="PSWindowsUpdate\ServiceManager.cs" />
-    <Compile Include="PSWindowsUpdate\WUSettings.cs" />
-    <Compile Include="PSWindowsUpdate\WUImpersonator.cs" />
-    <Compile Include="PSWindowsUpdate\CredentialType.cs" />
-    <Compile Include="PSWindowsUpdate\PersistenceType.cs" />
-    <Compile Include="PSWindowsUpdate\SecureStringHelper.cs" />
-    <Compile Include="PSWindowsUpdate\NativeMethods.cs" />
-    <Compile Include="PSWindowsUpdate\Credential.cs" />
-    <Compile Include="PSWindowsUpdate\WUServiceController.cs" />
-    <Compile Include="PSWindowsUpdate\PSCredMan.cs" />
-    <Compile Include="PSWindowsUpdate\WUAPIObject.cs" />
-    <Compile Include="PSWindowsUpdate\WUApiCode.cs" />
-    <Compile Include="PSWindowsUpdate\ValidateDateTimeAttribute.cs" />
-    <Compile Include="PSWindowsUpdate\ValidateRecurseCycleAttribute.cs" />
-    <Compile Include="PSWindowsUpdate\ValidateTestAttribute.cs" />
-    <Compile Include="PSWindowsUpdate\ValidateIntGt0Attribute.cs" />
-    <Compile Include="PSWindowsUpdate\WUTools.cs" />
-    <Compile Include="PSWindowsUpdate\RemoveWindowsUpdate.cs" />
-    <Compile Include="PSWindowsUpdate\RemoveWUServiceManager.cs" />
-    <Compile Include="PSWindowsUpdate\ResetWUComponents.cs" />
-    <Compile Include="PSWindowsUpdate\SetPSWUSettings.cs" />
-    <Compile Include="PSWindowsUpdate\SetWUSettings.cs" />
-    <Compile Include="PSWindowsUpdate\UpdateWUModule.cs" />
-    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="src\AddWUServiceManager.cs" />
+    <Compile Include="src\EnableWURemoting.cs" />
+    <Compile Include="src\GetWindowsUpdate_v2.cs" />
+    <Compile Include="src\GetWindowsUpdate.cs" />
+    <Compile Include="src\GetWUApiVersion.cs" />
+    <Compile Include="src\GetWUHistory.cs" />
+    <Compile Include="src\GetWUInstallerStatus.cs" />
+    <Compile Include="src\GetWUJob.cs" />
+    <Compile Include="src\GetWULastResults.cs" />
+    <Compile Include="src\GetWUOfflineMSU.cs" />
+    <Compile Include="src\GetWURebootStatus.cs" />
+    <Compile Include="src\GetWUServiceManager.cs" />
+    <Compile Include="src\GetWUSettings.cs" />
+    <Compile Include="src\GetWUTest.cs" />
+    <Compile Include="src\InvokeWUJob.cs" />
+    <Compile Include="src\WUBits.cs" />
+    <Compile Include="src\WUCimSession.cs" />
+    <Compile Include="src\WindowsUpdate.cs" />
+    <Compile Include="src\AgentInfo.cs" />
+    <Compile Include="src\History.cs" />
+    <Compile Include="src\InstallerStatus.cs" />
+    <Compile Include="src\WUJob.cs" />
+    <Compile Include="src\LastResults.cs" />
+    <Compile Include="src\OfflineMSU.cs" />
+    <Compile Include="src\RebootStatus.cs" />
+    <Compile Include="src\ServiceManager.cs" />
+    <Compile Include="src\WUSettings.cs" />
+    <Compile Include="src\WUImpersonator.cs" />
+    <Compile Include="src\CredentialType.cs" />
+    <Compile Include="src\PersistenceType.cs" />
+    <Compile Include="src\SecureStringHelper.cs" />
+    <Compile Include="src\NativeMethods.cs" />
+    <Compile Include="src\Credential.cs" />
+    <Compile Include="src\WUServiceController.cs" />
+    <Compile Include="src\PSCredMan.cs" />
+    <Compile Include="src\WUAPIObject.cs" />
+    <Compile Include="src\WUApiCode.cs" />
+    <Compile Include="src\ValidateDateTimeAttribute.cs" />
+    <Compile Include="src\ValidateRecurseCycleAttribute.cs" />
+    <Compile Include="src\ValidateTestAttribute.cs" />
+    <Compile Include="src\ValidateIntGt0Attribute.cs" />
+    <Compile Include="src\WUTools.cs" />
+    <Compile Include="src\RemoveWindowsUpdate.cs" />
+    <Compile Include="src\RemoveWUServiceManager.cs" />
+    <Compile Include="src\ResetWUComponents.cs" />
+    <Compile Include="src\SetPSWUSettings.cs" />
+    <Compile Include="src\SetWUSettings.cs" />
+    <Compile Include="src\UpdateWUModule.cs" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="MSHTML">
@@ -134,7 +136,14 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="LICENSE" />
+    <Content Include="PSWindowsUpdate.dll-Help.xml" />
+    <Content Include="PSWindowsUpdate.Format.ps1xml" />
+    <Content Include="PSWindowsUpdate.psd1" />
+    <Content Include="PSWindowsUpdate.psm1" />
     <Content Include="README.md" />
   </ItemGroup>
+  <!--<ItemGroup>
+    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
+  </ItemGroup>-->
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

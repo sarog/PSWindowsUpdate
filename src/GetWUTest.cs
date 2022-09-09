@@ -78,7 +78,7 @@ namespace PSWindowsUpdate {
         private void CoreProcessing() {
             var invocationName = MyInvocation.InvocationName;
             foreach (var target in ComputerName) {
-                WriteObject((object)new WUCimSession(target).ScanForUpdates());
+                WriteObject(new WUCimSession(target).ScanForUpdates());
             }
         }
 
