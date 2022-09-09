@@ -42,7 +42,6 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />
-    <Reference Include="System.Management.Automation" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Web" />
   </ItemGroup>
@@ -142,8 +141,8 @@
     <Content Include="PSWindowsUpdate.psm1" />
     <Content Include="README.md" />
   </ItemGroup>
-  <!--<ItemGroup>
-    <PackageReference Include="PowerShellStandard.Library" Version="5.1.1" />
-  </ItemGroup>-->
+  <ItemGroup>
+    <PackageReference Include="PowerShellStandard.Library" Version="7.0.0-preview.1" PrivateAssets="all"/>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
