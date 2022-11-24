@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -13,6 +12,16 @@
     <LangVersion>8</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IsPackable>true</IsPackable>
+    <Product>PSWindowsUpdate</Product>
+    <AssemblyVersion>2.2.0.3</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <PackageVersion>2.2.0.3</PackageVersion>
+    <Title>PSWindowsUpdate</Title>
+    <RepositoryUrl>https://github.com/sarog/PSWindowsUpdate</RepositoryUrl>
+    <Copyright>Copyright © 2011-2022 Michal Gajda. All rights reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/sarog/PSWindowsUpdate</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/sarog/PSWindowsUpdate/blob/master/LICENSE</PackageLicenseUrl>
+    <RootNamespace>PSWindowsUpdate</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -142,7 +151,7 @@
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="PowerShellStandard.Library" Version="7.0.0-preview.1" PrivateAssets="all"/>
+    <PackageReference Include="PowerShellStandard.Library" Version="7.0.0-preview.1" PrivateAssets="all" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
