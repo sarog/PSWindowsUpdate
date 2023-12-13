@@ -269,45 +269,45 @@ namespace PSWindowsUpdate {
                     continue;
                 }
 
-                var text6 = "";
-                text6 = !Debuger ? "Remove-WindowsUpdate" : "$DebugPreference = 'Continue'; Remove-WindowsUpdate";
+                var cmdLine = "";
+                cmdLine = !Debuger ? "Remove-WindowsUpdate" : "$DebugPreference = 'Continue'; Remove-WindowsUpdate";
                 if (KBArticleID != null) {
-                    text6 = text6 + " -KBArticleID " + KBArticleID;
+                    cmdLine = cmdLine + " -KBArticleID " + KBArticleID;
                 }
 
                 if (UpdateID != null) {
-                    text6 = text6 + " -UpdateID '" + UpdateID + "'";
+                    cmdLine = cmdLine + " -UpdateID '" + UpdateID + "'";
                 }
 
                 if (AutoReboot) {
-                    text6 += " -AutoReboot";
+                    cmdLine += " -AutoReboot";
                 }
 
                 if (ScheduleReboot != DateTime.MinValue) {
-                    text6 = text6 + " -ScheduleReboot " + ScheduleReboot;
+                    cmdLine = cmdLine + " -ScheduleReboot " + ScheduleReboot;
                 }
 
                 if (IgnoreReboot) {
-                    text6 += " -IgnoreReboot";
+                    cmdLine += " -IgnoreReboot";
                 }
 
-                text6 += " -Verbose -Confirm:$false *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
+                cmdLine += " -Verbose -Confirm:$false *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                 var invokeWUJob = new InvokeWUJob();
                 invokeWUJob.ComputerName = new string[1] { target };
                 if (Credential != null) {
                     invokeWUJob.Credential = Credential;
                 }
 
-                invokeWUJob.Script = text6;
+                invokeWUJob.Script = cmdLine;
                 if (ScheduleJob != DateTime.MinValue) {
                     invokeWUJob.TriggerDate = ScheduleJob;
-                    WriteVerbose("Invoke-WUJob: " + target + " (" + ScheduleJob + ") " + text6);
+                    WriteVerbose("Invoke-WUJob: " + target + " (" + ScheduleJob + ") " + cmdLine);
                 } else {
                     invokeWUJob.RunNow = true;
-                    WriteVerbose("Invoke-WUJob: " + target + " (Now) " + text6);
+                    WriteVerbose("Invoke-WUJob: " + target + " (Now) " + cmdLine);
                 }
 
-                WriteVerbose("powershell.exe -Command \"" + text6 + "\"");
+                WriteVerbose("powershell.exe -Command \"" + cmdLine + "\"");
                 var enumerable = invokeWUJob.Invoke();
                 foreach (var item2 in enumerable) {
                     WriteObject(item2);

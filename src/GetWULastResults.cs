@@ -6,7 +6,7 @@ using System.Security.Principal;
 
 namespace PSWindowsUpdate {
     [Cmdlet("Get", "WULastResults", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
-    [OutputType(new Type[] { typeof(LastResults) })]
+    [OutputType(typeof(LastResults))]
     public class GetWULastResults : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 

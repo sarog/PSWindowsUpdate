@@ -871,7 +871,7 @@ namespace PSWindowsUpdate {
                             var activity3 = "Choose updates for " + target;
                             var statusDescription3 = "[" + num8 + "/" + count2 + "]";
                             var progressRecord3 = new ProgressRecord(activityId3, activity3, statusDescription3);
-                            var text24 = "";
+                            var searchCritera = "";
                             foreach (var item3 in collection) {
                                 item3.Properties.Add(new PSNoteProperty("X", 1));
                                 item3.TypeNames.Clear();
@@ -909,8 +909,8 @@ namespace PSWindowsUpdate {
                                         var pSObject2 = new PSObject(item3.Properties["Identity"].Value);
                                         var text27 = (string)pSObject2.Properties["UpdateID"].Value;
                                         var num9 = (int)pSObject2.Properties["RevisionNumber"].Value;
-                                        text24 = !(text24 == "")
-                                            ? text24 + " or (UpdateID = '" + text27 + "' and RevisionNumber = " + num9 + ")"
+                                        searchCritera = !(searchCritera == "")
+                                            ? searchCritera + " or (UpdateID = '" + text27 + "' and RevisionNumber = " + num9 + ")"
                                             : "(UpdateID = '" + text27 + "' and RevisionNumber = " + num9 + ")";
                                     } catch (Exception ex3) {
                                         flag4 = false;
@@ -971,170 +971,170 @@ namespace PSWindowsUpdate {
                             progressRecord3.RecordType = ProgressRecordType.Completed;
                             WriteProgress(progressRecord3);
                             if (ShowPreSearchCriteria) {
-                                WriteVerbose("Choosed pre Search Criteria: " + text24);
+                                WriteVerbose("Chosen pre-Search Criteria: " + searchCritera);
                             }
 
                             var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                             WriteObject(collection, true);
                             WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
                             if (totalAccepted > 0 && (!WUToolsObj.IsLocalHost(target) || ScheduleJob != DateTime.MinValue)) {
-                                var text29 = "";
-                                text29 = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
-                                text29 = text29 + " -Criteria \\\"" + text24 + "\\\"";
+                                var cmdLine = "";
+                                cmdLine = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
+                                cmdLine = cmdLine + " -Criteria \\\"" + searchCritera + "\\\"";
                                 if (RecurseCycle > 1) {
                                     if (text23 != "") {
-                                        text29 = text29 + " -NotUpdateID " + text23;
+                                        cmdLine = cmdLine + " -NotUpdateID " + text23;
                                     }
 
                                     if (IsInstalled) {
-                                        text29 += " -IsInstalled";
+                                        cmdLine += " -IsInstalled";
                                     }
 
                                     if (IsHidden) {
-                                        text29 += " -IsHidden";
+                                        cmdLine += " -IsHidden";
                                     }
 
                                     if (WithHidden) {
-                                        text29 += " -WithHidden";
+                                        cmdLine += " -WithHidden";
                                     }
 
                                     if (UpdateType != null) {
-                                        text29 = text29 + " -UpdateType " + UpdateType;
+                                        cmdLine = cmdLine + " -UpdateType " + UpdateType;
                                     }
 
                                     if (DeploymentAction != null) {
-                                        text29 = text29 + " -DeploymentAction " + DeploymentAction;
+                                        cmdLine = cmdLine + " -DeploymentAction " + DeploymentAction;
                                     }
 
                                     if (UpdateID != null) {
-                                        text29 = text29 + " -UpdateID '" + string.Join("','", UpdateID) + "'";
+                                        cmdLine = cmdLine + " -UpdateID '" + string.Join("','", UpdateID) + "'";
                                     }
 
                                     if (RevisionNumber > 0) {
-                                        text29 = text29 + " -RevisionNumber " + RevisionNumber;
+                                        cmdLine = cmdLine + " -RevisionNumber " + RevisionNumber;
                                     }
 
                                     if (CategoryIDs != null) {
-                                        text29 = text29 + " -CategoryIDs " + string.Join(",", CategoryIDs);
+                                        cmdLine = cmdLine + " -CategoryIDs " + string.Join(",", CategoryIDs);
                                     }
 
                                     if (MyInvocation.BoundParameters.ContainsKey("IsAssigned")) {
-                                        text29 = !IsAssigned ? text29 + " -IsAssigned:$false" : text29 + " -IsAssigned";
+                                        cmdLine = !IsAssigned ? cmdLine + " -IsAssigned:$false" : cmdLine + " -IsAssigned";
                                     }
 
                                     if (MyInvocation.BoundParameters.ContainsKey("IsPresent")) {
-                                        text29 = !IsPresent ? text29 + " -IsPresent:$false" : text29 + " -IsPresent";
+                                        cmdLine = !IsPresent ? cmdLine + " -IsPresent:$false" : cmdLine + " -IsPresent";
                                     }
 
                                     if (MyInvocation.BoundParameters.ContainsKey("AutoSelectOnWebSites")) {
-                                        text29 = !AutoSelectOnWebSites ? text29 + " -AutoSelectOnWebSites:$false" : text29 + " -AutoSelectOnWebSites";
+                                        cmdLine = !AutoSelectOnWebSites ? cmdLine + " -AutoSelectOnWebSites:$false" : cmdLine + " -AutoSelectOnWebSites";
                                     }
 
                                     if (RootCategories != null) {
-                                        text29 = text29 + " -RootCategories '" + string.Join("','", RootCategories) + "'";
+                                        cmdLine = cmdLine + " -RootCategories '" + string.Join("','", RootCategories) + "'";
                                     }
 
                                     if (Category != null) {
-                                        text29 = text29 + " -Category '" + string.Join("','", Category) + "'";
+                                        cmdLine = cmdLine + " -Category '" + string.Join("','", Category) + "'";
                                     }
 
                                     if (KBArticleID != null) {
-                                        text29 = text29 + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
+                                        cmdLine = cmdLine + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
                                     }
 
                                     if (Title != null) {
-                                        text29 = text29 + " -Title '" + Title + "'";
+                                        cmdLine = cmdLine + " -Title '" + Title + "'";
                                     }
 
                                     if (Severity != null) {
-                                        text29 = text29 + " -Severity '" + string.Join("','", Severity) + "'";
+                                        cmdLine = cmdLine + " -Severity '" + string.Join("','", Severity) + "'";
                                     }
 
                                     if (NotCategory != null) {
-                                        text29 = text29 + " -NotCategory '" + string.Join("','", NotCategory) + "'";
+                                        cmdLine = cmdLine + " -NotCategory '" + string.Join("','", NotCategory) + "'";
                                     }
 
                                     if (NotKBArticleID != null) {
-                                        text29 = text29 + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
+                                        cmdLine = cmdLine + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
                                     }
 
                                     if (NotTitle != null) {
-                                        text29 = text29 + " -NotTitle '" + NotTitle + "'";
+                                        cmdLine = cmdLine + " -NotTitle '" + NotTitle + "'";
                                     }
 
                                     if (NotSeverity != null) {
-                                        text29 = text29 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
+                                        cmdLine = cmdLine + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
                                     }
 
                                     if (IgnoreUserInput) {
-                                        text29 += " -IgnoreUserInput";
+                                        cmdLine += " -IgnoreUserInput";
                                     }
 
                                     if (IgnoreRebootRequired) {
-                                        text29 += " -IgnoreRebootRequired";
+                                        cmdLine += " -IgnoreRebootRequired";
                                     }
 
                                     if (AutoSelectOnly) {
-                                        text29 += " -AutoSelectOnly";
+                                        cmdLine += " -AutoSelectOnly";
                                     }
 
                                     if (MaxSize > 0) {
-                                        text29 = text29 + " -MaxSize " + MaxSize;
+                                        cmdLine = cmdLine + " -MaxSize " + MaxSize;
                                     }
 
                                     if (MinSize > 0) {
-                                        text29 = text29 + " -MinSize " + MinSize;
+                                        cmdLine = cmdLine + " -MinSize " + MinSize;
                                     }
                                 }
 
                                 if (Download) {
-                                    text29 += " -Download";
+                                    cmdLine += " -Download";
                                 }
 
                                 if (Install) {
-                                    text29 += " -Install";
+                                    cmdLine += " -Install";
                                 }
 
                                 if (IgnoreReboot) {
-                                    text29 += " -IgnoreReboot";
+                                    cmdLine += " -IgnoreReboot";
                                 } else if (AutoReboot) {
-                                    text29 += " -AutoReboot";
+                                    cmdLine += " -AutoReboot";
                                 } else if (ScheduleReboot != DateTime.MinValue) {
-                                    text29 = text29 + " -ScheduleReboot '" + ScheduleReboot + "'";
+                                    cmdLine = cmdLine + " -ScheduleReboot '" + ScheduleReboot + "'";
                                 }
 
                                 if (WindowsUpdate) {
-                                    text29 += " -WindowsUpdate";
+                                    cmdLine += " -WindowsUpdate";
                                 } else if (MicrosoftUpdate) {
-                                    text29 += " -MicrosoftUpdate";
+                                    cmdLine += " -MicrosoftUpdate";
                                 } else if (ServiceID != null) {
-                                    text29 = text29 + " -ServiceID '" + ServiceID + "'";
+                                    cmdLine = cmdLine + " -ServiceID '" + ServiceID + "'";
                                 }
 
                                 if (SendReport) {
-                                    text29 += " -SendReport";
+                                    cmdLine += " -SendReport";
                                 }
 
                                 if (SendHistory) {
-                                    text29 += " -SendHistory";
+                                    cmdLine += " -SendHistory";
                                 }
 
                                 if (RecurseCycle > 1) {
-                                    text29 = text29 + " -RecurseCycle " + RecurseCycle;
+                                    cmdLine = cmdLine + " -RecurseCycle " + RecurseCycle;
                                 }
 
                                 if (!AutoReboot && ScheduleReboot == DateTime.MinValue && !IgnoreReboot) {
-                                    text29 += " -IgnoreReboot";
+                                    cmdLine += " -IgnoreReboot";
                                 }
 
-                                text29 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
+                                cmdLine += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                                 var invokeWUJob = new InvokeWUJob();
                                 invokeWUJob.ComputerName = new string[1] { target };
                                 if (Credential != null) {
                                     invokeWUJob.Credential = Credential;
                                 }
 
-                                invokeWUJob.Script = text29;
+                                invokeWUJob.Script = cmdLine;
                                 invokeWUJob.Debuger = true;
                                 if (ScheduleJob != DateTime.MinValue) {
                                     if (ScheduleJob.AddSeconds(10.0) <= DateTime.Now) {
@@ -1149,7 +1149,7 @@ namespace PSWindowsUpdate {
                                     WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (Now): ");
                                 }
 
-                                WriteVerbose("powershell.exe -Command \"" + text29 + "\"");
+                                WriteVerbose("powershell.exe -Command \"" + cmdLine + "\"");
                                 var enumerable = invokeWUJob.Invoke();
                                 foreach (var item4 in enumerable) {
                                     WriteObject(item4);
@@ -1371,21 +1371,21 @@ namespace PSWindowsUpdate {
                         WriteDebug(DateTime.Now + " Return installed update list");
                         OutputObj = new Collection<PSObject>(collection.ToList());
                         if (totalInstalled > 0 && SendHistory) {
-                            var text32 = "Get-WUHistory -SendReport -Last " + totalInstalled + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                            var cmdLine2 = "Get-WUHistory -SendReport -Last " + totalInstalled + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                             var invokeWUJob2 = new InvokeWUJob();
                             invokeWUJob2.ComputerName = new string[1] { target };
                             if (Credential != null) {
                                 invokeWUJob2.Credential = Credential;
                             }
 
-                            invokeWUJob2.Script = text32;
+                            invokeWUJob2.Script = cmdLine2;
                             invokeWUJob2.TaskName = "PSWindowsUpdate_History";
                             if (NeedsReboot) {
                                 invokeWUJob2.TriggerAtStart = true;
-                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" + text32 + "\"");
+                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" + cmdLine2 + "\"");
                             } else {
                                 invokeWUJob2.RunNow = true;
-                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" + text32 + "\"");
+                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" + cmdLine2 + "\"");
                             }
 
                             var enumerable2 = invokeWUJob2.Invoke();
@@ -1399,158 +1399,159 @@ namespace PSWindowsUpdate {
                         }
 
                         RecurseCycle--;
-                        var text33 = "";
-                        text33 = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
+                        
+                        var cmdLine3 = !Debuger ? "Get-WindowsUpdate -AcceptAll" : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
+                        
                         if (IsInstalled) {
-                            text33 += " -IsInstalled";
+                            cmdLine3 += " -IsInstalled";
                         }
 
                         if (IsHidden) {
-                            text33 += " -IsHidden";
+                            cmdLine3 += " -IsHidden";
                         }
 
                         if (WithHidden) {
-                            text33 += " -WithHidden";
+                            cmdLine3 += " -WithHidden";
                         }
 
                         if (UpdateType != null) {
-                            text33 = text33 + " -UpdateType " + UpdateType;
+                            cmdLine3 = cmdLine3 + " -UpdateType " + UpdateType;
                         }
 
                         if (DeploymentAction != null) {
-                            text33 = text33 + " -DeploymentAction " + DeploymentAction;
+                            cmdLine3 = cmdLine3 + " -DeploymentAction " + DeploymentAction;
                         }
 
                         if (UpdateID != null) {
-                            text33 = text33 + " -UpdateID '" + string.Join("','", UpdateID) + "'";
+                            cmdLine3 = cmdLine3 + " -UpdateID '" + string.Join("','", UpdateID) + "'";
                         }
 
                         if (NotUpdateID != null) {
-                            text33 = text33 + " -NotUpdateID '" + string.Join("','", NotUpdateID) + "'";
+                            cmdLine3 = cmdLine3 + " -NotUpdateID '" + string.Join("','", NotUpdateID) + "'";
                         } else if (text23 != "") {
-                            text33 = text33 + " -NotUpdateID " + text23;
+                            cmdLine3 = cmdLine3 + " -NotUpdateID " + text23;
                         }
 
                         if (RevisionNumber > 0) {
-                            text33 = text33 + " -RevisionNumber " + RevisionNumber;
+                            cmdLine3 = cmdLine3 + " -RevisionNumber " + RevisionNumber;
                         }
 
                         if (CategoryIDs != null) {
-                            text33 = text33 + " -CategoryIDs '" + string.Join("','", CategoryIDs) + "'";
+                            cmdLine3 = cmdLine3 + " -CategoryIDs '" + string.Join("','", CategoryIDs) + "'";
                         }
 
                         if (MyInvocation.BoundParameters.ContainsKey("IsAssigned")) {
-                            text33 = !IsAssigned ? text33 + " -IsAssigned:$false" : text33 + " -IsAssigned";
+                            cmdLine3 = !IsAssigned ? cmdLine3 + " -IsAssigned:$false" : cmdLine3 + " -IsAssigned";
                         }
 
                         if (MyInvocation.BoundParameters.ContainsKey("IsPresent")) {
-                            text33 = !IsPresent ? text33 + " -IsPresent:$false" : text33 + " -IsPresent";
+                            cmdLine3 = !IsPresent ? cmdLine3 + " -IsPresent:$false" : cmdLine3 + " -IsPresent";
                         }
 
                         if (MyInvocation.BoundParameters.ContainsKey("AutoSelectOnWebSites")) {
-                            text33 = !AutoSelectOnWebSites ? text33 + " -AutoSelectOnWebSites:$false" : text33 + " -AutoSelectOnWebSites";
+                            cmdLine3 = !AutoSelectOnWebSites ? cmdLine3 + " -AutoSelectOnWebSites:$false" : cmdLine3 + " -AutoSelectOnWebSites";
                         }
 
                         if (RootCategories != null) {
-                            text33 = text33 + " -RootCategories '" + string.Join("','", RootCategories) + "'";
+                            cmdLine3 = cmdLine3 + " -RootCategories '" + string.Join("','", RootCategories) + "'";
                         }
 
                         if (Category != null) {
-                            text33 = text33 + " -Category '" + string.Join("','", Category) + "'";
+                            cmdLine3 = cmdLine3 + " -Category '" + string.Join("','", Category) + "'";
                         }
 
                         if (KBArticleID != null) {
-                            text33 = text33 + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
+                            cmdLine3 = cmdLine3 + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
                         }
 
                         if (Title != null) {
-                            text33 = text33 + " -Title '" + Title + "'";
+                            cmdLine3 = cmdLine3 + " -Title '" + Title + "'";
                         }
 
                         if (Severity != null) {
-                            text33 = text33 + " -Severity '" + string.Join("','", Severity) + "'";
+                            cmdLine3 = cmdLine3 + " -Severity '" + string.Join("','", Severity) + "'";
                         }
 
                         if (NotCategory != null) {
-                            text33 = text33 + " -NotCategory '" + string.Join("','", NotCategory) + "'";
+                            cmdLine3 = cmdLine3 + " -NotCategory '" + string.Join("','", NotCategory) + "'";
                         }
 
                         if (NotKBArticleID != null) {
-                            text33 = text33 + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
+                            cmdLine3 = cmdLine3 + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
                         }
 
                         if (NotTitle != null) {
-                            text33 = text33 + " -NotTitle '" + NotTitle + "'";
+                            cmdLine3 = cmdLine3 + " -NotTitle '" + NotTitle + "'";
                         }
 
                         if (NotSeverity != null) {
-                            text33 = text33 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
+                            cmdLine3 = cmdLine3 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
                         }
 
                         if (IgnoreUserInput) {
-                            text33 += " -IgnoreUserInput";
+                            cmdLine3 += " -IgnoreUserInput";
                         }
 
                         if (IgnoreRebootRequired) {
-                            text33 += " -IgnoreRebootRequired";
+                            cmdLine3 += " -IgnoreRebootRequired";
                         }
 
                         if (AutoSelectOnly) {
-                            text33 += " -AutoSelectOnly";
+                            cmdLine3 += " -AutoSelectOnly";
                         }
 
                         if (MaxSize > 0) {
-                            text33 = text33 + " -MaxSize " + MaxSize;
+                            cmdLine3 = cmdLine3 + " -MaxSize " + MaxSize;
                         }
 
                         if (MinSize > 0) {
-                            text33 = text33 + " -MinSize " + MinSize;
+                            cmdLine3 = cmdLine3 + " -MinSize " + MinSize;
                         }
 
                         if (Download) {
-                            text33 += " -Download";
+                            cmdLine3 += " -Download";
                         }
 
                         if (Install) {
-                            text33 += " -Install";
+                            cmdLine3 += " -Install";
                         }
 
                         if (IgnoreReboot) {
-                            text33 += " -IgnoreReboot";
+                            cmdLine3 += " -IgnoreReboot";
                         } else if (AutoReboot) {
-                            text33 += " -AutoReboot";
+                            cmdLine3 += " -AutoReboot";
                         } else if (ScheduleReboot != DateTime.MinValue) {
-                            text33 = text33 + " -ScheduleReboot '" + ScheduleReboot + "'";
+                            cmdLine3 = cmdLine3 + " -ScheduleReboot '" + ScheduleReboot + "'";
                         }
 
                         if (WindowsUpdate) {
-                            text33 += " -WindowsUpdate";
+                            cmdLine3 += " -WindowsUpdate";
                         } else if (MicrosoftUpdate) {
-                            text33 += " -MicrosoftUpdate";
+                            cmdLine3 += " -MicrosoftUpdate";
                         } else if (ServiceID != null) {
-                            text33 = text33 + " -ServiceID '" + ServiceID + "'";
+                            cmdLine3 = cmdLine3 + " -ServiceID '" + ServiceID + "'";
                         }
 
                         if (SendReport) {
-                            text33 += " -SendReport";
+                            cmdLine3 += " -SendReport";
                         }
 
                         if (SendHistory) {
-                            text33 += " -SendHistory";
+                            cmdLine3 += " -SendHistory";
                         }
 
                         if (RecurseCycle > 1) {
-                            text33 = text33 + " -RecurseCycle " + RecurseCycle;
+                            cmdLine3 = cmdLine3 + " -RecurseCycle " + RecurseCycle;
                         }
 
-                        text33 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                        cmdLine3 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                         var invokeWUJob3 = new InvokeWUJob();
                         invokeWUJob3.ComputerName = new string[1] { target };
                         if (Credential != null) {
                             invokeWUJob3.Credential = Credential;
                         }
 
-                        invokeWUJob3.Script = text33;
+                        invokeWUJob3.Script = cmdLine3;
                         invokeWUJob3.TaskName = "PSWindowsUpdate_Recurse" + RecurseCycle;
                         invokeWUJob3.Debuger = true;
                         if (NeedsReboot) {
@@ -1562,7 +1563,7 @@ namespace PSWindowsUpdate {
                             WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
                         }
 
-                        WriteVerbose("powershell.exe -Command \"" + text33 + "\"");
+                        WriteVerbose("powershell.exe -Command \"" + cmdLine3 + "\"");
                         var enumerable3 = invokeWUJob3.Invoke();
                         foreach (var item8 in enumerable3) {
                             WriteObject(item8);
@@ -1717,7 +1718,5 @@ namespace PSWindowsUpdate {
 
             WriteDebug(DateTime.Now + " CmdletEnd");
         }
-
-
     }
 }

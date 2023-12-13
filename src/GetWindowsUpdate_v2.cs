@@ -10,6 +10,7 @@ using Microsoft.Management.Infrastructure;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    
     [Cmdlet("Get", "WindowsUpdate_v2", ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "Default", SupportsShouldProcess = true)]
     [OutputType(typeof(WindowsUpdate))]
     public class GetWindowsUpdate_v2 : PSCmdlet {

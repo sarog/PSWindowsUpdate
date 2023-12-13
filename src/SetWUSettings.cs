@@ -405,7 +405,7 @@ namespace PSWindowsUpdate {
                         }
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("NoAutoRebootWithLoggedOnUsers")) {
+                    if (MyInvocation.BoundParameters.ContainsKey(nameof(NoAutoRebootWithLoggedOnUsers))) {
                         switchParameter = NoAutoRebootWithLoggedOnUsers;
                         var flag = switchParameter.ToBool();
                         var boolean = Convert.ToBoolean(registryKey3.GetValue("NoAutoRebootWithLoggedOnUsers"));
