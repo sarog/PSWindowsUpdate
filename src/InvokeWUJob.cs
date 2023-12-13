@@ -95,19 +95,24 @@ namespace PSWindowsUpdate {
         private void CoreProcessing() {
             var taskScheduler =
                 (TaskScheduler.TaskScheduler)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
+            
             var taskDefinition = taskScheduler.NewTask(0u);
+            
             var registrationInfo = taskDefinition.RegistrationInfo;
             registrationInfo.Description = TaskName;
             registrationInfo.Author = WindowsIdentity.GetCurrent().Name;
             registrationInfo.Source = "PSWindowsUpdate";
+            
             var settings = taskDefinition.Settings;
             settings.Enabled = true;
             settings.StartWhenAvailable = true;
             settings.Hidden = Hidden;
             settings.DeleteExpiredTaskAfter = "PT30M";
+            
             var execAction = (IExecAction)taskDefinition.Actions.Create(_TASK_ACTION_TYPE.TASK_ACTION_EXEC);
             execAction.Path = "powershell.exe";
             execAction.Arguments = "-Command \"" + Script + "\"";
+            
             if (TriggerDate != DateTime.MinValue) {
                 var timeTrigger = (ITimeTrigger)taskDefinition.Triggers.Create(_TASK_TRIGGER_TYPE2.TASK_TRIGGER_TIME);
                 timeTrigger.StartBoundary = TriggerDate.ToString("yyyy-MM-ddTHH:mm:ss");
@@ -129,9 +134,12 @@ namespace PSWindowsUpdate {
             }
 
             taskDefinition.Principal.RunLevel = _TASK_RUNLEVEL.TASK_RUNLEVEL_HIGHEST;
+            
             foreach (var target in ComputerName) {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
+                
                 var pSObject = new PSObject();
+
                 try {
                     var errorRecord = WUToolsObj.CheckPSWUModule(target);
                     if (errorRecord != null) {
@@ -149,6 +157,7 @@ namespace PSWindowsUpdate {
                     try {
                         if (Credential != null) {
                             WriteVerbose("Try to connect " + target + ". Test " + j);
+                            // todo: use PSCredMan.cs or switch to PSCredential?
                             taskScheduler.Connect(target, UserName, Domain, Password);
                         } else {
                             WriteVerbose("Try to connect " + target + ". Test " + j);

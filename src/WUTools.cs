@@ -356,6 +356,7 @@ namespace PSWindowsUpdate {
         }
 
 
+        // todo: Change to UpdateSession instead of PSObject?
         public PSObject GetUpdateSessionObj(string Computer) {
             UpdateSession updateSession = null;
             var pSObject = new PSObject();
