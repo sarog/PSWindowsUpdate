@@ -32,7 +32,7 @@ namespace PSWindowsUpdate {
         public DateTime ScheduleJob { get; set; }
 
         [Parameter(Mandatory = true, ParameterSetName = "WUSAMode")]
-        [Alias(new string[] { "HotFixID" })]
+        [Alias("HotFixID")]
         public string KBArticleID { get; set; }
 
         [Parameter(Mandatory = true, ParameterSetName = "WUApiMode")]
@@ -112,7 +112,12 @@ namespace PSWindowsUpdate {
         }
 
         private void CoreProcessing() {
-            var invocationName = MyInvocation.InvocationName;
+            var articleId = string.Empty;
+            // 2023-12-13: fixes issue https://github.com/mgajda83/PSWindowsUpdate/pull/9
+            if (MyInvocation.BoundParameters.ContainsKey("KBArticleID")) {
+                articleId = KBArticleID.Replace("KB", "");
+            }
+
             foreach (var target in ComputerName) {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try {
@@ -123,8 +128,6 @@ namespace PSWindowsUpdate {
 
                 if (ScheduleJob == DateTime.MinValue && WUToolsObj.IsLocalHost(target)) {
                     if (WUSAMode) {
-                        // 2022-08-19: possible fix for issue described by MizardX (https://github.com/mgajda83/PSWindowsUpdate/pull/9)
-                        var articleId = KBArticleID.Replace("KB", "");
                         WriteVerbose(target + ": Try to uninstall KB" + KBArticleID);
                         var processStartInfo = new ProcessStartInfo();
                         processStartInfo.WindowStyle = ProcessWindowStyle.Hidden;

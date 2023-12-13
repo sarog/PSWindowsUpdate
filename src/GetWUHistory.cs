@@ -106,12 +106,12 @@ namespace PSWindowsUpdate {
                     var flag = false;
                     do {
                         try {
-                            var updateHistoryEntryCollection = updateSearcher.QueryHistory(startIndex, 1);
-                            foreach (IUpdateHistoryEntry item in updateHistoryEntryCollection) {
-                                if (item.Date.Year > 1900 && item.Date > MaxDate) {
-                                    var pSObject = new PSObject(item);
+                            var historyEntryCollection = updateSearcher.QueryHistory(startIndex, 1);
+                            foreach (IUpdateHistoryEntry updateHistoryEntry in historyEntryCollection) {
+                                if (updateHistoryEntry.Date.Year > 1900 && updateHistoryEntry.Date > MaxDate) {
+                                    var pSObject = new PSObject(updateHistoryEntry);
                                     var opName = "";
-                                    switch (item.Operation) {
+                                    switch (updateHistoryEntry.Operation) {
                                         case tagUpdateOperation.uoInstallation:
                                             opName = "Installation";
                                             break;
@@ -121,7 +121,7 @@ namespace PSWindowsUpdate {
                                     }
 
                                     var result = "";
-                                    switch (item.ResultCode) {
+                                    switch (updateHistoryEntry.ResultCode) {
                                         case OperationResultCode.orcNotStarted:
                                             result = "NotStarted";
                                             break;
@@ -143,15 +143,15 @@ namespace PSWindowsUpdate {
                                     }
 
                                     var kbId = "";
-                                    var match = Regex.Match(item.Title, "KB(\\d+)");
+                                    var match = Regex.Match(updateHistoryEntry.Title, "KB(\\d+)");
                                     if (match.Success) {
                                         kbId = match.Value;
                                     }
 
                                     pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
                                     pSObject.Properties.Add(new PSNoteProperty("OperationName", opName));
-                                    pSObject.Properties.Add(new PSNoteProperty("Date", item.Date.ToLocalTime()));
-                                    pSObject.Properties.Add(new PSNoteProperty("Title", item.Title));
+                                    pSObject.Properties.Add(new PSNoteProperty("Date", updateHistoryEntry.Date.ToLocalTime()));
+                                    pSObject.Properties.Add(new PSNoteProperty("Title", updateHistoryEntry.Title));
                                     pSObject.Properties.Add(new PSNoteProperty("Result", result));
                                     pSObject.Properties.Add(new PSNoteProperty("KB", kbId));
                                     pSObject.TypeNames.Clear();
@@ -160,6 +160,9 @@ namespace PSWindowsUpdate {
                                     WriteObject(pSObject, true);
                                     flag = true;
                                 } else {
+                                    flag = false;
+                                }
+                                if (historyEntryCollection.Count == 0) {
                                     flag = false;
                                 }
                             }

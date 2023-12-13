@@ -222,10 +222,16 @@ namespace PSWindowsUpdate {
                 }
 
                 var tasks = folder.GetTasks(0);
-                foreach (IRegisteredTask item2 in tasks) {
-                    if (item2.Definition.RegistrationInfo.Source == "PSWindowsUpdate" && DateTime.Parse(item2.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
-                        item2.State != _TASK_STATE.TASK_STATE_RUNNING) {
-                        folder.DeleteTask(item2.Name, 0);
+                foreach (IRegisteredTask registeredTask in tasks) {
+                    var infoSource = "";
+                    try {
+                        infoSource = registeredTask.Definition.RegistrationInfo.Source;
+                    } catch {
+                        WriteVerbose("Task source error. Skipping clear");
+                    }
+                    if (infoSource == "PSWindowsUpdate" && DateTime.Parse(registeredTask.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
+                        registeredTask.State != _TASK_STATE.TASK_STATE_RUNNING) {
+                        folder.DeleteTask(registeredTask.Name, 0);
                     }
                 }
             }
