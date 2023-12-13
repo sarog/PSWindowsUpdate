@@ -143,6 +143,27 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="docs\Add-WUServiceManager.md" />
+    <Content Include="docs\Enable-WURemoting.md" />
+    <Content Include="docs\Get-WindowsUpdate.md" />
+    <Content Include="docs\Get-WindowsUpdate_v2.md" />
+    <Content Include="docs\Get-WUApiVersion.md" />
+    <Content Include="docs\Get-WUHistory.md" />
+    <Content Include="docs\Get-WUInstallerStatus.md" />
+    <Content Include="docs\Get-WUJob.md" />
+    <Content Include="docs\Get-WULastResults.md" />
+    <Content Include="docs\Get-WUOfflineMSU.md" />
+    <Content Include="docs\Get-WURebootStatus.md" />
+    <Content Include="docs\Get-WUServiceManager.md" />
+    <Content Include="docs\Get-WUSettings.md" />
+    <Content Include="docs\Get-WUTest.md" />
+    <Content Include="docs\Invoke-WUJob.md" />
+    <Content Include="docs\Remove-WindowsUpdate.md" />
+    <Content Include="docs\Remove-WUServiceManager.md" />
+    <Content Include="docs\Reset-WUComponents.md" />
+    <Content Include="docs\Set-PSWUSettings.md" />
+    <Content Include="docs\Set-WUSettings.md" />
+    <Content Include="docs\Update-WUModule.md" />
     <Content Include="LICENSE" />
     <Content Include="PSWindowsUpdate.dll-Help.xml" />
     <Content Include="PSWindowsUpdate.Format.ps1xml" />
