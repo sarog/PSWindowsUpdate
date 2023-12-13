@@ -8,11 +8,9 @@ using Microsoft.Win32;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
-    
     [Cmdlet("Get", "WURebootStatus", ConfirmImpact = ConfirmImpact.Medium, DefaultParameterSetName = "ManualReboot", SupportsShouldProcess = true)]
     [OutputType(typeof(RebootStatus))]
     public class GetWURebootStatus : PSCmdlet {
-        
         private Hashtable _PSWUSettings = new Hashtable();
 
         [Parameter]
@@ -130,9 +128,9 @@ namespace PSWindowsUpdate {
                         }
                     } else {
                         rebootRequired = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
-                            .OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\WindowsUpdate\\Auto Update\\").GetSubKeyNames().Contains("RebootRequired");
+                            .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\").GetSubKeyNames().Contains("RebootRequired");
                     }
-                    
+
                     var rebootStatus = new PSObject();
                     rebootStatus.Properties.Add(new PSNoteProperty("ComputerName", target));
                     rebootStatus.Properties.Add(new PSNoteProperty("RebootRequired", rebootRequired));
