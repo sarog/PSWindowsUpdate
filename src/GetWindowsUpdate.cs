@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Management.Automation;
@@ -181,7 +182,7 @@ namespace PSWindowsUpdate {
 
         private static WUTools WUToolsObj { get; set; }
 
-        private static Collection<PSObject> OutputObj { get; set; }
+        private static List<PSObject> OutputObj { get; set; }
 
         private static UpdateSession UpdateSessionObj { get; set; }
 
@@ -205,7 +206,7 @@ namespace PSWindowsUpdate {
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = new List<PSObject>();
             if (SendReport) {
                 WriteDebug(DateTime.Now + " Test smtp settings");
                 if (!PSWUSettings.ContainsKey("Properties")) {
@@ -858,7 +859,7 @@ namespace PSWindowsUpdate {
                         if (!Download && !Install) {
                             WriteDebug(DateTime.Now + " Return update list only");
                             WriteObject(collection);
-                            OutputObj = new Collection<PSObject>(collection);
+                            OutputObj.AddRange(collection.ToList());
                             continue;
                         }
 
@@ -1156,7 +1157,7 @@ namespace PSWindowsUpdate {
                                 }
 
                                 WriteDebug(DateTime.Now + " Return invoked update list");
-                                OutputObj = new Collection<PSObject>(collection.ToList());
+                                OutputObj.AddRange(collection.ToList());
                                 continue;
                             }
 
@@ -1256,7 +1257,7 @@ namespace PSWindowsUpdate {
                             WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
                             if (!Install) {
                                 WriteDebug(DateTime.Now + " Return downloaded update list");
-                                OutputObj = new Collection<PSObject>(collection.ToList());
+                                OutputObj.AddRange(collection.ToList());
                                 continue;
                             }
                         }
@@ -1369,7 +1370,7 @@ namespace PSWindowsUpdate {
                         totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
                         WriteVerbose("Installed [" + totalInstalled + "] Updates");
                         WriteDebug(DateTime.Now + " Return installed update list");
-                        OutputObj = new Collection<PSObject>(collection.ToList());
+                        OutputObj.AddRange(collection.ToList());
                         if (totalInstalled > 0 && SendHistory) {
                             var cmdLine2 = "Get-WUHistory -SendReport -Last " + totalInstalled + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
                             var invokeWUJob2 = new InvokeWUJob();
