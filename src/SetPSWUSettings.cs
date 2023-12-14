@@ -6,60 +6,123 @@ using System.Security;
 using System.Security.Principal;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Save PSWUSettings.</para>
+    /// <para type="description">Use Set-PSWUSettings save PSWindowsUpdate module settings to XML file.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Set Office 365 as smtp server for PSWindowsUpdate module.</para>
+    ///
+    /// Set-PSWUSettings -SmtpServer smtp.office365.com -SmtpPort 587 -SmtpEnableSsl $true -SmtpSubject "PSWindowsUpdate Report" -SmtpTo mgajda@psmvp.pl -SmtpFrom mgajda@psmvp.pl -SmtpCredential (Get-Credential mgajda@psmvp.pl)
+    ///
+    /// </code>
+    /// </example>
     [Cmdlet("Set", "PSWUSettings", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
     public class SetPSWUSettings : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
         private int _Port = 25;
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         private string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         public PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         private Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Save smtp server to PSWUSettings file.</para>
+        /// </summary>
         [Parameter]
         public string SmtpServer { get; set; }
 
+        /// <summary>
+        /// <para type="description">Save smtp port to PSWUSettings file.</para>
+        /// </summary>
         [Parameter]
         public int SmtpPort {
             get => _Port;
             set => _Port = value;
         }
 
+        /// <summary>
+        /// <para type="description">Save enable ssl to PSWUSettings file.</para>
+        /// </summary>
         [Parameter]
         public bool SmtpEnableSsl { get; set; }
 
+        /// <summary>
+        /// <para type="description">Save smtp credential to Credential Manager.</para>
+        /// </summary>
         [Parameter]
         public PSCredential SmtpCredential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Save smtp recipient to PSWUSettings file.</para>
+        /// </summary>
         [Parameter]
         public string SmtpTo { get; set; }
 
+        /// <summary>
+        /// <para type="description">Save smtp sernder to PSWUSettings file.</para>
+        /// </summary>
         [Parameter]
         public string SmtpFrom { get; set; }
 
+        /// <summary>
+        /// <para type="description">Save alternative message subject to PSWUSettings file.</para>
+        /// </summary>
         [Parameter]
         public string SmtpSubject { get; set; }
 
+        /// <summary>
+        /// <para type="description">Alternative report message propertie.s</para>
+        /// </summary>
         [Parameter]
         public string Properties { get; set; }
 
+        /// <summary>
+        /// <para type="description">Alternative report message format style.</para>
+        /// </summary>
         [ValidateSet("Table", "List", IgnoreCase = true)]
         [Parameter]
         public string Style { get; set; }
 
+        /// <summary>
+        /// <para type="description">Invoke-WUJob to save credential as system user</para>
+        /// </summary>
         [Parameter]
         public string SaveAsSystem { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -73,6 +136,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -386,6 +450,7 @@ namespace PSWindowsUpdate {
             OutputObj = new Collection<PSObject>(collection);
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -475,6 +540,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

@@ -2,6 +2,7 @@
 using System.Management.Automation;
 
 namespace PSWindowsUpdate {
+    /// <summary>ValidateRecurseCycleAttribute</summary>
     internal class ValidateRecurseCycleAttribute : ValidateArgumentsAttribute {
         protected override void Validate(object arguments, EngineIntrinsics engineIntrinsics) {
             if ((int)arguments <= 1) {

@@ -5,28 +5,64 @@ using System.Management.Automation;
 using System.Security.Principal;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Test cmdlet.</para>
+    /// <para type="description">Use Get-WUTest cmdlet to test.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Test.</para>
+    ///
+    /// Get-WUTest
+    ///
+    /// </code>
+    /// </example>
     [Cmdlet("Get", "WUTest", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
     public class GetWUTest : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         public PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         public Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
+        /// <summary>
+        /// <para type="description">Test parameter.</para>
+        /// </summary>
         [Parameter]
         public string TestParam { get; set; }
 
@@ -40,6 +76,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -82,6 +119,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -171,6 +209,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

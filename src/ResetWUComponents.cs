@@ -6,25 +6,119 @@ using System.Management.Automation;
 using System.Security.Principal;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Reset Windows Update components.</para>
+    /// <para type="description">Use Reset-WUComponents cmdlet to reset all Windows Update components to default.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    ///  <code>
+    ///  <para>Reset Windows Update components to default.</para>
+    ///
+    ///  Reset-WUComponents -Verbose
+    ///  Step 1: Stop Windows Update services
+    /// VERBOSE: Background Intelligent Transfer Service(BITS)
+    /// VERBOSE: Windows Update(wuauserv)
+    /// VERBOSE: Application Identity(appidsvc)
+    /// VERBOSE: Cryptographic Services(cryptsvc)
+    /// Step 2: Delete the qmgr*.dat files
+    /// Step 3: Backup softare distribution folders
+    /// VERBOSE: Renaming Software Distribution folder to C:\WINDOWS\SoftwareDistribution.bak5
+    /// VERBOSE: Renaming CatRoot  folder to C:\WINDOWS\System32\Catroot2.bak1
+    /// Step 4: Remove old Windows Update logs
+    /// VERBOSE: Deleting the C:\WINDOWS\WindowsUpdate.log files.
+    /// Step 5: Reset Windows Update services
+    /// VERBOSE: Reset BITS service
+    /// VERBOSE: Reset Windows Update service
+    /// Step 6: Reregister dll's
+    /// VERBOSE: regsvr32.exe / s atl.dll
+    /// VERBOSE: regsvr32.exe / s urlmon.dll
+    /// VERBOSE: regsvr32.exe / s mshtml.dll
+    /// VERBOSE: regsvr32.exe / s shdocvw.dll
+    /// VERBOSE: regsvr32.exe / s browseui.dll
+    /// VERBOSE: regsvr32.exe / s jscript.dll
+    /// VERBOSE: regsvr32.exe / s vbscript.dll
+    /// VERBOSE: regsvr32.exe / s scrrun.dll
+    /// VERBOSE: regsvr32.exe / s msxml.dll
+    /// VERBOSE: regsvr32.exe / s msxml3.dll
+    /// VERBOSE: regsvr32.exe / s msxml6.dll
+    /// VERBOSE: regsvr32.exe / s actxprxy.dll
+    /// VERBOSE: regsvr32.exe / s softpub.dll
+    /// VERBOSE: regsvr32.exe / s wintrust.dll
+    /// VERBOSE: regsvr32.exe / s dssenh.dll
+    /// VERBOSE: regsvr32.exe / s rsaenh.dll
+    /// VERBOSE: regsvr32.exe / s gpkcsp.dll
+    /// VERBOSE: regsvr32.exe / s sccbase.dll
+    /// VERBOSE: regsvr32.exe / s slbcsp.dll
+    /// VERBOSE: regsvr32.exe / s cryptdlg.dll
+    /// VERBOSE: regsvr32.exe / s oleaut32.dll
+    /// VERBOSE: regsvr32.exe / s ole32.dll
+    /// VERBOSE: regsvr32.exe / s shell32.dll
+    /// VERBOSE: regsvr32.exe / s initpki.dll
+    /// VERBOSE: regsvr32.exe / s wuapi.dll
+    /// VERBOSE: regsvr32.exe / s wuaueng.dll
+    /// VERBOSE: regsvr32.exe / s wuaueng1.dll
+    /// VERBOSE: regsvr32.exe / s wucltui.dll
+    /// VERBOSE: regsvr32.exe / s wups.dll
+    /// VERBOSE: regsvr32.exe / s wups2.dll
+    /// VERBOSE: regsvr32.exe / s wuweb.dll
+    /// VERBOSE: regsvr32.exe / s qmgr.dll
+    /// VERBOSE: regsvr32.exe / s qmgrprxy.dll
+    /// VERBOSE: regsvr32.exe / s wucltux.dll
+    /// VERBOSE: regsvr32.exe / s muweb.dll
+    /// VERBOSE: regsvr32.exe / s wuwebv.dll
+    /// Step 7: Reset WinSock
+    /// VERBOSE: netsh winsock reset
+    /// Step 8: Reset Proxy
+    /// VERBOSE: netsh winhttp reset proxy
+    /// Step 9: Start Windows Update services
+    /// VERBOSE: Cryptographic Services (cryptsvc)
+    /// VERBOSE: Application Identity (appidsvc)
+    /// VERBOSE: Windows Update (wuauserv)
+    /// VERBOSE: Background Intelligent Transfer Service (BITS)
+    /// Step 10: Start Windows Update services
+    /// VERBOSE: wuauclt /resetauthorization /detectnow
+    ///  </code>
+    ///  </example>
     [Cmdlet("Reset", "WUComponents", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
     public class ResetWUComponents : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         private string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         private Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter Debuger { get; set; }
 
@@ -38,6 +132,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -259,6 +354,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -348,6 +444,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

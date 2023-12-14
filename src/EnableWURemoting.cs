@@ -8,20 +8,47 @@ using System.Runtime.InteropServices;
 using System.Security.Principal;
 
 namespace PSWindowsUpdate {
-    [Cmdlet("Enable", "WURemoting", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
+    /// <summary>
+    /// <para type="synopsis">Enable firewall rules for PSWindowsUpdate remoting.</para>
+    /// <para type="description">Use Enable-WURemoting cmdlet to enable nessesery firewall rules for PSWindowsUpdate remoting.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Enable firewall rules for PSWindowsUpdate remoting.</para>
+    ///
+    /// Enable-WURemoting -Verbose
+    /// </code>
+    /// </example>
+    [Cmdlet("Enable", "WURemoting", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High)]
     public class EnableWURemoting : PSCmdlet {
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         private string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Set LocalAccountTokenFilterPolicy registry entry to builds an elevated token on the target remote computer.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter LocalAccountTokenFilterPolicy { get; set; }
 
+        /// <summary>
+        /// <para type="description">Enable WinRM Public access from all subnets. Default access is only enabled from local subnet. Required for workgroup computers.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter WinRMPublic { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -35,6 +62,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -205,6 +233,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -294,6 +323,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             WriteDebug(DateTime.Now + " CmdletEnd");
         }

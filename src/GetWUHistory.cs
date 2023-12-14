@@ -8,33 +8,95 @@ using System.Text.RegularExpressions;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Get list of updates history.</para>
+    /// <para type="description">Use function Get-WUHistory to get list of installed updates on specific machine.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Get Windows Update history.</para>
+    ///
+    /// Get-WUHistory
+    ///
+    /// <para>ComputerName Operationname  Date                KB        Title</para>
+    /// <para>------------ -------------  ----                --        -----</para>
+    /// <para>MG-PC        Installation   30.08.2017 12:03:53 KB2267602 Definition Update for Windows Defender - KB2267602(Defini...</para>
+    /// <para>MG-PC        Installation   29.08.2017 11:49:50 KB3186568 Microsoft .NET Framework 4.7 for Windows 10 Version 1607 a...</para>
+    /// <para>MG-PC        Installation   29.08.2017 11:30:37 KB4035631 2017-08 Update for Windows Server 2016 for x64-based Syste...</para>
+    /// <para>MG-PC        Installation   29.08.2017 11:21:12 KB890830  Windows Malicious Software Removal Tool for Windows 8, 8.1...</para>
+    /// <para>MG-PC        Installation   29.08.2017 07:53:36 KB2267602 Definition Update for Windows Defender - KB2267602 (Defini...</para>
+    /// <para>MG-PC        Installation   27.08.2017 07:53:39 KB2267602 Definition Update for Windows Defender - KB2267602 (Defini...</para>
+    /// <para>MG-PC        Installation   25.08.2017 07:54:38 KB2267602 Definition Update for Windows Defender - KB2267602 (Defini...</para>
+    /// <para>MG-PC        Installation   23.08.2017 13:01:26 KB2267602 Definition Update for Windows Defender - KB2267602 (Defini...</para>
+    /// <para>MG-PC        Installation   23.08.2017 12:45:45 KB4023307 Security Update for Microsoft Silverlight (KB4023307)</para>
+    /// <para>MG-PC        Installation   23.08.2017 07:53:56 KB2267602 Definition Update for Windows Defender - KB2267602 (Defini...</para>
+    /// </code>
+    /// </example>
+    /// <example>
+    /// <code>
+    /// <para>Get Windows Update Agent history for last 24h.</para>
+    ///
+    /// Get-WUHistory -MaxDate (Get-Date).AddDays(-1)
+    ///
+    /// <para>ComputerName Operationname  Date                KB        Title</para>
+    /// <para>------------ -------------  ----                --        -----</para>
+    /// <para>MG-PC        Installation   30.08.2017 12:03:53 KB2267602 Definition Update for Windows Defender - KB2267602(Defini...</para>
+    /// </code>
+    /// </example>
     [Cmdlet("Get", "WUHistory", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
     [OutputType(typeof(History))]
     public class GetWUHistory : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// Export-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         public Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Filter results by date.</para>
+        /// </summary>
         [Parameter]
         public DateTime MaxDate { get; set; }
 
+        /// <summary>
+        /// <para type="description">Last X history entry.</para>
+        /// </summary>
         [Parameter]
         [ValidateIntGt0]
         public int Last { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -50,6 +112,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -187,6 +250,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -276,6 +340,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

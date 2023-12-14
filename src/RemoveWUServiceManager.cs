@@ -7,32 +7,76 @@ using System.Security.Principal;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Remove windows update service manager.</para>
+    /// <para type="description">Use Remove-WUServiceManager cmdlet to unregister Windows Update Service Manager.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Try unregister Microsoft Update Service.</para>
+    ///
+    /// Remove-WUServiceManager -ServiceID "7971f918-a847-4430-9279-4a52d1efe18d"
+    ///
+    /// <para>Confirm</para>
+    /// <para>Are you sure you want to perform this action?</para>
+    /// <para>Performing the operation "Unregister Windows Update Service Manager: 7971f918-a847-4430-9279-4a52d1efe18d" on target "MG-PC".</para>
+    /// <para></para>
+    /// <para>[Y] Yes[A] Yes to All  [N] No[L] No to All  [S] Suspend[?] Help (default is "Y"): Y</para>
+    /// </code>
+    /// </example>
     [Cmdlet("Remove", "WUServiceManager", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
     public class RemoveWUServiceManager : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         private Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Specify schedule time job.</para>
+        /// </summary>
         [Parameter]
         public DateTime ScheduleJob { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify ServiceID of Service Manager that you want to remove.</para>
+        /// </summary>
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
         public string ServiceID { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -48,6 +92,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -164,6 +209,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -253,6 +299,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             WriteDebug(DateTime.Now + " CmdletEnd");
         }

@@ -12,6 +12,7 @@ namespace PSWindowsUpdate {
             ServiceName = serviceName;
         }
 
+        /// <summary>Restart service on specific machine.</summary>
         public void RestartService() {
             try {
                 var serviceController = new ServiceController(ServiceName, ComputerName);
@@ -25,6 +26,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Stope service on specific machine.</summary>
         public void StopService() {
             try {
                 var serviceController = new ServiceController(ServiceName, ComputerName);
@@ -40,6 +42,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Start service on specific machine.</summary>
         public void StartService() {
             try {
                 var serviceController = new ServiceController(ServiceName, ComputerName);

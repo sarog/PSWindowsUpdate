@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace PSWindowsUpdate {
     internal class WUBits {
+        /// <summary>Download files from url using BITS.</summary>
+        /// <param name="Source">Source URL</param>
+        /// <param name="Destination">Destination path</param>
         public string StartBitsTransfer(string Source, string Destination) {
             var backgroundCopyManager4_ = (BackgroundCopyManager4_0)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("BB6DF56B-CACE-11DC-9992-0019B93A3A84")));
             backgroundCopyManager4_.CreateJob("Quick download", BG_JOB_TYPE.BG_JOB_TYPE_DOWNLOAD, out var _, out var ppJob);

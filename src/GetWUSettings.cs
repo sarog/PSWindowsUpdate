@@ -6,26 +6,74 @@ using System.Security.Principal;
 using Microsoft.Win32;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Get Windows Update Client settings.</para>
+    /// <para type="description">Use Get-WUSettings cmdlet to get current configuration of Windows Update Client.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Get current Windows Update Client configuration.</para>
+    ///
+    /// Get-WUSettings
+    ///
+    /// <para>ComputerName                  : MG-PC</para>
+    /// <para>AcceptTrustedPublisherCerts   : 0</para>
+    /// <para>WUServer                      : https://wsus.commandlinegeeks.com</para>
+    /// <para>WUStatusServer                : https://wsus.commandlinegeeks.com</para>
+    /// <para>DetectionFrequencyEnabled     : 1</para>
+    /// <para>DetectionFrequency            : 2</para>
+    /// <para>NoAutoRebootWithLoggedOnUsers : 1</para>
+    /// <para>RebootRelaunchTimeoutEnabled  : 1</para>
+    /// <para>RebootRelaunchTimeout         : 240</para>
+    /// <para>IncludeRecommendedUpdates     : 0</para>
+    /// <para>NoAutoUpdate                  : 0</para>
+    /// <para>AUOptions                     : 2 - Notify before download</para>
+    /// <para>ScheduledInstallDay           : 0 - Every Day</para>
+    /// <para>ScheduledInstallTime          : 4</para>
+    /// <para>UseWUServer                   : 1</para>
+    /// </code>
+    /// </example>
     [Cmdlet("Get", "WUSettings", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
     [OutputType(typeof(WUSettings))]
     public class GetWUSettings : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         public Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -39,6 +87,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -92,7 +141,7 @@ namespace PSWindowsUpdate {
             hashtable2.Add(5, "5 - Every Thursday");
             hashtable2.Add(6, "6 - Every Friday");
             hashtable2.Add(7, "7 - Every Saturday");
-            
+
             foreach (var target in ComputerName) {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try {
@@ -139,6 +188,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -228,6 +278,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

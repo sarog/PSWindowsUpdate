@@ -8,41 +8,101 @@ using Microsoft.Win32;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Get Windows Update reboot status.</para>
+    /// <para type="description">Use Get-WURebootStatus cmdlet to check if reboot is needed.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Check if restart is necessary. If yes, ask to do this or don't.</para>
+    ///
+    /// Get-WURebootStatus
+    ///
+    /// <para>Reboot is required. Do it now ? [Y/N] (default is 'N')</para>
+    /// <para>ComputerName RebootRequired RebootScheduled</para>
+    /// <para>------------ -------------- ---------------</para>
+    /// <para>MG-PC        True</para>
+    /// </code>
+    /// </example>
+    /// <example>
+    /// <code>
+    /// <para>Check if restart is necessary. If yes, then shedule it.</para>
+    ///
+    /// Get-WURebootStatus -ScheduleReboot (Get-Date -Hour 18 -Minute 0 -Second 0)
+    ///
+    /// <para>ComputerName RebootRequired RebootScheduled</para>
+    /// <para>------------ -------------- ---------------</para>
+    /// <para>MG-PC        True           31.08.2017 18:00:00</para>
+    /// </code>
+    /// </example>
     [Cmdlet("Get", "WURebootStatus", ConfirmImpact = ConfirmImpact.Medium, DefaultParameterSetName = "ManualReboot", SupportsShouldProcess = true)]
     [OutputType(typeof(RebootStatus))]
     public class GetWURebootStatus : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         public Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
-        [Parameter(ParameterSetName = "AutoReboot", ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
-        [Parameter(ParameterSetName = "ScheduleReboot", ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
-        [Parameter(ParameterSetName = "ManualReboot", ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
-        [Parameter(ParameterSetName = "CancelReboot", ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
+        /// <summary>
+        /// <para type="description">Return true/false only.</para>
+        /// </summary>
+        [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "AutoReboot")]
+        [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "ScheduleReboot")]
+        [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "ManualReboot")]
+        [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, ParameterSetName = "CancelReboot")]
         public SwitchParameter Silent { get; set; }
 
+        /// <summary>
+        /// <para type="description">Do not ask for reboot if it needed, but do it now.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "AutoReboot")]
         public SwitchParameter AutoReboot { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify schedule time for reboot.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "ScheduleReboot")]
         public DateTime ScheduleReboot { get; set; }
 
+        /// <summary>
+        /// <para type="description">Cancel scheduled reboot.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "CancelReboot")]
         public SwitchParameter CancelReboot { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -58,6 +118,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -187,6 +248,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -276,6 +338,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

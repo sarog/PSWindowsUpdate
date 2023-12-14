@@ -9,51 +9,108 @@ using System.Text.RegularExpressions;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Uninstall update.</para>
+    /// <para type="description">Use Remove-WindowsUpdate to uninstall update.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Try to uninstall update with specific KBArticleID = KB958830.</para>
+    ///
+    /// Get-WUUninstall -KBArticleID KB958830
+    ///
+    /// </code>
+    /// </example>
     [Cmdlet("Remove", "WindowsUpdate", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
     public class RemoveWindowsUpdate : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         private Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Specify schedule time job.</para>
+        /// </summary>
         [Parameter]
         public DateTime ScheduleJob { get; set; }
 
-        [Parameter(Mandatory = true, ParameterSetName = "WUSAMode")]
+        /// <summary>
+        /// <para type="description">KBArticleID that will be uninstalled.</para>
+        /// </summary>
+        [Parameter(ParameterSetName = "WUSAMode", Mandatory = true)]
         [Alias("HotFixID")]
         public string KBArticleID { get; set; }
 
+        /// <summary>
+        /// <para type="description">Update ID that will be uninstalled.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "WUApiMode")]
         public string UpdateID { get; set; }
 
+        /// <summary>
+        /// <para type="description">Do not ask for reboot if it needed.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter AutoReboot { get; set; }
 
+        /// <summary>
+        /// <para type="description">Do not ask for reboot if it needed, but do not reboot automaticaly.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter IgnoreReboot { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify time when system will be rebooted.</para>
+        /// </summary>
         [Parameter]
         [ValidateDateTime]
         public DateTime ScheduleReboot { get; set; }
 
+        /// <summary>
+        /// <para type="description">Don't use automatic reboot.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter NoRestart { get; set; }
 
+        /// <summary>
+        /// <para type="description">Wse wusa.exe instead of WU Api.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter WUSAMode { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -75,6 +132,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -318,6 +376,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -407,6 +466,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

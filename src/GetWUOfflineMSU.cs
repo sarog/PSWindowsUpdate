@@ -11,36 +11,113 @@ using System.Text.RegularExpressions;
 using MSHTML;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Get offline MSU package.</para>
+    /// <para type="description">Use Get-WUOfflineMSU cmdlet to download MSU package from Microsoft Update Catalog website.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    ///  <code>
+    ///  <para>Download package for KB4551762.</para>
+    /// PS&gt; Get-WUOfflineMSU -KBArticleID 4551762 -Destination C:\Temp
+    ///
+    ///     Confirm
+    ///     Are you sure you want to perform this action?
+    ///     Performing the operation "(20.04.2020 14:27:17) 2020-03 Cumulative Update for Windows Server, version 1909 for
+    ///     x64-based Systems (KB4551762)[354.4 MB]" on target "DESKTOP-GCQBCBS".
+    ///     [Y] Yes[A] Yes to All  [N] No[L] No to All  [S] Suspend[?] Help (default is "Y"): N
+    ///
+    ///     Confirm
+    ///     Are you sure you want to perform this action?
+    ///     Performing the operation "(20.04.2020 14:27:19) 2020-03 Cumulative Update for Windows 10 Version 1909 for x64-based
+    ///     Systems(KB4551762) [354.4 MB]" on target "DESKTOP-GCQBCBS".
+    ///     [Y] Yes[A] Yes to All [N] No [L] No to All [S] Suspend [?] Help (default is "Y"): Y
+    ///
+    ///     Confirm
+    ///     Are you sure you want to perform this action?
+    ///     Performing the operation "(20.04.2020 14:27:23) 2020-03 Cumulative Update for Windows 10 Version 1903 for x64-based
+    ///     Systems(KB4551762) [354.4 MB]" on target "DESKTOP-GCQBCBS".
+    ///     [Y] Yes[A]Yes to All [N] No [L] No to All [S] Suspend [?] Help (default is "Y"): L
+    ///
+    ///     X Result     Title                                                                                 LastUpdated     Size
+    ///     - ------     -----                                                                                 -----------     ----
+    ///     1 Rejected   2020-03 Cumulative Update for Windows Server, version 1909 for x64-based Systems (... 3/12/2020   354.4 MB
+    ///     1 Accepted   2020-03 Cumulative Update for Windows 10 Version 1909 for x64-based Systems (KB455... 3/12/2020   354.4 MB
+    ///     1 Rejected   2020-03 Cumulative Update for Windows 10 Version 1903 for x64-based Systems (KB455... 3/12/2020   354.4 MB
+    ///     1 Rejected   2020-03 Cumulative Update for Windows 10 Version 1909 for x86-based Systems (KB455... 3/12/2020   191.7 MB
+    ///     1 Rejected   2020-03 Cumulative Update for Windows 10 Version 1903 for x86-based Systems (KB455... 3/12/2020   191.7 MB
+    ///     1 Rejected   2020-03 Cumulative Update for Windows 10 Version 1909 for ARM64-based Systems (KB4... 3/12/2020   396.1 MB
+    ///     1 Rejected   2020-03 Cumulative Update for Windows Server, version 1903 for x64-based Systems (... 3/12/2020   354.4 MB
+    ///     1 Rejected   2020-03 Cumulative Update for Windows 10 Version 1903 for ARM64-based Systems (KB4... 3/12/2020   396.1 MB
+    ///     2 Downloaded 2020-03 Cumulative Update for Windows 10 Version 1909 for x64-based Systems (KB455... 3/12/2020   354.4 MB
+    ///
+    /// PS&gt; Get-ChildItem C:\Temp
+    ///     Directory: C:\Temp
+    ///
+    ///     Mode                LastWriteTime         Length    Name
+    ///     ----                -------------         ------    ----
+    ///     -a----              12.03.2020 07:03      371656774 windows10.0-kb4551762-x64_dacef156c781f2018d94d5a5286076610ba97279.msu
+    ///  </code>
+    ///  </example>
     [Cmdlet("Get", "WUOfflineMSU", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
     [OutputType(typeof(OfflineMSU))]
     public class GetWUOfflineMSU : PSCmdlet {
-        
+
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         private string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         private PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         private Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter Debuger { get; set; }
 
+        /// <summary>
+        /// <para type="description">Finds updates that contain a KBArticleID.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string KBArticleID { get; set; }
 
+        /// <summary>
+        /// <para type="description">Destination for downloaded files.</para>
+        /// </summary>
         [Parameter(Mandatory = true)]
         public string Destination { get; set; }
 
+        /// <summary>
+        /// <para type="description">Do not ask confirmation for download updates.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter AcceptAll { get; set; }
 
@@ -56,6 +133,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -253,6 +331,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -342,6 +421,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

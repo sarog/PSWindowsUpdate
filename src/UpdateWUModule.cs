@@ -5,32 +5,79 @@ using System.Management.Automation;
 using System.Security.Principal;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// <para type="synopsis">Update PSWindowsUpdate module.</para>
+    /// <para type="description">Use Use Update-WUModule cmdlet to remote update PSWindowsUpdate module.</para>
+    /// </summary>
+    /// <para type="link" uri="https://commandlinegeeks.wordpress.com/">Author Blog</para>
+    /// <example>
+    /// <code>
+    /// <para>Update PSWindowsUpdate module from PSGallery</para>
+    ///
+    /// Update-WUModule -ComputerName MG-PC -Online
+    ///
+    /// </code>
+    /// </example>
+    /// <example>
+    /// <code>
+    /// <para>Update PSWindowsUpdate module from current serwer. Require SMB connection to destination machine.</para>
+    ///
+    /// Update-WUModule -ComputerName MG-PC -Local
+    ///
+    /// </code>
+    /// </example>
     [Cmdlet("Update", "WUModule", ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "Online", SupportsShouldProcess = true)]
     public class UpdateWUModule : PSCmdlet {
         private Hashtable _PSWUSettings = new Hashtable();
 
+        /// <summary>
+        /// <para type="description">Specify one or more computer names for remote connection.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Local", ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         [Parameter(ParameterSetName = "Online", ValueFromPipeline = true, ValueFromPipelineByPropertyName = true)]
         public string[] ComputerName { get; set; }
 
+        /// <summary>
+        /// <para type="description">Specify alternative credential.</para>
+        /// </summary>
         [Parameter]
         public PSCredential Credential { get; set; }
 
+        /// <summary>
+        /// <para type="description">Send report email to specific recipients.</para>
+        /// <para type="description">Requires the parameter -PSWUSettings or declare the PSWUSettings.xml file in ModuleBase path.</para>
+        /// </summary>
         [Parameter]
         private SwitchParameter SendReport { get; set; }
 
+        /// <summary>
+        /// <para type="description">Required parameter for -SendReport.</para>
+        /// <para type="description">Passes the parameters (as hashtable) necessary to send the report:
+        /// \r\n@{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25];[Subject="Alternative Subject"];[Properties="Alternative object properties"];[Style="Table|List"]}</para>
+        /// <para type="description">Send parameters can also be saved to a PSWUSettings.xml file in ModuleBase path:
+        /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
+        /// </summary>
         [Parameter]
         private Hashtable PSWUSettings {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
 
+        /// <summary>
+        /// <para type="description">Update from PSGallery.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Online")]
         public SwitchParameter Online { get; set; }
 
+        /// <summary>
+        /// <para type="description">Update from current module.</para>
+        /// </summary>
         [Parameter(Mandatory = true, ParameterSetName = "Local")]
         public SwitchParameter Local { get; set; }
 
+        /// <summary>
+        /// <para type="description">Debuger return original exceptions.</para>
+        /// </summary>
         [Parameter]
         public SwitchParameter Debuger { get; set; }
 
@@ -44,6 +91,7 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
+        /// <summary>Begin</summary>
         protected override void BeginProcessing() {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
@@ -149,6 +197,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord() {
             var flag = false;
             if (Credential != null) {
@@ -238,6 +287,7 @@ namespace PSWindowsUpdate {
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing() {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();

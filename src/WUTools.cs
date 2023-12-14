@@ -20,11 +20,17 @@ using System.Web.UI.WebControls;
 using WUApiLib;
 
 namespace PSWindowsUpdate {
+    /// <summary>
+    /// Universal function used in rest of PSWindowsUpdate module.
+    /// </summary>
     public class WUTools : PSCmdlet {
         // todo: 2022-08-22: change this
         private const string initVector = "SraNie_W-ban13!!";
         private const int keysize = 256;
 
+        /// <summary>Encrypt string by key.</summary>
+        /// <param name="plainText">Text to encrypt</param>
+        /// <param name="passPhrase">Encryption key</param>
         public static string EncryptString(string plainText, string passPhrase) {
             var bytes1 = Encoding.UTF8.GetBytes(initVector);
             var bytes2 = Encoding.UTF8.GetBytes(plainText);
@@ -44,6 +50,9 @@ namespace PSWindowsUpdate {
             return Convert.ToBase64String(array);
         }
 
+        /// <summary>Decrypt string by key.</summary>
+        /// <param name="cipherText">Encrypted text</param>
+        /// <param name="passPhrase">Decryption key</param>
         public static string DecryptString(string cipherText, string passPhrase) {
             var bytes1 = Encoding.UTF8.GetBytes(initVector);
             var buffer = Convert.FromBase64String(cipherText);
@@ -62,6 +71,8 @@ namespace PSWindowsUpdate {
             return Encoding.UTF8.GetString(numArray, 0, count);
         }
 
+        /// <summary>Run reboot.</summary>
+        /// <param name="Computer">Computer name</param>
         public string RunReboot(string Computer) {
             var startInfo = new ProcessStartInfo();
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -72,6 +83,9 @@ namespace PSWindowsUpdate {
             return str;
         }
 
+        /// <summary>Schedule reboot.</summary>
+        /// <param name="Computer">Computer name</param>
+        /// <param name="ScheduleReboot">Computer name</param>
         public string ScheduleReboot(string Computer, DateTime ScheduleReboot) {
             var now = DateTime.Now;
             var timeSpan = ScheduleReboot - now;
@@ -92,6 +106,8 @@ namespace PSWindowsUpdate {
             return str;
         }
 
+        /// <summary>Cancel reboot.</summary>
+        /// <param name="Computer">Computer name</param>
         public string CancelReboot(string Computer) {
             var startInfo = new ProcessStartInfo();
             startInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -102,6 +118,8 @@ namespace PSWindowsUpdate {
             return str;
         }
 
+        /// <summary>Check is computer is localhost or remotehost.</summary>
+        /// <param name="Computer">Computer name</param>
         public bool IsLocalHost(string Computer) {
             if (Computer.ToLower() == "localhost" || Computer.ToLower() == "." || Computer.ToLower() == "127.0.0.1" || Computer.ToLower() == "::1" ||
                 Computer.ToLower() == Environment.MachineName.ToLower()) {
@@ -126,6 +144,8 @@ namespace PSWindowsUpdate {
             return collection.Contains(Computer.ToLower());
         }
 
+        /// <summary>Restart Windows Update service on specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public void RestartService(string Computer) {
             if (IsLocalHost(Computer)) {
                 try {
@@ -150,6 +170,9 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Stope service on specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
+        /// <param name="ServiceName">Service name</param>
         public void StopService(string Computer, string ServiceName) {
             if (IsLocalHost(Computer)) {
                 try {
@@ -174,6 +197,9 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Start service on specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
+        /// <param name="ServiceName">Service name</param>
         public void StartService(string Computer, string ServiceName) {
             if (IsLocalHost(Computer)) {
                 try {
@@ -198,6 +224,9 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Start service on specific machine.</summary>
+        /// <param name="FileName">Name of starting file</param>
+        /// <param name="Arguments">Arguments</param>
         public void RunProcess(string FileName, string Arguments) {
             try {
                 new Process() {
@@ -210,6 +239,8 @@ namespace PSWindowsUpdate {
             } catch { }
         }
 
+        /// <summary>Test ping connection for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public bool TestPing(string Computer) {
             bool flag;
             try {
@@ -224,6 +255,9 @@ namespace PSWindowsUpdate {
             return flag;
         }
 
+        /// <summary>Create object ServiceManager for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
+        /// <param name="e">Current Exception</param>
         public ErrorRecord ParseException(string Computer, Exception e) {
             return !Regex.IsMatch(e.Message, "800706BA", RegexOptions.IgnoreCase)
                 ? !Regex.IsMatch(e.Message, "80070005", RegexOptions.IgnoreCase)
@@ -234,6 +268,11 @@ namespace PSWindowsUpdate {
                     null);
         }
 
+        /// <summary>InvokeRestMethod</summary>
+        /// <param name="requestUrl">Requested url</param>
+        /// <param name="requestMethod">Request method</param>
+        /// <param name="requestBody">Body</param>
+        /// <param name="requestHeaders">Headers</param>
         public string InvokeRestMethod(
             string requestUrl,
             HttpWebRequestMethod requestMethod,
@@ -281,7 +320,8 @@ namespace PSWindowsUpdate {
             return str2;
         }
 
-
+        /// <summary>Create object ServiceManager for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public PSObject GetServiceManagerObj(string Computer) {
             UpdateServiceManager updateServiceManager = null;
             var pSObject = new PSObject();
@@ -318,7 +358,8 @@ namespace PSWindowsUpdate {
             return pSObject;
         }
 
-
+        /// <summary>Create object ServiceManager for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public WUAPIObject GetWUApiServiceManagerObj(string Computer) {
             UpdateServiceManager updateServiceManager = null;
             var wUAPIObject = new WUAPIObject();
@@ -355,7 +396,8 @@ namespace PSWindowsUpdate {
             return wUAPIObject;
         }
 
-
+        /// <summary>Create object UpdateSession for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         // todo: Change to UpdateSession instead of PSObject?
         public PSObject GetUpdateSessionObj(string Computer) {
             UpdateSession updateSession = null;
@@ -393,7 +435,8 @@ namespace PSWindowsUpdate {
             return pSObject;
         }
 
-
+        /// <summary>Create object UpdateSession for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public WUAPIObject GetWUApiUpdateSessionObj(string Computer) {
             UpdateSession updateSession = null;
             var wUAPIObject = new WUAPIObject();
@@ -430,7 +473,8 @@ namespace PSWindowsUpdate {
             return wUAPIObject;
         }
 
-
+        /// <summary>Create object Installer for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public PSObject GetInstallerObj(string Computer) {
             UpdateInstaller updateInstaller = null;
             var pSObject = new PSObject();
@@ -467,6 +511,8 @@ namespace PSWindowsUpdate {
             return pSObject;
         }
 
+        /// <summary>Create object Installer for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public WUAPIObject GetWUApiInstallerObj(string Computer) {
             UpdateInstaller updateInstaller = null;
             var wUAPIObject = new WUAPIObject();
@@ -503,6 +549,8 @@ namespace PSWindowsUpdate {
             return wUAPIObject;
         }
 
+        /// <summary>Create object SystemInfo for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public PSObject GetSystemInfoObj(string Computer) {
             SystemInformation systemInformation = null;
             var pSObject = new PSObject();
@@ -539,6 +587,8 @@ namespace PSWindowsUpdate {
             return pSObject;
         }
 
+        /// <summary>Create object SystemInfo for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public WUAPIObject GetWUApiSystemInfoObj(string Computer) {
             SystemInformation @object = null;
             var wUAPIObject = new WUAPIObject();
@@ -574,6 +624,8 @@ namespace PSWindowsUpdate {
             return wUAPIObject;
         }
 
+        /// <summary>Create object AutoUpdate for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public PSObject GetAutoUpdateObj(string Computer) {
             var pSObject = new PSObject();
             pSObject.Properties.Add(new PSNoteProperty("ComputerName", Computer));
@@ -609,6 +661,8 @@ namespace PSWindowsUpdate {
             return pSObject;
         }
 
+        /// <summary>Create object AutoUpdate for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public WUAPIObject GetWUApiAutoUpdateObj(string Computer) {
             var wUAPIObject = new WUAPIObject();
             wUAPIObject.ComputerName = Computer;
@@ -644,7 +698,8 @@ namespace PSWindowsUpdate {
             return wUAPIObject;
         }
 
-
+        /// <summary>Create object AgentInfo for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public PSObject GetAgentInfoObj(string Computer) {
             WindowsUpdateAgentInfo windowsUpdateAgentInfo = null;
             var pSObject = new PSObject();
@@ -681,7 +736,8 @@ namespace PSWindowsUpdate {
             return pSObject;
         }
 
-
+        /// <summary>Create object AgentInfo for specific machine.</summary>
+        /// <param name="Computer">Computer name</param>
         public WUAPIObject GetWUApiAgentInfoObj(string Computer) {
             WindowsUpdateAgentInfo windowsUpdateAgentInfo = null;
             var wUAPIObject = new WUAPIObject();
@@ -718,6 +774,8 @@ namespace PSWindowsUpdate {
             return wUAPIObject;
         }
 
+        /// <summary>convert size to human friendly format.</summary>
+        /// <param name="Size">Size in bytes</param>
         public string ConvertSize(decimal Size) {
             return !(Math.Round(Size, 0) < 1024M)
                 ? !(Math.Round(Size, 0) < 1048576M)
@@ -732,6 +790,10 @@ namespace PSWindowsUpdate {
                 : Math.Round(Size, 0) + "B";
         }
 
+        /// <summary>
+        /// Get PSWindowsUpdate module version on specific machine.
+        /// </summary>
+        /// <param name="Computer">Computer name</param>
         public PSObject GetPSWUModule(string Computer) {
             var str =
                 "$Module = Get-Module PSWindowsUpdate -ListAvailable | Sort Version -Descending | Select -First 1; $Module | Add-Member -Type NoteProperty -Name PSWUDllVersion -Value ([Version]$(Try{[System.Diagnostics.FileVersionInfo]::GetVersionInfo($(Join-Path -Path $Module.ModuleBase -ChildPath $Module.RootModule)).FileVersion}Catch{'0.0.0.0'})); $Module";
@@ -767,6 +829,10 @@ namespace PSWindowsUpdate {
             return pswuModule;
         }
 
+        /// <summary>
+        /// Check PSWindowsUpdate module version on specific machine.
+        /// </summary>
+        /// <param name="Computer">Computer name</param>
         public ErrorRecord CheckPSWUModule(string Computer) {
             var pswuModule = GetPSWUModule(Computer);
             var errorRecord = (ErrorRecord)null;
@@ -791,10 +857,14 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Define minimum PSWindowsUpdate module version.</summary>
         public Version MinimumPSWUModule() {
             return new Version("2.0.0.0");
         }
 
+        /// <summary>Save Credentials to Credential Manager.</summary>
+        /// <param name="Username">User name</param>
+        /// <param name="Password">Password</param>
         public void SaveCredential(string Username, string Password) {
             using (var credential = new Credential()) {
                 credential.Password = Password;
@@ -806,6 +876,7 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Get credentials from Credential Manager.</summary>
         public PSCredMan GetCredential() {
             using (var credential = new Credential()) {
                 credential.Target = "PSWindowsUpdate";
@@ -817,10 +888,12 @@ namespace PSWindowsUpdate {
             }
         }
 
+        /// <summary>Get PSWindowsUpdate module path.</summary>
         public string PSWUModulePath() {
             return Path.GetDirectoryName(Uri.UnescapeDataString(new UriBuilder(Assembly.GetExecutingAssembly().CodeBase).Path));
         }
 
+        /// <summary>Get GetPSWUSettings.</summary>
         public Hashtable GetPSWUSettings() {
             var path = PSWUModulePath() + "\\PSWUSettings.xml";
             if (File.Exists(path)) {
@@ -834,6 +907,7 @@ namespace PSWindowsUpdate {
             return new Hashtable();
         }
 
+        /// <summary>Save GetPSWUSettings.</summary>
         public void SetPSWUSettings(Hashtable PSWUSettings) {
             var path = PSWUModulePath() + "\\PSWUSettings.xml";
             var str = PSSerializer.Serialize(PSWUSettings);
@@ -997,6 +1071,8 @@ namespace PSWindowsUpdate {
             return str1 + "</body>\r\n</html>";
         }
 
+        /// <summary>test email settings.</summary>
+        /// <param name="LocalPSWUSettings">Send parameters</param>
         public PSObject TestMail(Hashtable LocalPSWUSettings) {
             var psObject = new PSObject();
             var mailOptionTypes = new string[8] {
@@ -1048,6 +1124,10 @@ namespace PSWindowsUpdate {
             return psObject;
         }
 
+        /// <summary>Send email report.</summary>
+        /// <param name="LocalPSWUSettings">Send parameters</param>
+        /// <param name="PSObjects">Output object</param>
+        /// <param name="CmdletInfo">Send ifno about used cmdlet</param>
         public PSObject SendMail(
             Hashtable LocalPSWUSettings,
             Collection<PSObject> PSObjects,
@@ -1269,6 +1349,8 @@ namespace PSWindowsUpdate {
             return psObject1;
         }
 
+        /// <summary>Get description from error code</summary>
+        /// <param name="ErrorCode">Error code</param>
         public WUApiCode GetWUApiCodeDetails(int ErrorCode) {
             WUApiCode wuApiCode;
             return new Dictionary<string, WUApiCode> {
@@ -1991,18 +2073,36 @@ namespace PSWindowsUpdate {
                 : null;
         }
 
+        /// <summary>Possible http web request methods</summary>
         public enum HttpWebRequestMethod {
+            /// <summary>Post</summary>
             POST,
+
+            /// <summary>Get</summary>
             GET
         }
 
+        /// <summary>Specifies the BuiltinUser type.</summary>
         public enum CodeType {
+            /// <summary>Success stream.</summary>
             Success = 1,
+
+            /// <summary>Error stream.</summary>
             Error = 2,
+
+            /// <summary>Warning stream.</summary>
             Warning = 3,
+
+            /// <summary>Verbose stream.</summary>
             Verbose = 4,
+
+            /// <summary>Debug stream.</summary>
             Debug = 5,
+
+            /// <summary>Information stream.</summary>
             Information = 6,
+
+            /// <summary>Throw stream.</summary>
             Throw = 7
         }
     }
