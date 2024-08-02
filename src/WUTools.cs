@@ -1201,12 +1201,14 @@ namespace PSWindowsUpdate
         {
             var str1 = "" +
                        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n<head>\r\n<style>\r\n<!--\r\n    table {\r\n        font-family: Verdana;\r\n        border-style: dashed;\r\n        border-width: 1px;\r\n        border-color: #FF6600;\r\n        padding: 5px;\r\n        background-color: #FFFFCC;\r\n        table-layout: auto;\r\n        text-align: left;\r\n        font-size: 8pt;\r\nwidth: 100%;\r\n        }\r\n    table th {\r\n        border-bottom-style: solid;\r\n        border-bottom-width: 1px;\r\n        text-align: left;\r\n        }\r\n    table td {\r\n        border-top-style: solid;\r\n        border-top-width: 1px;\r\n        }\r\n    p {\r\n        margin-bottom: 2px\r\n        margin-top: 2px\r\n        }\r\n    body {\r\n        font-family: Verdana;\r\n        font-size: 8pt;\r\n        }\r\n-->\r\n</style>\r\n</head>\r\n<body>\r\n";
-            var table = new System.Web.UI.WebControls.Table();
+            var table = new Table();
             if (TableStyle == null)
             {
                 TableStyle = "Table";
                 if (PSObjectProperties.Count > 5)
+                {
                     TableStyle = "List";
+                }
             }
 
             if (TableStyle == "Table")
@@ -1602,7 +1604,7 @@ namespace PSWindowsUpdate
             PSObject CmdletInfo = null)
         {
             var psObject1 = new PSObject();
-            string[] strArray =
+            string[] mailOptions =
             [
                 "SmtpServer",
                 "Port",
@@ -1613,20 +1615,24 @@ namespace PSWindowsUpdate
                 "Properties",
                 "Style"
             ];
-            var pswuSettings = this.GetPSWUSettings();
+            var pswuSettings = GetPSWUSettings();
             var hashtable = new Hashtable();
-            foreach (var str in strArray)
+            foreach (var option in mailOptions)
             {
-                if (LocalPSWUSettings.ContainsKey(str))
-                    hashtable.Add(str, LocalPSWUSettings[str]);
-                else if (pswuSettings.ContainsKey(str))
+                if (LocalPSWUSettings.ContainsKey(option))
                 {
-                    if (str != "Properties")
-                        hashtable.Add(str, pswuSettings[str]);
+                    hashtable.Add(option, LocalPSWUSettings[option]);
+                }
+                else if (pswuSettings.ContainsKey(option))
+                {
+                    if (option != "Properties")
+                    {
+                        hashtable.Add(option, pswuSettings[option]);
+                    }
                 }
                 else
                 {
-                    switch (str)
+                    switch (option)
                     {
                         case "Port":
                             hashtable.Add("Port", 25);
@@ -1640,13 +1646,12 @@ namespace PSWindowsUpdate
                         case "Style":
                             continue;
                         case "Subject":
-                            hashtable.Add("Subject",
-                                Environment.MachineName + ": Windows Update report " + DateTime.Now);
+                            hashtable.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
                             goto case "Style";
                         default:
                             var errorRecord = new ErrorRecord(
-                                new Exception("Missing " + str + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                str,
+                                new Exception("Missing " + option + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
+                                option,
                                 ErrorCategory.CloseError, null);
                             psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                             return psObject1;
@@ -1663,7 +1668,9 @@ namespace PSWindowsUpdate
                     foreach (var property in PSObjects[0].Properties)
                     {
                         if (!PSObjectProperties.Contains(property.Name))
+                        {
                             PSObjectProperties.Add(property.Name);
+                        }
                     }
                 }
                 else if (hashtable["Properties"].ToString() == "**")
@@ -1673,7 +1680,9 @@ namespace PSWindowsUpdate
                         foreach (var property in psObject2.Properties)
                         {
                             if (!PSObjectProperties.Contains(property.Name))
+                            {
                                 PSObjectProperties.Add(property.Name);
+                            }
                         }
                     }
                 }
@@ -1684,15 +1693,15 @@ namespace PSWindowsUpdate
                 }
 
                 var str = !hashtable.ContainsKey("Style")
-                    ? this.ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo)
-                    : this.ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable["Style"].ToString());
+                    ? ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo)
+                    : ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable["Style"].ToString());
                 var message = new MailMessage(hashtable["From"].ToString(), hashtable["To"].ToString());
                 var smtpClient = new SmtpClient();
                 smtpClient.Host = hashtable["SmtpServer"].ToString();
                 smtpClient.Port = Convert.ToInt32(hashtable["Port"].ToString());
                 smtpClient.EnableSsl = (bool)hashtable["EnableSsl"];
                 smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-                var credential = this.GetCredential();
+                var credential = GetCredential();
                 if (credential.Username != null)
                 {
                     smtpClient.UseDefaultCredentials = false;
@@ -1701,7 +1710,9 @@ namespace PSWindowsUpdate
                     message.Subject = hashtable["Subject"] + ".";
                 }
                 else
+                {
                     message.Subject = hashtable["Subject"].ToString();
+                }
 
                 message.Body = str;
                 message.BodyEncoding = new UTF8Encoding();

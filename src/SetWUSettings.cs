@@ -778,8 +778,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ElevateNonAdmins' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("TargetGroup"))
@@ -811,8 +813,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(
                                 target + " The command completed successfully but no settings of 'TargetGroup' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("TargetGroupEnabled"))
@@ -844,8 +848,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'TargetGroupEnabled' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("WUServer"))
@@ -877,7 +883,9 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target + " The command completed successfully but no settings of 'WUServer' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("NoAutoUpdate"))
@@ -909,8 +917,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'NoAutoUpdate' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("NotificationLevel"))
@@ -942,7 +952,9 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target + " The command completed successfully but no settings of 'AUOptions' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AutoInstallMinorUpdates"))
@@ -974,8 +986,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AutoInstallMinorUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DetectionFrequency"))
@@ -1007,8 +1021,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DetectionFrequency' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DetectionFrequencyEnabled"))
@@ -1040,8 +1056,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DetectionFrequencyEnabled' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("IncludeRecommendedUpdates"))
@@ -1073,8 +1091,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'IncludeRecommendedUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("NoAutoRebootWithLoggedOnUsers"))
@@ -1107,8 +1127,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'NoAutoRebootWithLoggedOnUsers' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("RebootRelaunchTimeout"))
@@ -1140,8 +1162,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'RebootRelaunchTimeout' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("RebootRelaunchTimeoutEnabled"))
@@ -1174,8 +1198,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'RebootRelaunchTimeoutEnabled' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("RebootWarningTimeout"))
@@ -1207,8 +1233,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'RebootWarningTimeout' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("RebootWarningTimeoutEnabled"))
@@ -1240,8 +1268,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'RebootWarningTimeoutEnabled' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ScheduledInstallDay"))
@@ -1273,8 +1303,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ScheduledInstallDay' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ScheduledInstallTime"))
@@ -1306,8 +1338,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ScheduledInstallTime' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("UseWUServer"))
@@ -1339,8 +1373,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(
                                 target + " The command completed successfully but no settings of 'UseWUServer' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("TargetReleaseVersion"))
@@ -1372,8 +1408,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'TargetReleaseVersion' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("TargetReleaseVersionInfo"))
@@ -1406,8 +1444,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'TargetReleaseVersionInfo' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ProductVersion"))
@@ -1439,8 +1479,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ProductVersion' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DisableWUfBSafeguards"))
@@ -1472,8 +1514,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DisableWUfBSafeguards' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ManagePreviewBuilds"))
@@ -1507,8 +1551,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ManagePreviewBuilds' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DeferFeatureUpdatesPeriodInDays"))
@@ -1542,8 +1588,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DeferFeatureUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DeferQualityUpdatesPeriodInDays"))
@@ -1577,8 +1625,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DeferQualityUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AllowAutoWindowsUpdateDownloadOverMeteredNetwork"))
@@ -1612,8 +1662,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AllowAutoWindowsUpdateDownloadOverMeteredNetwork' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AlwaysAutoRebootAtScheduledTime"))
@@ -1646,8 +1698,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AlwaysAutoRebootAtScheduledTime' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AlwaysAutoRebootAtScheduledTimeMinutes"))
@@ -1681,8 +1735,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AlwaysAutoRebootAtScheduledTimeMinutes' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartNotificationConfig"))
@@ -1715,8 +1771,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetAutoRestartNotificationConfig' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AutoRestartNotificationSchedule"))
@@ -1749,8 +1807,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AutoRestartNotificationSchedule' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartRequiredNotificationDismissal"))
@@ -1784,8 +1844,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetAutoRestartRequiredNotificationDismissal' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AutoRestartRequiredNotificationDismissal"))
@@ -1818,8 +1880,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AutoRestartRequiredNotificationDismissal' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetRestartWarningSchd"))
@@ -1851,8 +1915,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetRestartWarningSchd' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ScheduleRestartWarning"))
@@ -1884,8 +1950,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ScheduleRestartWarning' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ScheduleImminentRestartWarning"))
@@ -1918,8 +1986,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ScheduleImminentRestartWarning' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DeferUpgrade"))
@@ -1951,8 +2021,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DeferUpgrade' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DeferUpgradePeriod"))
@@ -1984,8 +2056,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DeferUpgradePeriod' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("DeferUpdatePeriod"))
@@ -2017,8 +2091,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'DeferUpdatePeriod' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("PauseDeferrals"))
@@ -2050,8 +2126,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'PauseDeferrals' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetUpdateNotificationLevel"))
@@ -2083,8 +2161,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetUpdateNotificationLevel' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("UpdateNotificationLevel"))
@@ -2116,8 +2196,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'UpdateNotificationLevel' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("NoAUShutdownOption"))
@@ -2149,8 +2231,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'NoAUShutdownOption' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("AUPowerManagement"))
@@ -2182,8 +2266,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AUPowerManagement' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetDisablePauseUXAccess"))
@@ -2215,8 +2301,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetDisablePauseUXAccess' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetDisableUXWUAccess"))
@@ -2248,8 +2336,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetDisableUXWUAccess' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("RescheduleWaitTimeEnabled"))
@@ -2281,8 +2371,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'RescheduleWaitTimeEnabled' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("RescheduleWaitTime"))
@@ -2314,8 +2406,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'RescheduleWaitTime' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetActiveHoursMaxRange"))
@@ -2347,8 +2441,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetActiveHoursMaxRange' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursMaxRange"))
@@ -2380,8 +2476,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ActiveHoursMaxRange' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("UseUpdateClassPolicySource"))
@@ -2413,8 +2511,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'UseUpdateClassPolicySource' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForFeatureUpdates"))
@@ -2449,8 +2549,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForFeatureUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForQualityUpdates"))
@@ -2485,8 +2587,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForQualityUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForDriverUpdates"))
@@ -2520,8 +2624,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForDriverUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForOtherUpdates"))
@@ -2555,8 +2661,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForOtherUpdates' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetActiveHours"))
@@ -2588,8 +2696,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetActiveHours' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursStart"))
@@ -2621,8 +2731,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ActiveHoursStart' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursEnd"))
@@ -2654,8 +2766,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'ActiveHoursEnd' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartNotificationDisable"))
@@ -2689,8 +2803,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetAutoRestartNotificationDisable' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("EnableFeaturedSoftware"))
@@ -2722,8 +2838,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'EnableFeaturedSoftware' have been modified.");
+                        }
                     }
 
                     if (MyInvocation.BoundParameters.ContainsKey("SetEDURestart"))
@@ -2755,8 +2873,10 @@ namespace PSWindowsUpdate
                             }
                         }
                         else
+                        {
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'SetEDURestart' have been modified.");
+                        }
                     }
 
                     WriteObject(sendToPipeline, true);
