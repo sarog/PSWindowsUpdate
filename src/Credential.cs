@@ -311,7 +311,7 @@ namespace PSWindowsUpdate
                 throw new ArgumentOutOfRangeException("password", "The password has exceeded 512 bytes.");
             }
 
-            var userCredential = new NativeMethods.CREDENTIAL()
+            var userCredential = new NativeMethods.CREDENTIAL
             {
                 TargetName = Target,
                 UserName = Username,
@@ -377,12 +377,10 @@ namespace PSWindowsUpdate
                 throw new InvalidOperationException("Target must be specified to check existance of a credential.");
             }
 
-            using (var credential = new Credential()
-                   {
-                       Target = Target,
-                       Type = Type
-                   })
+            using (var credential = new Credential())
             {
+                credential.Target = Target;
+                credential.Type = Type;
                 return credential.Load();
             }
         }

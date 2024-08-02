@@ -139,8 +139,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 ThrowTerminatingError(new ErrorRecord(
@@ -262,8 +261,7 @@ namespace PSWindowsUpdate
                             }
                             else if (Debuger)
                             {
-                                var errorRecord = new ErrorRecord(ex, "Debug: " + ex.ErrorCode, ErrorCategory.CloseError, null);
-                                ThrowTerminatingError(errorRecord);
+                                ThrowTerminatingError(new ErrorRecord(ex, "Debug: " + ex.ErrorCode, ErrorCategory.CloseError, null));
                             }
                             else
                             {

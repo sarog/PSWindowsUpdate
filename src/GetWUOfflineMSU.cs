@@ -139,8 +139,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
@@ -148,7 +147,7 @@ namespace PSWindowsUpdate
 
             WUToolsObj = new WUTools();
             WUBitsObj = new WUBits();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -174,15 +173,14 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
         {
-            var invocationName = MyInvocation.InvocationName;
             var computerNames = ComputerName;
             foreach (var target in computerNames)
             {
@@ -196,8 +194,7 @@ namespace PSWindowsUpdate
                 WriteDebug(DateTime.Now + " " + reqUrl);
                 var text3 = WUToolsObj.InvokeRestMethod(reqUrl, WUTools.HttpWebRequestMethod.GET, null, null);
                 var psarray = new object[1] { text3 };
-                var hTMLDocument =
-                    (HTMLDocument)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("25336920-03F9-11CF-8FD0-00AA00686F13")));
+                var hTMLDocument = (HTMLDocument)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("25336920-03F9-11CF-8FD0-00AA00686F13")));
                 var iHTMLDocument = (IHTMLDocument2)hTMLDocument;
                 iHTMLDocument.write(psarray);
                 var regex = new Regex("(id=\\\"(?<id>.*?)\\\"(.*?)value='Download')", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -205,10 +202,7 @@ namespace PSWindowsUpdate
                 var count = matchCollection.Count;
                 WriteVerbose("Found [" + count + "] Updates in Microsoft Update Catalog");
                 var num = 0;
-                var activityId = 1;
-                var activity = "Choose updates for " + target;
-                var statusDescription = "[" + num + "/" + count + "]";
-                var progressRecord = new ProgressRecord(activityId, activity, statusDescription);
+                var progressRecord = new ProgressRecord(1, "Choose updates for " + target, "[" + num + "/" + count + "]");
                 var collection = new Collection<PSObject>();
                 var num2 = 0;
                 foreach (Match item in matchCollection)
@@ -242,15 +236,12 @@ namespace PSWindowsUpdate
                     progressRecord.StatusDescription = "[" + num + "/" + count + "] " + updateTitle + " " + updateSize;
                     progressRecord.PercentComplete = num * 100 / count;
                     WriteProgress(progressRecord);
-                    num++;
+                    ++num;
                     WriteDebug(DateTime.Now + " Show update to accept: " + updateTitle);
-                    var flag = false;
-                    flag = AcceptAll || (ShouldProcess(target, "(" + DateTime.Now + ") " + updateTitle + "[" + updateSize + "]")
-                        ? true
-                        : false);
+                    var accepted = AcceptAll || (ShouldProcess(target, "(" + DateTime.Now + ") " + updateTitle + "[" + updateSize + "]"));
                     var pStatus = "";
                     var pResult = "";
-                    if (flag)
+                    if (accepted)
                     {
                         pStatus += "A";
                         pResult = "Accepted";
@@ -287,17 +278,14 @@ namespace PSWindowsUpdate
                     pSObject.TypeNames.Clear();
                     pSObject.TypeNames.Add("PSWindowsUpdate.OfflineMSU");
                     collection.Add(pSObject);
-                    num2++;
+                    ++num2;
                 }
 
                 var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
                 WriteObject(collection, true);
                 WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
                 var num4 = 0;
-                var activityId2 = 1;
-                var activity2 = "Download updates for " + target;
-                var statusDescription2 = "[" + num4 + "/" + totalAccepted + "]";
-                var progressRecord2 = new ProgressRecord(activityId2, activity2, statusDescription2);
+                var progressRecord2 = new ProgressRecord(1, "Download updates for " + target, "[" + num4 + "/" + totalAccepted + "]");
                 foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted"))
                 {
                     item2.Properties.Add(new PSNoteProperty("X", 2));
@@ -310,7 +298,7 @@ namespace PSWindowsUpdate
                     progressRecord2.StatusDescription = "[" + num4 + "/" + totalAccepted + "] " + text8 + " " + text9;
                     progressRecord2.PercentComplete = num4 * 100 / totalAccepted;
                     WriteProgress(progressRecord2);
-                    num4++;
+                    ++num4;
                     if (!Directory.Exists(Destination))
                     {
                         Directory.CreateDirectory(Destination);
@@ -467,10 +455,10 @@ namespace PSWindowsUpdate
         protected override void EndProcessing()
         {
             CmdletEnd = DateTime.Now;
-            var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
-            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
-            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            var cmdletInfo = new PSObject();
+            cmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            cmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            cmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Send report");
@@ -479,7 +467,7 @@ namespace PSWindowsUpdate
                     PSWUSettings.Add("Properties", "*");
                 }
 
-                var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
+                var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, cmdletInfo);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1)
                 {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);

@@ -99,21 +99,20 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
                 if (!PSWUSettings.ContainsKey("Properties"))
                 {
-                    PSWUSettings.Add("Properties", new string[1]
+                    PSWUSettings.Add("Properties", new[]
                     {
                         "*"
                     });
@@ -133,16 +132,15 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
         {
-            var invocationName = MyInvocation.InvocationName;
-            if (string.Equals(invocationName, "Clear-WUJob", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(MyInvocation.InvocationName, "Clear-WUJob", StringComparison.OrdinalIgnoreCase))
             {
                 ClearExpired = true;
             }
@@ -155,48 +153,45 @@ namespace PSWindowsUpdate
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try
                 {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 }
                 catch
                 {
                 }
 
-                for (var j = 1; j <= 3; j++)
+                for (var i = 1; i <= 3; ++i)
                 {
                     try
                     {
                         if (Credential != null)
                         {
-                            WriteVerbose("Try to connect " + target + ". Test " + j);
+                            WriteVerbose("Try to connect " + target + ". Test " + i);
                             taskScheduler.Connect(target, UserName, Domain, Password);
                         }
                         else
                         {
-                            WriteVerbose("Try to connect " + target + ". Test " + j);
+                            WriteVerbose("Try to connect " + target + ". Test " + i);
                             taskScheduler.Connect(target, Type.Missing, Type.Missing, Type.Missing);
                         }
                     }
                     catch (COMException ex)
                     {
-                        if (j >= 3)
+                        if (i >= 3)
                         {
-                            var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                            if (wUApiCodeDetails != null)
+                            var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                            if (wuApiCodeDetails != null)
                             {
-                                var codeType = wUApiCodeDetails.CodeType;
-                                var num = codeType;
-                                if (num == 2)
+                                if (wuApiCodeDetails.CodeType == 2)
                                 {
-                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                    WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
                                         ErrorCategory.CloseError, null));
                                 }
                             }
                             else if (Debuger)
                             {
-                                var errorRecord = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
-                                ThrowTerminatingError(errorRecord);
+                                ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
                             }
                             else
                             {
@@ -218,90 +213,87 @@ namespace PSWindowsUpdate
                     if (!MyInvocation.BoundParameters.ContainsKey("TaskName"))
                     {
                         var tasks = folder.GetTasks(1);
-                        foreach (IRegisteredTask item in tasks)
+                        foreach (IRegisteredTask registeredTask in tasks)
                         {
-                            if (item.Definition.RegistrationInfo.Source == "PSWindowsUpdate")
+                            if (registeredTask.Definition.RegistrationInfo.Source == "PSWindowsUpdate")
                             {
-                                var pSObject = new PSObject(item);
-                                pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                                switch (item.State)
+                                var sendToPipeline = new PSObject(registeredTask);
+                                sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
+                                switch (registeredTask.State)
                                 {
                                     case _TASK_STATE.TASK_STATE_DISABLED:
-                                        pSObject.Properties.Add(new PSNoteProperty("StateName", "Disabled"));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Disabled"));
                                         break;
                                     case _TASK_STATE.TASK_STATE_QUEUED:
-                                        pSObject.Properties.Add(new PSNoteProperty("StateName", "Queued"));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Queued"));
                                         break;
                                     case _TASK_STATE.TASK_STATE_READY:
-                                        pSObject.Properties.Add(new PSNoteProperty("StateName", "Ready"));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Ready"));
                                         break;
                                     case _TASK_STATE.TASK_STATE_RUNNING:
-                                        pSObject.Properties.Add(new PSNoteProperty("StateName", "Running"));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Running"));
                                         break;
                                     case _TASK_STATE.TASK_STATE_UNKNOWN:
-                                        pSObject.Properties.Add(new PSNoteProperty("StateName", "Unknown"));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Unknown"));
                                         break;
                                 }
 
-                                pSObject.TypeNames.Clear();
-                                pSObject.TypeNames.Add("PSWindowsUpdate.WUJob");
-                                WriteObject(pSObject);
-                                taskCount++;
+                                sendToPipeline.TypeNames.Clear();
+                                sendToPipeline.TypeNames.Add("PSWindowsUpdate.WUJob");
+                                WriteObject(sendToPipeline);
+                                ++taskCount;
                             }
                         }
                     }
                     else
                     {
                         var task = folder.GetTask(TaskName);
-                        var pSObject2 = new PSObject(task);
-                        pSObject2.Properties.Add(new PSNoteProperty("ComputerName", target));
+                        var sendToPipeline = new PSObject(task);
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
                         switch (task.State)
                         {
                             case _TASK_STATE.TASK_STATE_DISABLED:
-                                pSObject2.Properties.Add(new PSNoteProperty("StateName", "Disabled"));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Disabled"));
                                 break;
                             case _TASK_STATE.TASK_STATE_QUEUED:
-                                pSObject2.Properties.Add(new PSNoteProperty("StateName", "Queued"));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Queued"));
                                 break;
                             case _TASK_STATE.TASK_STATE_READY:
-                                pSObject2.Properties.Add(new PSNoteProperty("StateName", "Ready"));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Ready"));
                                 break;
                             case _TASK_STATE.TASK_STATE_RUNNING:
-                                pSObject2.Properties.Add(new PSNoteProperty("StateName", "Running"));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Running"));
                                 break;
                             case _TASK_STATE.TASK_STATE_UNKNOWN:
-                                pSObject2.Properties.Add(new PSNoteProperty("StateName", "Unknown"));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("StateName", "Unknown"));
                                 break;
                         }
 
-                        pSObject2.TypeNames.Clear();
-                        pSObject2.TypeNames.Add("PSWindowsUpdate.WUJob");
-                        WriteObject(pSObject2);
-                        taskCount++;
+                        sendToPipeline.TypeNames.Clear();
+                        sendToPipeline.TypeNames.Add("PSWindowsUpdate.WUJob");
+                        WriteObject(sendToPipeline);
+                        ++taskCount;
                     }
 
                     WriteVerbose("Found " + taskCount + " tasks");
-                    if (MyInvocation.BoundParameters.ContainsKey("ClearExpired"))
+                    if (!MyInvocation.BoundParameters.ContainsKey("ClearExpired"))
                     {
-                        continue;
-                    }
-
-                    var tasks2 = folder.GetTasks(1);
-                    foreach (IRegisteredTask item2 in tasks2)
-                    {
-                        if (item2.Definition.RegistrationInfo.Source == "PSWindowsUpdate" &&
-                            DateTime.Parse(item2.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
-                            item2.State != _TASK_STATE.TASK_STATE_RUNNING && ShouldProcess(target, "Clear expired task: " + item2.Name))
+                        var tasks = folder.GetTasks(1);
+                        foreach (IRegisteredTask registeredTask in tasks)
                         {
-                            folder.DeleteTask(item2.Name, 0);
+                            if (registeredTask.Definition.RegistrationInfo.Source == "PSWindowsUpdate" &&
+                                DateTime.Parse(registeredTask.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
+                                registeredTask.State != _TASK_STATE.TASK_STATE_RUNNING && ShouldProcess(target, "Clear expired task: " + registeredTask.Name))
+                            {
+                                folder.DeleteTask(registeredTask.Name, 0);
+                            }
                         }
                     }
                 }
                 catch
                 {
-                    var errorRecord2 = new ErrorRecord(new Exception("Cant find task " + TaskName + " on " + target), "WUJob",
-                        ErrorCategory.ResourceUnavailable, null);
-                    WriteError(errorRecord2);
+                    WriteError(new ErrorRecord(new Exception("Cant find task " + TaskName + " on " + target), "WUJob",
+                        ErrorCategory.ResourceUnavailable, null));
                 }
             }
         }

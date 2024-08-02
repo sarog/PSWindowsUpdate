@@ -552,8 +552,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 ThrowTerminatingError(new ErrorRecord(
@@ -562,7 +561,7 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -585,10 +584,10 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -670,7 +669,7 @@ namespace PSWindowsUpdate
                     WriteDebug(DateTime.Now + " Set pre search criteria: DeploymentAction = '" + DeploymentAction + "'");
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("IsAssigned"))
+                if (IsAssigned)
                 {
                     if (IsAssigned)
                     {
@@ -684,7 +683,7 @@ namespace PSWindowsUpdate
                     }
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("IsPresent"))
+                if (IsPresent)
                 {
                     if (IsPresent)
                     {
@@ -712,7 +711,7 @@ namespace PSWindowsUpdate
                     }
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("AutoSelectOnWebSites"))
+                if (AutoSelectOnWebSites)
                 {
                     if (AutoSelectOnWebSites)
                     {
@@ -763,27 +762,26 @@ namespace PSWindowsUpdate
                             WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + uID);
                         }
 
-                        num++;
+                        ++num;
                     }
                 }
 
                 if (CategoryIDs != null)
                 {
-                    var text5 = criteria;
+                    var prevCriteria = criteria;
                     criteria = "";
-                    var num2 = 0;
-                    var categoryIDs = CategoryIDs;
-                    foreach (var catIDs in categoryIDs)
+                    var count = 0;
+                    foreach (var catId in CategoryIDs)
                     {
-                        if (num2 > 0)
+                        if (count > 0)
                         {
                             criteria += " or ";
                             WriteDebug(DateTime.Now + " Set pre search criteria: or ");
                         }
 
-                        criteria = criteria + "(" + text5 + " and CategoryIDs contains '" + catIDs + "')";
-                        WriteDebug(DateTime.Now + " Set pre search criteria: CategoryIDs = " + catIDs);
-                        num2++;
+                        criteria = criteria + "(" + prevCriteria + " and CategoryIDs contains '" + catId + "')";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: CategoryIDs = " + catId);
+                        ++count;
                     }
                 }
             }
@@ -800,12 +798,13 @@ namespace PSWindowsUpdate
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try
                 {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 }
                 catch
                 {
+                    // ignored
                 }
 
                 if (Download)
@@ -818,18 +817,17 @@ namespace PSWindowsUpdate
                     }
                 }
 
-                var wUCimSession = new WUCimSession(target);
+                var wuCimSession = new WUCimSession(target);
                 CimInstance[] cimInstances;
                 try
                 {
-                    cimInstances = wUCimSession.ScanForUpdates(criteria);
+                    cimInstances = wuCimSession.ScanForUpdates(criteria);
                 }
-                catch (COMException exception)
+                catch (COMException ex)
                 {
                     if (Debuger)
                     {
-                        var errorRecord2 = new ErrorRecord(exception, "Debug", ErrorCategory.CloseError, null);
-                        ThrowTerminatingError(errorRecord2);
+                        ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
                     }
 
                     WriteDebug(DateTime.Now + " Skip to next computer");
@@ -838,463 +836,434 @@ namespace PSWindowsUpdate
 
                 var cimInstancesLength = cimInstances.Length;
                 WriteVerbose("Found [" + cimInstancesLength + "] Updates in pre search criteria");
-                if (cimInstancesLength == 0)
+                if (cimInstancesLength != 0)
                 {
-                    continue;
-                }
+                    var num4 = 0;
+                    var progressRecord = new ProgressRecord(0, "Post search updates for " + target, "[" + num4 + "/" + cimInstancesLength + "]");
+                    var collection = new Collection<PSObject>();
+                    foreach (var cimInstance in cimInstances)
+                    {
+                        WriteDebug(DateTime.Now + " " + cimInstance.CimInstanceProperties["Title"]);
+                        progressRecord.StatusDescription =
+                            "[" + num4 + "/" + cimInstancesLength + "] " + cimInstance.CimInstanceProperties["Title"];
+                        progressRecord.PercentComplete = num4 * 100 / cimInstancesLength;
+                        WriteProgress(progressRecord);
+                        ++num4;
+                        var updateAccess = true;
+                        if (KBArticleID != null && updateAccess)
+                        {
+                            WriteDebug(DateTime.Now + " Set post search criteria: KBArticleID = " + Title);
+                            if (!Regex.IsMatch(cimInstance.CimInstanceProperties["KBArticleID"].ToString(), Title, RegexOptions.IgnoreCase))
+                            {
+                                updateAccess = false;
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
+                            }
+                        }
 
-                var num4 = 0;
-                var activityId = 0;
-                var activity = "Post search updates for " + target;
-                var statusDescription = "[" + num4 + "/" + cimInstancesLength + "]";
-                var progressRecord = new ProgressRecord(activityId, activity, statusDescription);
-                var collection = new Collection<PSObject>();
-                foreach (var cimInstance in cimInstances)
-                {
-                    WriteDebug(DateTime.Now + " " + cimInstance.CimInstanceProperties["Title"]);
-                    progressRecord.StatusDescription =
-                        "[" + num4 + "/" + cimInstancesLength + "] " + cimInstance.CimInstanceProperties["Title"];
-                    progressRecord.PercentComplete = num4 * 100 / cimInstancesLength;
+                        if (NotKBArticleID != null && updateAccess)
+                        {
+                            WriteDebug(DateTime.Now + " Set post search criteria: NotKBArticleID = " + NotTitle);
+                            if (Regex.IsMatch(cimInstance.CimInstanceProperties["KBArticleID"].ToString(), NotTitle, RegexOptions.IgnoreCase))
+                            {
+                                updateAccess = false;
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
+                            }
+                        }
+
+                        if (Title != null && updateAccess)
+                        {
+                            WriteDebug(DateTime.Now + " Set post search criteria: Title = " + Title);
+                            if (!Regex.IsMatch(cimInstance.CimInstanceProperties["Title"].ToString(), Title, RegexOptions.IgnoreCase))
+                            {
+                                updateAccess = false;
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
+                            }
+                        }
+
+                        if (NotTitle != null && updateAccess)
+                        {
+                            WriteDebug(DateTime.Now + " Set post search criteria: NotTitle = " + NotTitle);
+                            if (Regex.IsMatch(cimInstance.CimInstanceProperties["Title"].ToString(), NotTitle, RegexOptions.IgnoreCase))
+                            {
+                                updateAccess = false;
+                                WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
+                            }
+                        }
+
+                        if (updateAccess)
+                        {
+                            WriteDebug(DateTime.Now + " Update was not filtered");
+                            var pSObject = new PSObject(cimInstance);
+                            pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
+                            pSObject.Properties.Add(new PSNoteProperty("BaseObject", cimInstance));
+                            pSObject.TypeNames.Clear();
+                            pSObject.TypeNames.Add("PSWindowsUpdate.WindowsUpdate");
+                            collection.Add(pSObject);
+                        }
+                    }
+
+                    progressRecord.RecordType = ProgressRecordType.Completed;
                     WriteProgress(progressRecord);
-                    num4++;
-                    var updateAccess = true;
-                    if (KBArticleID != null && updateAccess)
+                    var count = collection.Count;
+                    WriteVerbose("Found [" + count + "] Updates in post search criteria");
+                    if (!Download && !Install)
                     {
-                        WriteDebug(DateTime.Now + " Set post search criteria: KBArticleID = " + Title);
-                        if (!Regex.IsMatch(cimInstance.CimInstanceProperties["KBArticleID"].ToString(), Title, RegexOptions.IgnoreCase))
-                        {
-                            updateAccess = false;
-                            WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
-                        }
+                        WriteDebug(DateTime.Now + " Return update list only");
+                        WriteObject(collection);
+                        OutputObj = new Collection<PSObject>(collection);
                     }
-
-                    if (NotKBArticleID != null && updateAccess)
+                    else
                     {
-                        WriteDebug(DateTime.Now + " Set post search criteria: NotKBArticleID = " + NotTitle);
-                        if (Regex.IsMatch(cimInstance.CimInstanceProperties["KBArticleID"].ToString(), NotTitle, RegexOptions.IgnoreCase))
+                        var totalDownloaded = 0;
+                        var totalInstalled = 0;
+                        var text8 = "";
+                        if (Download || Install)
                         {
-                            updateAccess = false;
-                            WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
-                        }
-                    }
-
-                    if (Title != null && updateAccess)
-                    {
-                        WriteDebug(DateTime.Now + " Set post search criteria: Title = " + Title);
-                        if (!Regex.IsMatch(cimInstance.CimInstanceProperties["Title"].ToString(), Title, RegexOptions.IgnoreCase))
-                        {
-                            updateAccess = false;
-                            WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
-                        }
-                    }
-
-                    if (NotTitle != null && updateAccess)
-                    {
-                        WriteDebug(DateTime.Now + " Set post search criteria: NotTitle = " + NotTitle);
-                        if (Regex.IsMatch(cimInstance.CimInstanceProperties["Title"].ToString(), NotTitle, RegexOptions.IgnoreCase))
-                        {
-                            updateAccess = false;
-                            WriteDebug(DateTime.Now + " UpdateAccess: " + updateAccess);
-                        }
-                    }
-
-                    if (updateAccess)
-                    {
-                        WriteDebug(DateTime.Now + " Update was not filtered");
-                        var pSObject = new PSObject(cimInstance);
-                        pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                        pSObject.Properties.Add(new PSNoteProperty("BaseObject", cimInstance));
-                        pSObject.TypeNames.Clear();
-                        pSObject.TypeNames.Add("PSWindowsUpdate.WindowsUpdate");
-                        collection.Add(pSObject);
-                    }
-                }
-
-                progressRecord.RecordType = ProgressRecordType.Completed;
-                WriteProgress(progressRecord);
-                var count = collection.Count;
-                WriteVerbose("Found [" + count + "] Updates in post search criteria");
-                if (!Download && !Install)
-                {
-                    WriteDebug(DateTime.Now + " Return update list only");
-                    WriteObject(collection);
-                    OutputObj = new Collection<PSObject>(collection);
-                    continue;
-                }
-
-                var totalDownloaded = 0;
-                var totalInstalled = 0;
-                var text8 = "";
-                if (Download || Install)
-                {
-                    var num7 = 0;
-                    var activityId2 = 1;
-                    var activity2 = "Choose updates for " + target;
-                    var statusDescription2 = "[" + num7 + "/" + count + "]";
-                    var progressRecord2 = new ProgressRecord(activityId2, activity2, statusDescription2);
-                    var text9 = "";
-                    foreach (var item in collection)
-                    {
-                        item.Properties.Add(new PSNoteProperty("X", 1));
-                        item.TypeNames.Clear();
-                        item.TypeNames.Add("PSWindowsUpdate.WindowsUpdateJob");
-                        var cimInstance2 = (CimInstance)item.BaseObject;
-                        progressRecord2.StatusDescription = "[" + num7 + "/" + count + "] " + cimInstance2.CimInstanceProperties["Title"];
-                        progressRecord2.PercentComplete = num7 * 100 / count;
-                        WriteProgress(progressRecord2);
-                        num7++;
-                        WriteDebug(DateTime.Now + " Show update to accept: " + cimInstance2.CimInstanceProperties["Title"]);
-                        var flag2 = false;
-                        flag2 = AcceptAll || (ShouldProcess(target, "(" + DateTime.Now + ") " + cimInstance2.CimInstanceProperties["Title"])
-                            ? true
-                            : false);
-                        var text10 = "";
-                        var text11 = "";
-                        if (flag2)
-                        {
-                            try
+                            var num7 = 0;
+                            var progressRecord2 = new ProgressRecord(1, "Choose updates for " + target, "[" + num7 + "/" + count + "]");
+                            var text9 = "";
+                            foreach (var item in collection)
                             {
-                                var pSObject2 = new PSObject(item.Properties["Identity"].Value);
-                                var text12 = (string)pSObject2.Properties["UpdateID"].Value;
-                                var num8 = (int)pSObject2.Properties["RevisionNumber"].Value;
-                                text9 = !(text9 == "")
-                                    ? text9 + " or (UpdateID = '" + text12 + "' and RevisionNumber = " + num8 + ")"
-                                    : "(UpdateID = '" + text12 + "' and RevisionNumber = " + num8 + ")";
-                            }
-                            catch (Exception ex)
-                            {
-                                flag2 = false;
-                                var errorRecord3 =
-                                    new ErrorRecord(
-                                        new Exception("Something goes wrong: " + cimInstance2.CimInstanceProperties["Title"] + "; " +
-                                                      ex.Message), "Debug",
-                                        ErrorCategory.CloseError, null);
-                                WriteError(errorRecord3);
-                            }
-
-                            if (flag2)
-                            {
-                                text10 += "A";
-                                text11 = "Accepted";
-                                WriteDebug(DateTime.Now + " " + text11);
-                                item.Properties.Add(new PSNoteProperty("ChooseResult", text11));
-                                item.Properties.Add(new PSNoteProperty("Result", text11));
-                            }
-                        }
-
-                        if (!flag2)
-                        {
-                            try
-                            {
-                                var pSObject3 = new PSObject(item.Properties["Identity"].Value);
-                                var text13 = (string)pSObject3.Properties["UpdateID"].Value;
-                                var num9 = (int)pSObject3.Properties["RevisionNumber"].Value;
-                                text8 = !(text8 == "") ? text8 + ",'" + text13 + "'" : "'" + text13 + "'";
-                            }
-                            catch (Exception ex2)
-                            {
-                                flag2 = false;
-                                var errorRecord4 =
-                                    new ErrorRecord(
-                                        new Exception("Something goes wrong: " + cimInstance2.CimInstanceProperties["Title"] + "; " +
-                                                      ex2.Message), "Debug",
-                                        ErrorCategory.CloseError, null);
-                                WriteError(errorRecord4);
-                            }
-
-                            text10 += "R";
-                            text11 = "Rejected";
-                            WriteDebug(DateTime.Now + " " + text11);
-                            item.Properties.Add(new PSNoteProperty("ChooseResult", text11));
-                            item.Properties.Add(new PSNoteProperty("Result", text11));
-                        }
-                    }
-
-                    progressRecord2.RecordType = ProgressRecordType.Completed;
-                    WriteProgress(progressRecord2);
-                    if (ShowPreSearchCriteria)
-                    {
-                        WriteVerbose("Choosed pre Search Criteria: " + text9);
-                    }
-
-                    var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
-                    WriteObject(collection, true);
-                    WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
-                    var num11 = 0;
-                    var activityId3 = 1;
-                    var activity3 = "Download updates for " + target;
-                    var statusDescription3 = "[" + num11 + "/" + totalAccepted + "]";
-                    var progressRecord3 = new ProgressRecord(activityId3, activity3, statusDescription3);
-                    foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted"))
-                    {
-                        item2.Properties.Add(new PSNoteProperty("X", 2));
-                        var update = (IUpdate)item2.BaseObject;
-                        var updateCollection =
-                            (UpdateCollection)Activator.CreateInstance(
-                                Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
-                        updateCollection.Add(update);
-                        progressRecord3.StatusDescription = "[" + num11 + "/" + totalAccepted + "] " + update.Title + " " +
-                                                            item2.Properties["Size"].Value;
-                        progressRecord3.PercentComplete = num11 * 100 / totalAccepted;
-                        WriteProgress(progressRecord3);
-                        num11++;
-                        WriteDebug(DateTime.Now + " Show update to download: " + update.Title);
-                        IUpdateDownloader updateDownloader = UpdateSessionObj.CreateUpdateDownloader();
-                        updateDownloader.Updates = updateCollection;
-                        if (ForceDownload)
-                        {
-                            updateDownloader.IsForced = true;
-                        }
-
-                        IDownloadResult downloadResult;
-                        try
-                        {
-                            downloadResult = updateDownloader.Download();
-                            WriteDebug(DateTime.Now + " Downloaded");
-                        }
-                        catch (COMException ex3)
-                        {
-                            var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex3.ErrorCode);
-                            var flag3 = false;
-                            if (wUApiCodeDetails != null)
-                            {
-                                switch (wUApiCodeDetails.CodeType)
+                                item.Properties.Add(new PSNoteProperty("X", 1));
+                                item.TypeNames.Clear();
+                                item.TypeNames.Add("PSWindowsUpdate.WindowsUpdateJob");
+                                var cimInstance2 = (CimInstance)item.BaseObject;
+                                progressRecord2.StatusDescription = "[" + num7 + "/" + count + "] " + cimInstance2.CimInstanceProperties["Title"];
+                                progressRecord2.PercentComplete = num7 * 100 / count;
+                                WriteProgress(progressRecord2);
+                                ++num7;
+                                WriteDebug(DateTime.Now + " Show update to accept: " + cimInstance2.CimInstanceProperties["Title"]);
+                                var flag2 = AcceptAll || ShouldProcess(target, "(" + DateTime.Now + ") " + cimInstance2.CimInstanceProperties["Title"]);
+                                var text10 = "";
+                                var text11 = "";
+                                if (flag2)
                                 {
-                                    case 2: // WUTools.CodeType.Error
-                                        WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                    try
+                                    {
+                                        var identity = new PSObject(item.Properties["Identity"].Value);
+                                        var updateId = (string)identity.Properties["UpdateID"].Value;
+                                        var revision = (int)identity.Properties["RevisionNumber"].Value;
+                                        text9 = !(text9 == "")
+                                            ? text9 + " or (UpdateID = '" + updateId + "' and RevisionNumber = " + revision + ")"
+                                            : "(UpdateID = '" + updateId + "' and RevisionNumber = " + revision + ")";
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        flag2 = false;
+                                        WriteError(new ErrorRecord(
+                                            new Exception("Something goes wrong: " + cimInstance2.CimInstanceProperties["Title"] + "; " +
+                                                          ex.Message), "Debug",
                                             ErrorCategory.CloseError, null));
-                                        flag3 = true;
-                                        break;
-                                    case 3:
-                                        WriteWarning(wUApiCodeDetails.HResult + ": " + wUApiCodeDetails.Description);
-                                        break;
+                                    }
+
+                                    if (flag2)
+                                    {
+                                        text10 += "A";
+                                        text11 = "Accepted";
+                                        WriteDebug(DateTime.Now + " " + text11);
+                                        item.Properties.Add(new PSNoteProperty("ChooseResult", text11));
+                                        item.Properties.Add(new PSNoteProperty("Result", text11));
+                                    }
                                 }
 
-                                if (flag3)
+                                if (!flag2)
                                 {
-                                    WriteDebug(DateTime.Now + " Skip to next computer");
-                                    break;
+                                    try
+                                    {
+                                        var identity = new PSObject(item.Properties["Identity"].Value);
+                                        var updateId = (string)identity.Properties["UpdateID"].Value;
+                                        var revision = (int)identity.Properties["RevisionNumber"].Value;
+                                        text8 = !(text8 == "") ? text8 + ",'" + updateId + "'" : "'" + updateId + "'";
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        flag2 = false;
+                                        WriteError(new ErrorRecord(
+                                            new Exception("Something goes wrong: " + cimInstance2.CimInstanceProperties["Title"] + "; " +
+                                                          ex.Message), "Debug",
+                                            ErrorCategory.CloseError, null));
+                                    }
+
+                                    text10 += "R";
+                                    text11 = "Rejected";
+                                    WriteDebug(DateTime.Now + " " + text11);
+                                    item.Properties.Add(new PSNoteProperty("ChooseResult", text11));
+                                    item.Properties.Add(new PSNoteProperty("Result", text11));
                                 }
                             }
-                            else if (Debuger)
+
+                            progressRecord2.RecordType = ProgressRecordType.Completed;
+                            WriteProgress(progressRecord2);
+                            if (ShowPreSearchCriteria)
                             {
-                                // Debuger
-                                var errorRecord5 = new ErrorRecord(ex3, "Debug", ErrorCategory.CloseError, null);
-                                ThrowTerminatingError(errorRecord5);
+                                WriteVerbose("Chosen pre-Search Criteria: " + text9);
                             }
 
-                            WriteDebug(DateTime.Now + " Skip to next update");
-                            continue;
-                        }
-
-                        var value = "";
-                        switch (downloadResult.ResultCode)
-                        {
-                            case OperationResultCode.orcNotStarted:
-                                value = "NotStarted";
-                                break;
-                            case OperationResultCode.orcInProgress:
-                                value = "InProgress";
-                                break;
-                            case OperationResultCode.orcSucceeded:
-                                value = "Downloaded";
-                                break;
-                            case OperationResultCode.orcSucceededWithErrors:
-                                value = "DownloadedWithErrors";
-                                break;
-                            case OperationResultCode.orcFailed:
-                                value = "Failed";
-                                break;
-                            case OperationResultCode.orcAborted:
-                                value = "Aborted";
-                                break;
-                        }
-
-                        item2.Properties.Add(new PSNoteProperty("DownloadResult", value));
-                        item2.Properties.Add(new PSNoteProperty("Result", value));
-                        var text14 = "";
-                        text14 = !(item2.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text14 + "R" : text14 + "A";
-                        text14 = !(item2.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text14 + "F" : text14 + "D";
-                        text14 = !update.IsInstalled ? text14 + "-" : text14 + "I";
-                        text14 = !update.IsMandatory ? text14 + "-" : text14 + "M";
-                        text14 = !update.IsHidden ? text14 + "-" : text14 + "H";
-                        text14 = !update.IsUninstallable ? text14 + "-" : text14 + "U";
-                        text14 = !update.IsBeta ? text14 + "-" : text14 + "B";
-                        item2.Properties["Status"].Value = text14;
-                        WriteObject(item2, true);
-                    }
-
-                    progressRecord3.RecordType = ProgressRecordType.Completed;
-                    WriteProgress(progressRecord3);
-                    totalDownloaded = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
-                    WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
-                    if (!Install)
-                    {
-                        WriteDebug(DateTime.Now + " Return downloaded update list");
-                        OutputObj = new Collection<PSObject>(collection.ToList());
-                        continue;
-                    }
-                }
-
-                if (!Install)
-                {
-                    continue;
-                }
-
-                NeedsReboot = false;
-                var num12 = 0;
-                var activityId4 = 1;
-                var activity4 = "Install updates for " + target;
-                var statusDescription4 = "[" + num12 + "/" + totalDownloaded + "]";
-                var progressRecord4 = new ProgressRecord(activityId4, activity4, statusDescription4);
-                foreach (var item3 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded"))
-                {
-                    item3.Properties.Add(new PSNoteProperty("X", 3));
-                    var update2 = (IUpdate)item3.BaseObject;
-                    var updateCollection2 =
-                        (UpdateCollection)Activator.CreateInstance(
-                            Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
-                    updateCollection2.Add(update2);
-                    progressRecord4.StatusDescription = "[" + num12 + "/" + totalDownloaded + "] " + update2.Title + " " +
-                                                        item3.Properties["Size"].Value;
-                    progressRecord4.PercentComplete = num12 * 100 / totalDownloaded;
-                    WriteProgress(progressRecord4);
-                    num12++;
-                    WriteDebug(DateTime.Now + " Show update to install: " + update2.Title);
-                    var updateInstaller = UpdateSessionObj.CreateUpdateInstaller();
-                    updateInstaller.Updates = updateCollection2;
-                    if (ForceInstall)
-                    {
-                        updateInstaller.IsForced = true;
-                    }
-
-                    IInstallationResult installationResult;
-                    try
-                    {
-                        installationResult = updateInstaller.Install();
-                        WriteDebug(DateTime.Now + " Installed");
-                    }
-                    catch (COMException ex4)
-                    {
-                        var wUApiCodeDetails2 = WUToolsObj.GetWUApiCodeDetails(ex4.ErrorCode);
-                        var skip = false;
-                        if (wUApiCodeDetails2 != null)
-                        {
-                            switch (wUApiCodeDetails2.CodeType)
+                            var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
+                            WriteObject(collection, true);
+                            WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
+                            var num11 = 0;
+                            var progressRecord3 = new ProgressRecord(1, "Download updates for " + target, "[" + num11 + "/" + totalAccepted + "]");
+                            foreach (var sendToPipeline in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted"))
                             {
-                                case 2:
-                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails2.Description), wUApiCodeDetails2.HResult,
-                                        ErrorCategory.CloseError, null));
-                                    skip = true;
-                                    break;
-                                case 3:
-                                    WriteWarning(wUApiCodeDetails2.HResult + ": " + wUApiCodeDetails2.Description);
-                                    break;
+                                sendToPipeline.Properties.Add(new PSNoteProperty("X", 2));
+                                var update = (IUpdate)sendToPipeline.BaseObject;
+                                var updateCollection =
+                                    (UpdateCollection)Activator.CreateInstance(
+                                        Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
+                                updateCollection.Add(update);
+                                progressRecord3.StatusDescription = "[" + num11 + "/" + totalAccepted + "] " + update.Title + " " +
+                                                                    sendToPipeline.Properties["Size"].Value;
+                                progressRecord3.PercentComplete = num11 * 100 / totalAccepted;
+                                WriteProgress(progressRecord3);
+                                ++num11;
+                                WriteDebug(DateTime.Now + " Show update to download: " + update.Title);
+                                IUpdateDownloader updateDownloader = UpdateSessionObj.CreateUpdateDownloader();
+                                updateDownloader.Updates = updateCollection;
+                                if (ForceDownload)
+                                {
+                                    updateDownloader.IsForced = true;
+                                }
+
+                                IDownloadResult downloadResult;
+                                try
+                                {
+                                    downloadResult = updateDownloader.Download();
+                                    WriteDebug(DateTime.Now + " Downloaded");
+                                }
+                                catch (COMException ex)
+                                {
+                                    var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                    var skip = false;
+                                    if (wuApiCodeDetails != null)
+                                    {
+                                        switch (wuApiCodeDetails.CodeType)
+                                        {
+                                            case 2: // WUTools.CodeType.Error
+                                                WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
+                                                    ErrorCategory.CloseError, null));
+                                                skip = true;
+                                                break;
+                                            case 3: // WUTools.CodeType.Warning
+                                                WriteWarning(wuApiCodeDetails.HResult + ": " + wuApiCodeDetails.Description);
+                                                break;
+                                        }
+
+                                        if (skip)
+                                        {
+                                            WriteDebug(DateTime.Now + " Skip to next computer");
+                                            break;
+                                        }
+                                    }
+                                    else if (Debuger)
+                                    {
+                                        ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                                    }
+
+                                    WriteDebug(DateTime.Now + " Skip to next update");
+                                    continue;
+                                }
+
+                                var value = "";
+                                switch (downloadResult.ResultCode)
+                                {
+                                    case OperationResultCode.orcNotStarted:
+                                        value = "NotStarted";
+                                        break;
+                                    case OperationResultCode.orcInProgress:
+                                        value = "InProgress";
+                                        break;
+                                    case OperationResultCode.orcSucceeded:
+                                        value = "Downloaded";
+                                        break;
+                                    case OperationResultCode.orcSucceededWithErrors:
+                                        value = "DownloadedWithErrors";
+                                        break;
+                                    case OperationResultCode.orcFailed:
+                                        value = "Failed";
+                                        break;
+                                    case OperationResultCode.orcAborted:
+                                        value = "Aborted";
+                                        break;
+                                }
+
+                                sendToPipeline.Properties.Add(new PSNoteProperty("DownloadResult", value));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("Result", value));
+                                var text14 = "";
+                                text14 = !(sendToPipeline.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text14 + "R" : text14 + "A";
+                                text14 = !(sendToPipeline.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text14 + "F" : text14 + "D";
+                                text14 = !update.IsInstalled ? text14 + "-" : text14 + "I";
+                                text14 = !update.IsMandatory ? text14 + "-" : text14 + "M";
+                                text14 = !update.IsHidden ? text14 + "-" : text14 + "H";
+                                text14 = !update.IsUninstallable ? text14 + "-" : text14 + "U";
+                                text14 = !update.IsBeta ? text14 + "-" : text14 + "B";
+                                sendToPipeline.Properties["Status"].Value = text14;
+                                WriteObject(sendToPipeline, true);
                             }
 
-                            if (skip)
+                            progressRecord3.RecordType = ProgressRecordType.Completed;
+                            WriteProgress(progressRecord3);
+                            totalDownloaded = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
+                            WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
+                            if (!Install)
                             {
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
+                                WriteDebug(DateTime.Now + " Return downloaded update list");
+                                OutputObj = new Collection<PSObject>(collection.ToList());
+                                continue;
                             }
                         }
-                        else if (Debuger)
+
+                        if (Install)
                         {
-                            // Debuger
-                            var errorRecord6 = new ErrorRecord(ex4, "Debug", ErrorCategory.CloseError, null);
-                            ThrowTerminatingError(errorRecord6);
+                            NeedsReboot = false;
+                            var num12 = 0;
+                            var progressRecord4 = new ProgressRecord(1, "Install updates for " + target, "[" + num12 + "/" + totalDownloaded + "]");
+                            foreach (var sendToPipeline in collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded"))
+                            {
+                                sendToPipeline.Properties.Add(new PSNoteProperty("X", 3));
+                                var update = (IUpdate)sendToPipeline.BaseObject;
+                                var updateCollection2 =
+                                    (UpdateCollection)Activator.CreateInstance(
+                                        Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
+                                updateCollection2.Add(update);
+                                progressRecord4.StatusDescription = "[" + num12 + "/" + totalDownloaded + "] " + update.Title + " " +
+                                                                    sendToPipeline.Properties["Size"].Value;
+                                progressRecord4.PercentComplete = num12 * 100 / totalDownloaded;
+                                WriteProgress(progressRecord4);
+                                ++num12;
+                                WriteDebug(DateTime.Now + " Show update to install: " + update.Title);
+                                var updateInstaller = UpdateSessionObj.CreateUpdateInstaller();
+                                updateInstaller.Updates = updateCollection2;
+                                if (ForceInstall)
+                                {
+                                    updateInstaller.IsForced = true;
+                                }
+
+                                IInstallationResult installationResult;
+                                try
+                                {
+                                    installationResult = updateInstaller.Install();
+                                    WriteDebug(DateTime.Now + " Installed");
+                                }
+                                catch (COMException ex)
+                                {
+                                    var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                    var skip = false;
+                                    if (wuApiCodeDetails != null)
+                                    {
+                                        switch (wuApiCodeDetails.CodeType)
+                                        {
+                                            case 2:
+                                                WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
+                                                    ErrorCategory.CloseError, null));
+                                                skip = true;
+                                                break;
+                                            case 3:
+                                                WriteWarning(wuApiCodeDetails.HResult + ": " + wuApiCodeDetails.Description);
+                                                break;
+                                        }
+
+                                        if (skip)
+                                        {
+                                            WriteDebug(DateTime.Now + " Skip to next computer");
+                                            break;
+                                        }
+                                    }
+                                    else if (Debuger)
+                                    {
+                                        ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                                    }
+
+                                    WriteDebug(DateTime.Now + " Skip to next update");
+                                    continue;
+                                }
+
+                                if (!NeedsReboot)
+                                {
+                                    NeedsReboot = installationResult.RebootRequired;
+                                    WriteDebug(DateTime.Now + " Reboot is required");
+                                }
+
+                                var installResult = "";
+                                switch (installationResult.ResultCode)
+                                {
+                                    case OperationResultCode.orcNotStarted:
+                                        installResult = "NotStarted";
+                                        break;
+                                    case OperationResultCode.orcInProgress:
+                                        installResult = "InProgress";
+                                        break;
+                                    case OperationResultCode.orcSucceeded:
+                                        installResult = "Installed";
+                                        break;
+                                    case OperationResultCode.orcSucceededWithErrors:
+                                        installResult = "InstalledWithErrors";
+                                        break;
+                                    case OperationResultCode.orcFailed:
+                                        installResult = "Failed";
+                                        break;
+                                    case OperationResultCode.orcAborted:
+                                        installResult = "Aborted";
+                                        break;
+                                }
+
+                                sendToPipeline.Properties.Add(new PSNoteProperty("InstallResult", installResult));
+                                sendToPipeline.Properties.Add(new PSNoteProperty("Result", installResult));
+                                var text15 = "";
+                                text15 = !(sendToPipeline.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text15 + "R" : text15 + "A";
+                                text15 = !(sendToPipeline.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text15 + "F" : text15 + "D";
+                                text15 = !(sendToPipeline.Properties["InstallResult"].Value.ToString() == "Installed")
+                                    ? text15 + "F"
+                                    : !installationResult.RebootRequired
+                                        ? text15 + "I"
+                                        : text15 + "R";
+                                text15 = !update.IsMandatory ? text15 + "-" : text15 + "M";
+                                text15 = !update.IsHidden ? text15 + "-" : text15 + "H";
+                                text15 = !update.IsUninstallable ? text15 + "-" : text15 + "U";
+                                text15 = !update.IsBeta ? text15 + "-" : text15 + "B";
+                                sendToPipeline.Properties["Status"].Value = text15;
+                                WriteObject(sendToPipeline, true);
+                            }
+
+                            progressRecord4.RecordType = ProgressRecordType.Completed;
+                            WriteProgress(progressRecord4);
+                            totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
+                            WriteVerbose("Installed [" + totalInstalled + "] Updates");
+                            WriteDebug(DateTime.Now + " Return installed update list");
+                            OutputObj = new Collection<PSObject>(collection.ToList());
+                            if (totalInstalled > 0 && SendHistory)
+                            {
+                                var pCommand = "Get-WUHistory -SendReport -Last " + totalInstalled +
+                                               " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                                var invokeWuJob = new InvokeWUJob();
+                                invokeWuJob.ComputerName = [target];
+                                if (Credential != null)
+                                {
+                                    invokeWuJob.Credential = Credential;
+                                }
+
+                                invokeWuJob.Script = pCommand;
+                                invokeWuJob.TaskName = "PSWindowsUpdate_History";
+                                if (NeedsReboot)
+                                {
+                                    invokeWuJob.TriggerAtStart = true;
+                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" + pCommand +
+                                                 "\"");
+                                }
+                                else
+                                {
+                                    invokeWuJob.RunNow = true;
+                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" + pCommand +
+                                                 "\"");
+                                }
+
+                                foreach (var sendToPipeline in invokeWuJob.Invoke())
+                                {
+                                    WriteObject(sendToPipeline);
+                                }
+                            }
                         }
-
-                        WriteDebug(DateTime.Now + " Skip to next update");
-                        continue;
                     }
-
-                    if (!NeedsReboot)
-                    {
-                        NeedsReboot = installationResult.RebootRequired;
-                        WriteDebug(DateTime.Now + " Reboot is required");
-                    }
-
-                    var installResult = "";
-                    switch (installationResult.ResultCode)
-                    {
-                        case OperationResultCode.orcNotStarted:
-                            installResult = "NotStarted";
-                            break;
-                        case OperationResultCode.orcInProgress:
-                            installResult = "InProgress";
-                            break;
-                        case OperationResultCode.orcSucceeded:
-                            installResult = "Installed";
-                            break;
-                        case OperationResultCode.orcSucceededWithErrors:
-                            installResult = "InstalledWithErrors";
-                            break;
-                        case OperationResultCode.orcFailed:
-                            installResult = "Failed";
-                            break;
-                        case OperationResultCode.orcAborted:
-                            installResult = "Aborted";
-                            break;
-                    }
-
-                    item3.Properties.Add(new PSNoteProperty("InstallResult", installResult));
-                    item3.Properties.Add(new PSNoteProperty("Result", installResult));
-                    var text15 = "";
-                    text15 = !(item3.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text15 + "R" : text15 + "A";
-                    text15 = !(item3.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text15 + "F" : text15 + "D";
-                    text15 = !(item3.Properties["InstallResult"].Value.ToString() == "Installed")
-                        ? text15 + "F"
-                        : !installationResult.RebootRequired
-                            ? text15 + "I"
-                            : text15 + "R";
-                    text15 = !update2.IsMandatory ? text15 + "-" : text15 + "M";
-                    text15 = !update2.IsHidden ? text15 + "-" : text15 + "H";
-                    text15 = !update2.IsUninstallable ? text15 + "-" : text15 + "U";
-                    text15 = !update2.IsBeta ? text15 + "-" : text15 + "B";
-                    item3.Properties["Status"].Value = text15;
-                    WriteObject(item3, true);
-                }
-
-                progressRecord4.RecordType = ProgressRecordType.Completed;
-                WriteProgress(progressRecord4);
-                totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
-                WriteVerbose("Installed [" + totalInstalled + "] Updates");
-                WriteDebug(DateTime.Now + " Return installed update list");
-                OutputObj = new Collection<PSObject>(collection.ToList());
-                if (totalInstalled <= 0 || !SendHistory)
-                {
-                    continue;
-                }
-
-                var pCommand = "Get-WUHistory -SendReport -Last " + totalInstalled +
-                               " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
-                var invokeWUJob = new InvokeWUJob();
-                invokeWUJob.ComputerName = new string[1] { target };
-                if (Credential != null)
-                {
-                    invokeWUJob.Credential = Credential;
-                }
-
-                invokeWUJob.Script = pCommand;
-                invokeWUJob.TaskName = "PSWindowsUpdate_History";
-                if (NeedsReboot)
-                {
-                    invokeWUJob.TriggerAtStart = true;
-                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" + pCommand +
-                                 "\"");
-                }
-                else
-                {
-                    invokeWUJob.RunNow = true;
-                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" + pCommand +
-                                 "\"");
-                }
-
-                var enumerable = invokeWUJob.Invoke();
-                foreach (var item4 in enumerable)
-                {
-                    WriteObject(item4);
                 }
             }
         }

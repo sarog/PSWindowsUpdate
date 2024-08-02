@@ -84,15 +84,14 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -121,10 +120,10 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -134,61 +133,57 @@ namespace PSWindowsUpdate
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try
                 {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 }
                 catch
                 {
                 }
 
-                if (!ShouldProcess(target, "(" + DateTime.Now + ") Get Windows Update Agent version"))
+                if (ShouldProcess(target, "(" + DateTime.Now + ") Get Windows Update Agent version"))
                 {
-                    continue;
-                }
-
-                var wUApiAgentInfoObj = WUToolsObj.GetWUApiAgentInfoObj(target);
-                WriteDebug(DateTime.Now + " AgentInfoObj mode: " + wUApiAgentInfoObj.Mode);
-                if (wUApiAgentInfoObj.Status)
-                {
-                    AgentInfoObj = (WindowsUpdateAgentInfo)wUApiAgentInfoObj.Object;
-                    int apiMajorVer = AgentInfoObj.GetInfo("ApiMajorVersion");
-                    int apiMinorVer = AgentInfoObj.GetInfo("ApiMinorVersion");
-                    string productVersion = AgentInfoObj.GetInfo("ProductVersionString");
-                    var pSObject = new PSObject();
-                    pSObject.Properties.Add(new PSNoteProperty("ApiVersion", apiMajorVer + "." + apiMinorVer));
-                    pSObject.Properties.Add(new PSNoteProperty("WuapiDllVersion", productVersion));
-                    pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                    var pSWUModule2 = WUToolsObj.GetPSWUModule(target);
-                    try
+                    var wuApiAgentInfoObj = WUToolsObj.GetWUApiAgentInfoObj(target);
+                    WriteDebug(DateTime.Now + " AgentInfoObj mode: " + wuApiAgentInfoObj.Mode);
+                    if (wuApiAgentInfoObj.Status)
                     {
-                        WriteDebug(DateTime.Now + " PSWU module exist on " + target);
-                        var value2 = (Version)pSWUModule2.Properties["Version"].Value;
-                        var value3 = (Version)pSWUModule2.Properties["PSWUDllVersion"].Value;
-                        pSObject.Properties.Add(new PSNoteProperty("PSWindowsUpdate", value2));
-                        pSObject.Properties.Add(new PSNoteProperty("PSWUModuleDll", value3));
-                    }
-                    catch
-                    {
-                        WriteDebug(DateTime.Now + " PSWU module doesn't exist on " + target);
-                        pSObject.Properties.Add(new PSNoteProperty("PSWindowsUpdate", null));
-                        pSObject.Properties.Add(new PSNoteProperty("PSWUModuleDll", null));
-                    }
+                        AgentInfoObj = (WindowsUpdateAgentInfo)wuApiAgentInfoObj.Object;
+                        int apiMajorVer = AgentInfoObj.GetInfo("ApiMajorVersion");
+                        int apiMinorVer = AgentInfoObj.GetInfo("ApiMinorVersion");
+                        string productVersion = AgentInfoObj.GetInfo("ProductVersionString");
+                        var sendToPipeline = new PSObject();
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ApiVersion", apiMajorVer + "." + apiMinorVer));
+                        sendToPipeline.Properties.Add(new PSNoteProperty("WuapiDllVersion", productVersion));
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
+                        var pswuModule = WUToolsObj.GetPSWUModule(target);
+                        try
+                        {
+                            WriteDebug(DateTime.Now + " PSWU module exist on " + target);
+                            var version = (Version)pswuModule.Properties["Version"].Value;
+                            var dllVersion = (Version)pswuModule.Properties["PSWUDllVersion"].Value;
+                            sendToPipeline.Properties.Add(new PSNoteProperty("PSWindowsUpdate", version));
+                            sendToPipeline.Properties.Add(new PSNoteProperty("PSWUModuleDll", dllVersion));
+                        }
+                        catch
+                        {
+                            WriteDebug(DateTime.Now + " PSWU module doesn't exist on " + target);
+                            sendToPipeline.Properties.Add(new PSNoteProperty("PSWindowsUpdate", null));
+                            sendToPipeline.Properties.Add(new PSNoteProperty("PSWUModuleDll", null));
+                        }
 
-                    pSObject.TypeNames.Clear();
-                    pSObject.TypeNames.Add("PSWindowsUpdate.AgentInfo");
-                    WriteObject(pSObject, true);
-                    OutputObj.Add(pSObject);
-                }
-                else if (Debuger)
-                {
-                    var errorRecord = new ErrorRecord(wUApiAgentInfoObj.Exception, "Debug", ErrorCategory.CloseError, null);
-                    WriteError(errorRecord);
-                }
-                else
-                {
-                    var error = wUApiAgentInfoObj.Error;
-                    WriteError(error);
+                        sendToPipeline.TypeNames.Clear();
+                        sendToPipeline.TypeNames.Add("PSWindowsUpdate.AgentInfo");
+                        WriteObject(sendToPipeline, true);
+                        OutputObj.Add(sendToPipeline);
+                    }
+                    else if (Debuger)
+                    {
+                        WriteError(new ErrorRecord(wuApiAgentInfoObj.Exception, "Debug", ErrorCategory.CloseError, null));
+                    }
+                    else
+                    {
+                        WriteError(wuApiAgentInfoObj.Error);
+                    }
                 }
             }
         }

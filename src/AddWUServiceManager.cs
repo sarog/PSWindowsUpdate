@@ -188,8 +188,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 ThrowTerminatingError(new ErrorRecord(
@@ -198,7 +197,7 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -218,10 +217,10 @@ namespace PSWindowsUpdate
 
             if (ComputerName == null)
             {
-                ComputerName = new string[1]
-                {
+                ComputerName =
+                [
                     Environment.MachineName
-                };
+                ];
             }
 
             if (!MicrosoftUpdate)
@@ -237,9 +236,9 @@ namespace PSWindowsUpdate
             foreach (var target in ComputerName)
             {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
-                var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
-                WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                var pswuModule = WUToolsObj.GetPSWUModule(target);
+                WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 var serviceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(target);
                 WriteDebug(DateTime.Now + " ServiceManagerObj mode: " + serviceManagerObj.Mode);
                 if (serviceManagerObj.Status)
@@ -260,16 +259,17 @@ namespace PSWindowsUpdate
                             }
                             catch (COMException ex)
                             {
-                                var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                                if (wUApiCodeDetails != null)
+                                var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                if (wuApiCodeDetails != null)
                                 {
-                                    if (wUApiCodeDetails.CodeType == 2)
+                                    if (wuApiCodeDetails.CodeType == 2)
                                     {
-                                        WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                        WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
                                             ErrorCategory.CloseError, null));
                                     }
                                 }
-                                else if (Debuger)
+                                
+                                if (Debuger)
                                 {
                                     ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
                                 }
@@ -282,9 +282,9 @@ namespace PSWindowsUpdate
                     {
                         try
                         {
-                            var updateServiceRegistration = ServiceManagerObj.AddService2(ServiceID, AddServiceFlag, AuthorizationCabPath);
-                            updateService = updateServiceRegistration.Service;
-                            switch (updateServiceRegistration.RegistrationState)
+                            var serviceRegistration = ServiceManagerObj.AddService2(ServiceID, AddServiceFlag, AuthorizationCabPath);
+                            updateService = serviceRegistration.Service;
+                            switch (serviceRegistration.RegistrationState)
                             {
                                 case UpdateServiceRegistrationState.usrsNotRegistered:
                                     value = "Not Registered";
@@ -308,7 +308,8 @@ namespace PSWindowsUpdate
                                         ErrorCategory.CloseError, null));
                                 }
                             }
-                            else if (Debuger)
+                            
+                            if (Debuger)
                             {
                                 ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
                             }
@@ -318,15 +319,15 @@ namespace PSWindowsUpdate
                     }
 
                     WUToolsObj.RestartService(target);
-                    var pSObject = new PSObject(updateService);
-                    pSObject.Properties.Add(new PSNoteProperty("RegistrationStateName", value));
-                    pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                    pSObject.TypeNames.Clear();
-                    pSObject.TypeNames.Add("PSWindowsUpdate.ServiceManager");
-                    OutputObj.Add(pSObject);
+                    var sendToPipeline = new PSObject(updateService);
+                    sendToPipeline.Properties.Add(new PSNoteProperty("RegistrationStateName", value));
+                    sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
+                    sendToPipeline.TypeNames.Clear();
+                    sendToPipeline.TypeNames.Add("PSWindowsUpdate.ServiceManager");
+                    OutputObj.Add(sendToPipeline);
                     if (!Silent)
                     {
-                        WriteObject(pSObject, true);
+                        WriteObject(sendToPipeline, true);
                     }
                 }
                 else if (Debuger)

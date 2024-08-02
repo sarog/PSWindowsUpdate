@@ -98,15 +98,14 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -132,15 +131,14 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
         {
-            var invocationName = MyInvocation.InvocationName;
             if (Local)
             {
                 var pswuModule = WUToolsObj.GetPSWUModule(Environment.MachineName);

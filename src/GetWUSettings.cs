@@ -94,21 +94,20 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
                 if (!PSWUSettings.ContainsKey("Properties"))
                 {
-                    PSWUSettings.Add("Properties", new string[1]
+                    PSWUSettings.Add("Properties", new[]
                     {
                         "*"
                     });
@@ -128,15 +127,14 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
         {
-            var invocationName = MyInvocation.InvocationName;
             var hashtable1 = new Hashtable();
             hashtable1.Add(0, "0 - Not configured");
             hashtable1.Add(1, "1 - Disabled");
@@ -144,6 +142,7 @@ namespace PSWindowsUpdate
             hashtable1.Add(3, "3 - Notify before installation");
             hashtable1.Add(4, "4 - Scheduled installation");
             hashtable1.Add(5, "5 - Users configure");
+            
             var hashtable2 = new Hashtable();
             hashtable2.Add(0, "0 - Every Day");
             hashtable2.Add(1, "1 - Every Sunday");
@@ -188,17 +187,14 @@ namespace PSWindowsUpdate
                         foreach (var valueName in registryKey3.GetValueNames())
                         {
                             var key = registryKey3.GetValue(valueName);
-                            var str2 = valueName;
-                            if (!(str2 == "AUOptions"))
+                            switch (valueName)
                             {
-                                if (str2 == "ScheduledInstallDay")
-                                {
+                                case "AUOptions":
+                                    key = hashtable1[key];
+                                    break;
+                                case "ScheduledInstallDay":
                                     key = hashtable2[key];
-                                }
-                            }
-                            else
-                            {
-                                key = hashtable1[key];
+                                    break;
                             }
 
                             sendToPipeline.Properties.Add(new PSNoteProperty(valueName, key));

@@ -142,16 +142,16 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (ComputerName != null)
             {
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -224,125 +224,120 @@ namespace PSWindowsUpdate
                                  ": Can't check PSWindowsUpdate on destination machine - check WinRM. Can't guarantee Invoke success.");
                 }
 
-                if (!ShouldProcess(target, "(" + DateTime.Now + ") Invoke WU job: " + execAction.Path + " " + execAction.Arguments))
+                if (ShouldProcess(target, "(" + DateTime.Now + ") Invoke WU job: " + execAction.Path + " " + execAction.Arguments))
                 {
-                    continue;
-                }
 
-                for (var j = 1; j <= 3; j++)
-                {
-                    try
+                    for (var j = 1; j <= 3; ++j)
                     {
-                        if (Credential != null)
+                        try
                         {
-                            WriteVerbose("Try to connect " + target + ". Test " + j);
-                            // todo: use PSCredMan.cs or switch to PSCredential?
-                            taskScheduler.Connect(target, UserName, Domain, Password);
-                        }
-                        else
-                        {
-                            WriteVerbose("Try to connect " + target + ". Test " + j);
-                            taskScheduler.Connect(target, Type.Missing, Type.Missing, Type.Missing);
-                        }
-                    }
-                    catch (COMException ex)
-                    {
-                        if (j >= 3)
-                        {
-                            var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                            if (wUApiCodeDetails != null)
+                            if (Credential != null)
                             {
-                                var codeType = wUApiCodeDetails.CodeType;
-                                var num = codeType;
-                                if (num == 2)
-                                {
-                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
-                                        ErrorCategory.CloseError, null));
-                                }
-                            }
-                            else if (Debuger)
-                            {
-                                var errorRecord2 = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
-                                ThrowTerminatingError(errorRecord2);
+                                WriteVerbose("Try to connect " + target + ". Test " + j);
+                                // todo: use PSCredMan.cs or switch to PSCredential?
+                                taskScheduler.Connect(target, UserName, Domain, Password);
                             }
                             else
                             {
-                                WriteError(new ErrorRecord(new Exception(target + ": Unknown failure. Try debug."), "Unknown",
-                                    ErrorCategory.CloseError, null));
+                                WriteVerbose("Try to connect " + target + ". Test " + j);
+                                taskScheduler.Connect(target, Type.Missing, Type.Missing, Type.Missing);
                             }
+                        }
+                        catch (COMException ex)
+                        {
+                            if (j >= 3)
+                            {
+                                var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                if (wuApiCodeDetails != null)
+                                {
+                                    if (wuApiCodeDetails.CodeType == 2)
+                                    {
+                                        WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
+                                            ErrorCategory.CloseError, null));
+                                    }
+                                }
+                                else if (Debuger)
+                                {
+                                    ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                                }
+                                else
+                                {
+                                    WriteError(new ErrorRecord(new Exception(target + ": Unknown failure. Try debug."), "Unknown",
+                                        ErrorCategory.CloseError, null));
+                                }
+                            }
+                            else
+                            {
+                                Thread.Sleep(500);
+                            }
+                        }
+                    }
+
+                    var folder = taskScheduler.GetFolder("\\");
+                    var num2 = 1;
+                    var runningTasks = taskScheduler.GetRunningTasks(0);
+                    IRunningTask runningTask = null;
+                    foreach (IRunningTask item in runningTasks)
+                    {
+                        if (item.Name == TaskName)
+                        {
+                            runningTask = item;
+                            break;
+                        }
+                    }
+
+                    if (runningTask != null)
+                    {
+                        num2 = 0;
+                        if (Force)
+                        {
+                            WriteVerbose("Stopping task: " + TaskName);
+                            folder.GetTask(TaskName).Stop(0);
+                            num2 = 1;
                         }
                         else
                         {
-                            Thread.Sleep(500);
+                            var task = folder.GetTask(TaskName);
+                            var path = ((IExecAction)task.Definition.Actions[0]).Path;
+                            var arguments = ((IExecAction)task.Definition.Actions[0]).Arguments;
+                            ThrowTerminatingError(new ErrorRecord(
+                                new Exception(target + ": Job " + TaskName + " (" + path + " " + arguments + ") is still running."),
+                                "RegisterTaskDefinition", ErrorCategory.CloseError, null));
                         }
                     }
-                }
 
-                var folder = taskScheduler.GetFolder("\\");
-                var num2 = 1;
-                var runningTasks = taskScheduler.GetRunningTasks(0);
-                IRunningTask runningTask = null;
-                foreach (IRunningTask item in runningTasks)
-                {
-                    if (item.Name == TaskName)
+                    if (num2 == 1)
                     {
-                        runningTask = item;
-                        break;
-                    }
-                }
-
-                if (runningTask != null)
-                {
-                    num2 = 0;
-                    if (Force)
-                    {
-                        WriteVerbose("Stopping task: " + TaskName);
-                        folder.GetTask(TaskName).Stop(0);
-                        num2 = 1;
-                    }
-                    else
-                    {
-                        var task = folder.GetTask(TaskName);
-                        var path = ((IExecAction)task.Definition.Actions[0]).Path;
-                        var arguments = ((IExecAction)task.Definition.Actions[0]).Arguments;
-                        var errorRecord3 = new ErrorRecord(
-                            new Exception(target + ": Job " + TaskName + " (" + path + " " + arguments + ") is still running."),
-                            "RegisterTaskDefinition", ErrorCategory.CloseError, null);
-                        ThrowTerminatingError(errorRecord3);
-                    }
-                }
-
-                if (num2 == 1)
-                {
-                    WriteVerbose("Registering task: " + TaskName);
-                    folder.RegisterTaskDefinition(TaskName, taskDefinition, 6, "SYSTEM", null, _TASK_LOGON_TYPE.TASK_LOGON_PASSWORD,
-                        Type.Missing);
-                    if (RunNow)
-                    {
-                        Thread.Sleep(5000);
-                        WriteVerbose("Starting task: " + TaskName);
-                        folder.GetTask(TaskName).Run(0);
-                    }
-                }
-
-                var tasks = folder.GetTasks(0);
-                foreach (IRegisteredTask registeredTask in tasks)
-                {
-                    var infoSource = "";
-                    try
-                    {
-                        infoSource = registeredTask.Definition.RegistrationInfo.Source;
-                    }
-                    catch
-                    {
-                        WriteVerbose("Task source error. Skipping clear");
+                        WriteVerbose("Registering task: " + TaskName);
+                        folder.RegisterTaskDefinition(TaskName, taskDefinition, 6, "SYSTEM", null, _TASK_LOGON_TYPE.TASK_LOGON_PASSWORD,
+                            Type.Missing);
+                        if (RunNow)
+                        {
+                            Thread.Sleep(5000);
+                            WriteVerbose("Starting task: " + TaskName);
+                            folder.GetTask(TaskName).Run(0);
+                        }
                     }
 
-                    if (infoSource == "PSWindowsUpdate" &&
-                        DateTime.Parse(registeredTask.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
-                        registeredTask.State != _TASK_STATE.TASK_STATE_RUNNING)
+                    var tasks = folder.GetTasks(0);
+                    foreach (IRegisteredTask registeredTask in tasks)
                     {
-                        folder.DeleteTask(registeredTask.Name, 0);
+                        var infoSource = "";
+                        try
+                        {
+                            infoSource = registeredTask.Definition.RegistrationInfo.Source;
+                        }
+                        catch
+                        {
+                            WriteVerbose("Task source error. Skipping clear");
+                        }
+
+                        if (infoSource == "PSWindowsUpdate" &&
+                            DateTime.Parse(registeredTask.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
+                            registeredTask.State != _TASK_STATE.TASK_STATE_RUNNING)
+                        {
+                            folder.DeleteTask(registeredTask.Name, 0);
+                        }
                     }
                 }
             }

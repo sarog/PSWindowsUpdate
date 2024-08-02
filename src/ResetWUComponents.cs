@@ -139,8 +139,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 ThrowTerminatingError(new ErrorRecord(
@@ -183,7 +182,6 @@ namespace PSWindowsUpdate
 
         private void CoreProcessing()
         {
-            var invocationName = MyInvocation.InvocationName;
             foreach (var target in ComputerName)
             {
                 if (ShouldProcess(target,

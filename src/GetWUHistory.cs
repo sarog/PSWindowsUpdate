@@ -119,15 +119,14 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -150,10 +149,10 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -163,94 +162,92 @@ namespace PSWindowsUpdate
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try
                 {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 }
                 catch
                 {
                 }
 
-                if (!ShouldProcess(target, "(" + DateTime.Now + ") Get Windows Update History"))
+                if (ShouldProcess(target, "(" + DateTime.Now + ") Get Windows Update History"))
                 {
-                    continue;
-                }
-
-                var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(target);
-                WriteDebug(DateTime.Now + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
-                if (wUApiUpdateSessionObj.Status)
-                {
-                    UpdateSessionObj = (UpdateSession)wUApiUpdateSessionObj.Object;
-                    var updateSearcher = UpdateSessionObj.CreateUpdateSearcher();
-                    var collection = new Collection<PSObject>();
-                    var startIndex = 0;
-                    var flag = false;
-                    do
+                    var updateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(target);
+                    WriteDebug(DateTime.Now + " UpdateSessionObj mode: " + updateSessionObj.Mode);
+                    if (updateSessionObj.Status)
                     {
-                        try
+                        UpdateSessionObj = (UpdateSession)updateSessionObj.Object;
+                        var updateSearcher = UpdateSessionObj.CreateUpdateSearcher();
+                        var collection = new Collection<PSObject>();
+                        var startIndex = 0;
+                        var flag = false;
+                        do
                         {
-                            var historyEntryCollection = updateSearcher.QueryHistory(startIndex, 1);
-                            foreach (IUpdateHistoryEntry updateHistoryEntry in historyEntryCollection)
+                            try
                             {
-                                if (updateHistoryEntry.Date.Year > 1900 && updateHistoryEntry.Date > MaxDate)
+                                var historyEntryCollection = updateSearcher.QueryHistory(startIndex, 1);
+                                foreach (IUpdateHistoryEntry updateHistoryEntry in historyEntryCollection)
                                 {
-                                    var pSObject = new PSObject(updateHistoryEntry);
-                                    var opName = "";
-                                    switch (updateHistoryEntry.Operation)
+                                    if (updateHistoryEntry.Date.Year > 1900 && updateHistoryEntry.Date > MaxDate)
                                     {
-                                        case tagUpdateOperation.uoInstallation:
-                                            opName = "Installation";
-                                            break;
-                                        case tagUpdateOperation.uoUninstallation:
-                                            opName = "Uninstallation";
-                                            break;
-                                    }
+                                        var sendToPipeline = new PSObject(updateHistoryEntry);
+                                        var opName = "";
+                                        switch (updateHistoryEntry.Operation)
+                                        {
+                                            case tagUpdateOperation.uoInstallation:
+                                                opName = "Installation";
+                                                break;
+                                            case tagUpdateOperation.uoUninstallation:
+                                                opName = "Uninstallation";
+                                                break;
+                                        }
 
-                                    var result = "";
-                                    switch (updateHistoryEntry.ResultCode)
+                                        var result = "";
+                                        switch (updateHistoryEntry.ResultCode)
+                                        {
+                                            case OperationResultCode.orcNotStarted:
+                                                result = "NotStarted";
+                                                break;
+                                            case OperationResultCode.orcInProgress:
+                                                result = "InProgress";
+                                                break;
+                                            case OperationResultCode.orcSucceeded:
+                                                result = "Succeeded";
+                                                break;
+                                            case OperationResultCode.orcSucceededWithErrors:
+                                                result = "SucceededWithErrors";
+                                                break;
+                                            case OperationResultCode.orcFailed:
+                                                result = "Failed";
+                                                break;
+                                            case OperationResultCode.orcAborted:
+                                                result = "Aborted ";
+                                                break;
+                                        }
+
+                                        var kbId = "";
+                                        var match = Regex.Match(updateHistoryEntry.Title, "KB(\\d+)");
+                                        if (match.Success)
+                                        {
+                                            kbId = match.Value;
+                                        }
+
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("OperationName", opName));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("Date", updateHistoryEntry.Date.ToLocalTime()));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("Title", updateHistoryEntry.Title));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("Result", result));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("KB", kbId));
+                                        sendToPipeline.TypeNames.Clear();
+                                        sendToPipeline.TypeNames.Add("PSWindowsUpdate.History");
+                                        collection.Add(sendToPipeline);
+                                        WriteObject(sendToPipeline, true);
+                                        flag = true;
+                                    }
+                                    else
                                     {
-                                        case OperationResultCode.orcNotStarted:
-                                            result = "NotStarted";
-                                            break;
-                                        case OperationResultCode.orcInProgress:
-                                            result = "InProgress";
-                                            break;
-                                        case OperationResultCode.orcSucceeded:
-                                            result = "Succeeded";
-                                            break;
-                                        case OperationResultCode.orcSucceededWithErrors:
-                                            result = "SucceededWithErrors";
-                                            break;
-                                        case OperationResultCode.orcFailed:
-                                            result = "Failed";
-                                            break;
-                                        case OperationResultCode.orcAborted:
-                                            result = "Aborted ";
-                                            break;
+                                        flag = false;
                                     }
-
-                                    var kbId = "";
-                                    var match = Regex.Match(updateHistoryEntry.Title, "KB(\\d+)");
-                                    if (match.Success)
-                                    {
-                                        kbId = match.Value;
-                                    }
-
-                                    pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                                    pSObject.Properties.Add(new PSNoteProperty("OperationName", opName));
-                                    pSObject.Properties.Add(new PSNoteProperty("Date", updateHistoryEntry.Date.ToLocalTime()));
-                                    pSObject.Properties.Add(new PSNoteProperty("Title", updateHistoryEntry.Title));
-                                    pSObject.Properties.Add(new PSNoteProperty("Result", result));
-                                    pSObject.Properties.Add(new PSNoteProperty("KB", kbId));
-                                    pSObject.TypeNames.Clear();
-                                    pSObject.TypeNames.Add("PSWindowsUpdate.History");
-                                    collection.Add(pSObject);
-                                    WriteObject(pSObject, true);
-                                    flag = true;
-                                }
-                                else
-                                {
-                                    flag = false;
                                 }
 
                                 if (historyEntryCollection.Count == 0)
@@ -258,30 +255,28 @@ namespace PSWindowsUpdate
                                     flag = false;
                                 }
                             }
-                        }
-                        catch
-                        {
-                            break;
-                        }
+                            catch
+                            {
+                                break;
+                            }
 
-                        startIndex++;
-                        if (Last > 0 && startIndex >= Last)
-                        {
-                            flag = false;
-                        }
-                    } while (flag);
+                            ++startIndex;
+                            if (Last > 0 && startIndex >= Last)
+                            {
+                                flag = false;
+                            }
+                        } while (flag);
 
-                    OutputObj = new Collection<PSObject>(OutputObj.Concat(collection).ToList());
-                }
-                else if (Debuger)
-                {
-                    var errorRecord = new ErrorRecord(wUApiUpdateSessionObj.Exception, "Debug", ErrorCategory.CloseError, null);
-                    WriteError(errorRecord);
-                }
-                else
-                {
-                    var error = wUApiUpdateSessionObj.Error;
-                    WriteError(error);
+                        OutputObj = new Collection<PSObject>(OutputObj.Concat(collection).ToList());
+                    }
+                    else if (Debuger)
+                    {
+                        WriteError(new ErrorRecord(updateSessionObj.Exception, "Debug", ErrorCategory.CloseError, null));
+                    }
+                    else
+                    {
+                        WriteError(updateSessionObj.Error);
+                    }
                 }
             }
         }
@@ -396,10 +391,10 @@ namespace PSWindowsUpdate
         protected override void EndProcessing()
         {
             CmdletEnd = DateTime.Now;
-            var CmdletInfo = new PSObject();
-            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
-            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
-            CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
+            var cmdletInfo = new PSObject();
+            cmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
+            cmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
+            cmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Send report");
@@ -408,7 +403,7 @@ namespace PSWindowsUpdate
                     PSWUSettings.Add("Properties", new History());
                 }
 
-                var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
+                var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, cmdletInfo);
                 if (psObject.Properties.Match("ErrorRecord").Count == 1)
                 {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);

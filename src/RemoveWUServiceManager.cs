@@ -99,8 +99,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 ThrowTerminatingError(new ErrorRecord(
@@ -109,7 +108,7 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -135,15 +134,14 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
         {
-            var invocationName = MyInvocation.InvocationName;
             foreach (var target in ComputerName)
             {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
@@ -178,14 +176,12 @@ namespace PSWindowsUpdate
                         }
                         catch (COMException ex)
                         {
-                            var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                            if (wUApiCodeDetails != null)
+                            var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                            if (wuApiCodeDetails != null)
                             {
-                                var codeType = wUApiCodeDetails.CodeType;
-                                var num = codeType;
-                                if (num == 2)
+                                if (wuApiCodeDetails.CodeType == 2)
                                 {
-                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                    WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
                                         ErrorCategory.CloseError, null));
                                 }
                             }
@@ -225,7 +221,7 @@ namespace PSWindowsUpdate
                 var text2 = "Remove-WUServiceManager -ServiceID " + ServiceID +
                             " -Verbose -Confirm:$false *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                 var invokeWUJob = new InvokeWUJob();
-                invokeWUJob.ComputerName = new string[1] { target };
+                invokeWUJob.ComputerName = [target];
                 if (Credential != null)
                 {
                     invokeWUJob.Credential = Credential;

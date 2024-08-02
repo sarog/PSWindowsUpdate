@@ -563,8 +563,7 @@ namespace PSWindowsUpdate
         protected override void BeginProcessing()
         {
             CmdletStart = DateTime.Now;
-            var invocationName = MyInvocation.InvocationName;
-            WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
+            WriteDebug(DateTime.Now + " CmdletStart: " + MyInvocation.InvocationName);
             if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
             {
                 ThrowTerminatingError(new ErrorRecord(
@@ -776,7 +775,7 @@ namespace PSWindowsUpdate
                             WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + uid);
                         }
 
-                        num++;
+                        ++num;
                     }
                 }
 
@@ -795,7 +794,7 @@ namespace PSWindowsUpdate
 
                         criteria = criteria + "(" + prevCriteria + " and CategoryIDs contains '" + catID + "')";
                         WriteDebug(DateTime.Now + " Set pre search criteria: CategoryIDs = " + catID);
-                        num++;
+                        ++num;
                     }
                 }
             }
@@ -1088,7 +1087,7 @@ namespace PSWindowsUpdate
                                 progressRecord.StatusDescription = "[" + num3 + "/" + count + "] " + update.Title + " " + text11;
                                 progressRecord.PercentComplete = num3 * 100 / count;
                                 WriteProgress(progressRecord);
-                                num3++;
+                                ++num3;
                                 var foundMatch = true;
                                 if (Category != null || NotCategory != null)
                                 {
@@ -1309,9 +1308,9 @@ namespace PSWindowsUpdate
                             var count2 = collection.Count;
                             WriteVerbose("Found [" + count2 + "] Updates in post search criteria");
                             if (Hide ||
-                                string.Equals(MyInvocation.InvocationName, "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(MyInvocation.InvocationName, "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(MyInvocation.InvocationName, "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase))
+                                string.Equals(invocationName, "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(invocationName, "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(invocationName, "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase))
                             {
                                 var text21 = !Hide ? "Show" : "Hide";
                                 var num5 = 0;
@@ -1324,7 +1323,7 @@ namespace PSWindowsUpdate
                                                                         item.Properties["Size"].Value;
                                     progressRecord2.PercentComplete = num5 * 100 / count2;
                                     WriteProgress(progressRecord2);
-                                    num5++;
+                                    ++num5;
                                     if (AcceptAll)
                                     {
                                         flag = true;
@@ -1392,7 +1391,7 @@ namespace PSWindowsUpdate
                                                                             item.Properties["Size"].Value;
                                         progressRecord3.PercentComplete = num8 * 100 / count2;
                                         WriteProgress(progressRecord3);
-                                        num8++;
+                                        ++num8;
                                         WriteDebug(DateTime.Now + " Show update to accept: " + update.Title);
                                         var flag = AcceptAll || (AutoSelectOnly
                                             ? update.AutoSelectOnWebSites
@@ -1432,6 +1431,7 @@ namespace PSWindowsUpdate
                                             }
                                             catch (Exception ex)
                                             {
+                                                // ignored
                                             }
 
                                             if (flag)
@@ -1455,6 +1455,7 @@ namespace PSWindowsUpdate
                                             }
                                             catch (Exception ex)
                                             {
+                                                // ignored
                                             }
 
                                             text25 += "R";
@@ -1749,7 +1750,7 @@ namespace PSWindowsUpdate
                                                                             sendToPipeline.Properties["Size"].Value;
                                         progressRecord4.PercentComplete = num12 * 100 / totalAccepted;
                                         WriteProgress(progressRecord4);
-                                        num12++;
+                                        ++num12;
                                         WriteDebug(DateTime.Now + " Show update to download: " + update.Title);
                                         IUpdateDownloader updateDownloader = UpdateSessionObj.CreateUpdateDownloader();
                                         updateDownloader.Updates = updateCollection3;
@@ -1866,7 +1867,7 @@ namespace PSWindowsUpdate
                                                                             sendToPipeline.Properties["Size"].Value;
                                         progressRecord5.PercentComplete = num13 * 100 / totalDownloaded;
                                         WriteProgress(progressRecord5);
-                                        num13++;
+                                        ++num13;
                                         WriteDebug(DateTime.Now + " Show update to install: " + update.Title);
                                         var updateInstaller = UpdateSessionObj.CreateUpdateInstaller();
                                         updateInstaller.Updates = updateCollection4;

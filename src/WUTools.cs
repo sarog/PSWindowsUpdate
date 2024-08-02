@@ -287,9 +287,9 @@ namespace PSWindowsUpdate
         {
             try
             {
-                new Process()
+                new Process
                 {
-                    StartInfo = new ProcessStartInfo()
+                    StartInfo = new ProcessStartInfo
                     {
                         WindowStyle = ProcessWindowStyle.Hidden,
                         FileName = FileName,
@@ -299,6 +299,7 @@ namespace PSWindowsUpdate
             }
             catch
             {
+                // ignored
             }
         }
 
@@ -1134,7 +1135,7 @@ namespace PSWindowsUpdate
             {
                 credential.Target = "PSWindowsUpdate";
                 credential.Load();
-                return new PSCredMan()
+                return new PSCredMan
                 {
                     Username = credential.Username,
                     Password = credential.Password
@@ -1198,9 +1199,9 @@ namespace PSWindowsUpdate
             PSObject CmdletInfo = null,
             string TableStyle = null)
         {
-            string str1 = "" +
-                          "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n<head>\r\n<style>\r\n<!--\r\n    table {\r\n        font-family: Verdana;\r\n        border-style: dashed;\r\n        border-width: 1px;\r\n        border-color: #FF6600;\r\n        padding: 5px;\r\n        background-color: #FFFFCC;\r\n        table-layout: auto;\r\n        text-align: left;\r\n        font-size: 8pt;\r\nwidth: 100%;\r\n        }\r\n    table th {\r\n        border-bottom-style: solid;\r\n        border-bottom-width: 1px;\r\n        text-align: left;\r\n        }\r\n    table td {\r\n        border-top-style: solid;\r\n        border-top-width: 1px;\r\n        }\r\n    p {\r\n        margin-bottom: 2px\r\n        margin-top: 2px\r\n        }\r\n    body {\r\n        font-family: Verdana;\r\n        font-size: 8pt;\r\n        }\r\n-->\r\n</style>\r\n</head>\r\n<body>\r\n";
-            System.Web.UI.WebControls.Table table = new System.Web.UI.WebControls.Table();
+            var str1 = "" +
+                       "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n<head>\r\n<style>\r\n<!--\r\n    table {\r\n        font-family: Verdana;\r\n        border-style: dashed;\r\n        border-width: 1px;\r\n        border-color: #FF6600;\r\n        padding: 5px;\r\n        background-color: #FFFFCC;\r\n        table-layout: auto;\r\n        text-align: left;\r\n        font-size: 8pt;\r\nwidth: 100%;\r\n        }\r\n    table th {\r\n        border-bottom-style: solid;\r\n        border-bottom-width: 1px;\r\n        text-align: left;\r\n        }\r\n    table td {\r\n        border-top-style: solid;\r\n        border-top-width: 1px;\r\n        }\r\n    p {\r\n        margin-bottom: 2px\r\n        margin-top: 2px\r\n        }\r\n    body {\r\n        font-family: Verdana;\r\n        font-size: 8pt;\r\n        }\r\n-->\r\n</style>\r\n</head>\r\n<body>\r\n";
+            var table = new System.Web.UI.WebControls.Table();
             if (TableStyle == null)
             {
                 TableStyle = "Table";
@@ -1210,21 +1211,21 @@ namespace PSWindowsUpdate
 
             if (TableStyle == "Table")
             {
-                TableHeaderRow row1 = new TableHeaderRow();
-                foreach (string psObjectProperty in PSObjectProperties)
+                var row1 = new TableHeaderRow();
+                foreach (var psObjectProperty in PSObjectProperties)
                 {
-                    TableHeaderCell cell = new TableHeaderCell();
+                    var cell = new TableHeaderCell();
                     cell.Text = psObjectProperty;
-                    row1.Cells.Add((TableCell)cell);
+                    row1.Cells.Add(cell);
                 }
 
-                table.Rows.AddAt(0, (TableRow)row1);
-                foreach (PSObject psObject in PSObjects)
+                table.Rows.AddAt(0, row1);
+                foreach (var psObject in PSObjects)
                 {
-                    TableRow row2 = new TableRow();
-                    foreach (string psObjectProperty in PSObjectProperties)
+                    var row2 = new TableRow();
+                    foreach (var psObjectProperty in PSObjectProperties)
                     {
-                        TableCell cell = new TableCell();
+                        var cell = new TableCell();
                         try
                         {
                             cell.Text = psObject.Properties[psObjectProperty].Value.ToString();
@@ -1241,16 +1242,16 @@ namespace PSWindowsUpdate
             }
             else
             {
-                foreach (PSObject psObject in PSObjects)
+                foreach (var psObject in PSObjects)
                 {
-                    foreach (string psObjectProperty in PSObjectProperties)
+                    foreach (var psObjectProperty in PSObjectProperties)
                     {
-                        TableRow row = new TableRow();
-                        row.Cells.Add(new TableCell()
+                        var row = new TableRow();
+                        row.Cells.Add(new TableCell
                         {
                             Text = psObjectProperty
                         });
-                        TableCell cell = new TableCell();
+                        var cell = new TableCell();
                         try
                         {
                             cell.Text = psObject.Properties[psObjectProperty].Value.ToString();
@@ -1265,17 +1266,17 @@ namespace PSWindowsUpdate
                 }
             }
 
-            using (StringWriter writer = new StringWriter())
+            using (var writer = new StringWriter())
             {
-                table.RenderControl(new HtmlTextWriter((TextWriter)writer));
+                table.RenderControl(new HtmlTextWriter(writer));
                 str1 += writer.ToString();
             }
 
             if (CmdletInfo != null)
             {
-                string str2 = str1 + "<p>";
-                foreach (PSPropertyInfo property in CmdletInfo.Properties)
-                    str2 = str2 + property.Name.ToString() + ": " + CmdletInfo.Properties[property.Name].Value.ToString() + "<br />";
+                var str2 = str1 + "<p>";
+                foreach (var property in CmdletInfo.Properties)
+                    str2 = str2 + property.Name + ": " + CmdletInfo.Properties[property.Name].Value + "<br />";
                 str1 = str2 + "</p>";
             }
 
@@ -1415,42 +1416,30 @@ namespace PSWindowsUpdate
                 }
                 else
                 {
-                    if (!(optionName == "Port"))
+                    switch (optionName)
                     {
-                        if (!(optionName == "EnableSsl"))
-                        {
-                            if (!(optionName == "Properties"))
-                            {
-                                if (!(optionName == "Style"))
-                                {
-                                    if (optionName == "Subject")
-                                    {
-                                        mailSettings.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
-                                    }
-                                    else
-                                    {
-                                        var errorRecord = new ErrorRecord(
-                                            new Exception("Missing " + optionName +
-                                                          "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                            optionName, ErrorCategory.CloseError, null);
-                                        psObject.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
-                                        return psObject;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                mailSettings.Add("Properties", "*");
-                            }
-                        }
-                        else
-                        {
+                        case "Port":
+                            mailSettings.Add("Port", 25);
+                            goto case "Style";
+                        case "EnableSsl":
                             mailSettings.Add("EnableSsl", false);
-                        }
-                    }
-                    else
-                    {
-                        mailSettings.Add("Port", 25);
+                            goto case "Style";
+                        case "Properties":
+                            mailSettings.Add("Properties", "*");
+                            goto case "Style";
+                        case "Style":
+                            continue;
+                        case "Subject":
+                            mailSettings.Add("Subject",
+                                Environment.MachineName + ": Windows Update report " + DateTime.Now);
+                            goto case "Style";
+                        default:
+                            var errorRecord =
+                                new ErrorRecord(
+                                    new Exception("Missing " + optionName + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
+                                    optionName, ErrorCategory.CloseError, null);
+                            psObject.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
+                            return psObject;
                     }
                 }
             }
@@ -1496,42 +1485,30 @@ namespace PSWindowsUpdate
                 }
                 else
                 {
-                    if (!(optionName == "Port"))
+                    switch (optionName)
                     {
-                        if (!(optionName == "EnableSsl"))
-                        {
-                            if (!(optionName == "Properties"))
-                            {
-                                if (!(optionName == "Style"))
-                                {
-                                    if (optionName == "Subject")
-                                    {
-                                        mailSettings.Add("Subject", Environment.MachineName + ": Windows Update report " + DateTime.Now);
-                                    }
-                                    else
-                                    {
-                                        var errorRecord = new ErrorRecord(
-                                            new Exception("Missing " + optionName +
-                                                          "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
-                                            optionName, ErrorCategory.CloseError, null);
-                                        psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
-                                        return psObject1;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                mailSettings.Add("Properties", "*");
-                            }
-                        }
-                        else
-                        {
+                        case "Port":
+                            mailSettings.Add("Port", 25);
+                            goto case "Style";
+                        case "EnableSsl":
                             mailSettings.Add("EnableSsl", false);
-                        }
-                    }
-                    else
-                    {
-                        mailSettings.Add("Port", 25);
+                            goto case "Style";
+                        case "Properties":
+                            mailSettings.Add("Properties", "*");
+                            goto case "Style";
+                        case "Style":
+                            continue;
+                        case "Subject":
+                            mailSettings.Add("Subject",
+                                Environment.MachineName + ": Windows Update report " + DateTime.Now);
+                            goto case "Style";
+                        default:
+                            var errorRecord =
+                                new ErrorRecord(
+                                    new Exception("Missing " + optionName + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
+                                    optionName, ErrorCategory.CloseError, null);
+                            psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
+                            return psObject1;
                     }
                 }
             }
@@ -1539,14 +1516,14 @@ namespace PSWindowsUpdate
             psObject1.Properties.Add(new PSNoteProperty("PSWUSettings", mailSettings));
             if (PSObjects != null)
             {
-                var PSObjectProperties = new Collection<string>();
+                var psObjectProperties = new Collection<string>();
                 if (mailSettings["Properties"].ToString() == "*")
                 {
                     foreach (var property in PSObjects[0].Properties)
                     {
-                        if (!PSObjectProperties.Contains(property.Name))
+                        if (!psObjectProperties.Contains(property.Name))
                         {
-                            PSObjectProperties.Add(property.Name);
+                            psObjectProperties.Add(property.Name);
                         }
                     }
                 }
@@ -1556,9 +1533,9 @@ namespace PSWindowsUpdate
                     {
                         foreach (var property in psObject2.Properties)
                         {
-                            if (!PSObjectProperties.Contains(property.Name))
+                            if (!psObjectProperties.Contains(property.Name))
                             {
-                                PSObjectProperties.Add(property.Name);
+                                psObjectProperties.Add(property.Name);
                             }
                         }
                     }
@@ -1567,13 +1544,13 @@ namespace PSWindowsUpdate
                 {
                     foreach (var obj in (object[])mailSettings["Properties"])
                     {
-                        PSObjectProperties.Add(obj.ToString());
+                        psObjectProperties.Add(obj.ToString());
                     }
                 }
 
                 var str = !mailSettings.ContainsKey("Style")
-                    ? ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo)
-                    : ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, mailSettings["Style"].ToString());
+                    ? ObjectToHtml(PSObjects, psObjectProperties, CmdletInfo)
+                    : ObjectToHtml(PSObjects, psObjectProperties, CmdletInfo, mailSettings["Style"].ToString());
                 var message = new MailMessage(mailSettings["From"].ToString(), mailSettings["To"].ToString());
                 var smtpClient = new SmtpClient();
                 smtpClient.Host = mailSettings["SmtpServer"].ToString();
@@ -1624,9 +1601,9 @@ namespace PSWindowsUpdate
             List<PSObject> PSObjects,
             PSObject CmdletInfo = null)
         {
-            PSObject psObject1 = new PSObject();
-            string[] strArray = new string[8]
-            {
+            var psObject1 = new PSObject();
+            string[] strArray =
+            [
                 "SmtpServer",
                 "Port",
                 "EnableSsl",
@@ -1635,99 +1612,99 @@ namespace PSWindowsUpdate
                 "Subject",
                 "Properties",
                 "Style"
-            };
-            Hashtable pswuSettings = this.GetPSWUSettings();
-            Hashtable hashtable = new Hashtable();
-            foreach (string str in strArray)
+            ];
+            var pswuSettings = this.GetPSWUSettings();
+            var hashtable = new Hashtable();
+            foreach (var str in strArray)
             {
-                if (LocalPSWUSettings.ContainsKey((object)str))
-                    hashtable.Add((object)str, LocalPSWUSettings[(object)str]);
-                else if (pswuSettings.ContainsKey((object)str))
+                if (LocalPSWUSettings.ContainsKey(str))
+                    hashtable.Add(str, LocalPSWUSettings[str]);
+                else if (pswuSettings.ContainsKey(str))
                 {
                     if (str != "Properties")
-                        hashtable.Add((object)str, pswuSettings[(object)str]);
+                        hashtable.Add(str, pswuSettings[str]);
                 }
                 else
                 {
                     switch (str)
                     {
                         case "Port":
-                            hashtable.Add((object)"Port", (object)25);
+                            hashtable.Add("Port", 25);
                             goto case "Style";
                         case "EnableSsl":
-                            hashtable.Add((object)"EnableSsl", (object)false);
+                            hashtable.Add("EnableSsl", false);
                             goto case "Style";
                         case "Properties":
-                            hashtable.Add((object)"Properties", (object)"*");
+                            hashtable.Add("Properties", "*");
                             goto case "Style";
                         case "Style":
                             continue;
                         case "Subject":
-                            hashtable.Add((object)"Subject",
-                                (object)(Environment.MachineName + ": Windows Update report " + DateTime.Now.ToString()));
+                            hashtable.Add("Subject",
+                                Environment.MachineName + ": Windows Update report " + DateTime.Now);
                             goto case "Style";
                         default:
-                            ErrorRecord errorRecord = new ErrorRecord(
+                            var errorRecord = new ErrorRecord(
                                 new Exception("Missing " + str + "; Use -PSWUSettings or declare PSWUSettings.xml in ModuleBase path."),
                                 str,
-                                ErrorCategory.CloseError, (object)null);
-                            psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord));
+                                ErrorCategory.CloseError, null);
+                            psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                             return psObject1;
                     }
                 }
             }
 
-            psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("PSWUSettings", (object)hashtable));
+            psObject1.Properties.Add(new PSNoteProperty("PSWUSettings", hashtable));
             if (PSObjects != null)
             {
-                List<string> PSObjectProperties = new List<string>();
-                if (hashtable[(object)"Properties"].ToString() == "*")
+                List<string> PSObjectProperties = [];
+                if (hashtable["Properties"].ToString() == "*")
                 {
-                    foreach (PSPropertyInfo property in PSObjects[0].Properties)
+                    foreach (var property in PSObjects[0].Properties)
                     {
-                        if (!PSObjectProperties.Contains(property.Name.ToString()))
-                            PSObjectProperties.Add(property.Name.ToString());
+                        if (!PSObjectProperties.Contains(property.Name))
+                            PSObjectProperties.Add(property.Name);
                     }
                 }
-                else if (hashtable[(object)"Properties"].ToString() == "**")
+                else if (hashtable["Properties"].ToString() == "**")
                 {
-                    foreach (PSObject psObject2 in PSObjects)
+                    foreach (var psObject2 in PSObjects)
                     {
-                        foreach (PSPropertyInfo property in psObject2.Properties)
+                        foreach (var property in psObject2.Properties)
                         {
-                            if (!PSObjectProperties.Contains(property.Name.ToString()))
-                                PSObjectProperties.Add(property.Name.ToString());
+                            if (!PSObjectProperties.Contains(property.Name))
+                                PSObjectProperties.Add(property.Name);
                         }
                     }
                 }
                 else
                 {
-                    foreach (object obj in (object[])hashtable[(object)"Properties"])
+                    foreach (var obj in (object[])hashtable["Properties"])
                         PSObjectProperties.Add(obj.ToString());
                 }
 
-                string str = !hashtable.ContainsKey((object)"Style")
+                var str = !hashtable.ContainsKey("Style")
                     ? this.ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo)
-                    : this.ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable[(object)"Style"].ToString());
-                MailMessage message = new MailMessage(hashtable[(object)"From"].ToString(), hashtable[(object)"To"].ToString());
-                SmtpClient smtpClient = new SmtpClient();
-                smtpClient.Host = hashtable[(object)"SmtpServer"].ToString();
-                smtpClient.Port = Convert.ToInt32(hashtable[(object)"Port"].ToString());
-                smtpClient.EnableSsl = (bool)hashtable[(object)"EnableSsl"];
+                    : this.ObjectToHtml(PSObjects, PSObjectProperties, CmdletInfo, hashtable["Style"].ToString());
+                var message = new MailMessage(hashtable["From"].ToString(), hashtable["To"].ToString());
+                var smtpClient = new SmtpClient();
+                smtpClient.Host = hashtable["SmtpServer"].ToString();
+                smtpClient.Port = Convert.ToInt32(hashtable["Port"].ToString());
+                smtpClient.EnableSsl = (bool)hashtable["EnableSsl"];
                 smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-                PSCredMan credential = this.GetCredential();
+                var credential = this.GetCredential();
                 if (credential.Username != null)
                 {
                     smtpClient.UseDefaultCredentials = false;
-                    NetworkCredential networkCredential = new NetworkCredential(credential.Username, credential.Password);
-                    smtpClient.Credentials = (ICredentialsByHost)networkCredential;
-                    message.Subject = hashtable[(object)"Subject"].ToString() + ".";
+                    var networkCredential = new NetworkCredential(credential.Username, credential.Password);
+                    smtpClient.Credentials = networkCredential;
+                    message.Subject = hashtable["Subject"] + ".";
                 }
                 else
-                    message.Subject = hashtable[(object)"Subject"].ToString();
+                    message.Subject = hashtable["Subject"].ToString();
 
                 message.Body = str;
-                message.BodyEncoding = (Encoding)new UTF8Encoding();
+                message.BodyEncoding = new UTF8Encoding();
                 message.IsBodyHtml = true;
                 try
                 {
@@ -1735,16 +1712,16 @@ namespace PSWindowsUpdate
                 }
                 catch (Exception ex)
                 {
-                    ErrorRecord errorRecord = new ErrorRecord(ex, "SmtpException", ErrorCategory.CloseError, (object)null);
-                    psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord));
+                    var errorRecord = new ErrorRecord(ex, "SmtpException", ErrorCategory.CloseError, null);
+                    psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord));
                     return psObject1;
                 }
 
                 return psObject1;
             }
 
-            ErrorRecord errorRecord1 = new ErrorRecord(new Exception("Missing Body"), "Body", ErrorCategory.CloseError, (object)null);
-            psObject1.Properties.Add((PSPropertyInfo)new PSNoteProperty("ErrorRecord", (object)errorRecord1));
+            var errorRecord1 = new ErrorRecord(new Exception("Missing Body"), "Body", ErrorCategory.CloseError, null);
+            psObject1.Properties.Add(new PSNoteProperty("ErrorRecord", errorRecord1));
             return psObject1;
         }
 
