@@ -1,6 +1,8 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>Return error code description.</summary>
-    public class WUApiCode {
+    public class WUApiCode
+    {
         /// <summary>ErrorCode in Hex</summary>
         public string HResult { get; set; }
 

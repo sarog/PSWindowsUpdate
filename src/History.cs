@@ -1,9 +1,11 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for History objects.</para>
     /// </summary>
-    public class History {
+    public class History
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

@@ -5,7 +5,8 @@ using System.Management.Automation;
 using System.Security.Principal;
 using Microsoft.Win32;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// <para type="synopsis">Set Windows Update Client settings.</para>
     /// <para type="description">Use Set-WUSettings cmdlet to Set configuration of Windows Update Client.</para>
@@ -29,7 +30,8 @@ namespace PSWindowsUpdate {
     /// </example>
     [Cmdlet("Set", "WUSettings", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
     [OutputType(typeof(WUSettings))]
-    public class SetWUSettings : PSCmdlet {
+    public class SetWUSettings : PSCmdlet
+    {
         private Hashtable _PSWUSettings = new Hashtable();
 
         /// <summary>
@@ -59,7 +61,8 @@ namespace PSWindowsUpdate {
         /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
         /// </summary>
         [Parameter]
-        public Hashtable PSWUSettings {
+        public Hashtable PSWUSettings
+        {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
@@ -111,7 +114,8 @@ namespace PSWindowsUpdate {
         /// <para type="description">Notify mode: "Not configured", "Disabled", "Notify before download", "Notify before installation", "Scheduled installation", "Users configure"</para>
         /// <para type="description">Supported on: Windows XP Professional Service Pack 1 or At least Windows 2000 Service Pack 3 Option 7 only supported on servers of at least Windows Server 2016 edition</para>
         /// </summary>
-        [ValidateSet("Not configured", "Disabled", "Notify before download", "Notify before installation", "Scheduled installation", "Users configure")]
+        [ValidateSet("Not configured", "Disabled", "Notify before download", "Notify before installation", "Scheduled installation",
+            "Users configure")]
         [Alias("AUOptions")]
         [Parameter]
         public string NotificationLevel { get; set; }
@@ -192,7 +196,8 @@ namespace PSWindowsUpdate {
         /// <para type="description">Scheduled day of install: "Every day", "Every Sunday", "Every Monday", "Every Tuesday", "Every Wednesday", "Every Thursday", ""Every Friday", "EverySaturday". Only valid if NotificationLevel (AUOptions) = "Scheduled installation"</para>
         /// <para type="description">Starting with Windows 8 and Windows Server 2012, ScheduledInstallationDay are not supported and will return unreliable values.If you try to modify these properties, the operation will appear to succeed but will have no effect.</para>
         /// </summary>
-        [ValidateSet("Every Day", "Every Sunday", "Every Monday", "Every Tuesday", "Every Wednesday", "Every Thursday", "Every Friday", "EverySaturday")]
+        [ValidateSet("Every Day", "Every Sunday", "Every Monday", "Every Tuesday", "Every Wednesday", "Every Thursday", "Every Friday",
+            "EverySaturday")]
         [Parameter]
         public string ScheduledInstallDay { get; set; }
 
@@ -540,43 +545,53 @@ namespace PSWindowsUpdate {
 
         private static DateTime CmdletEnd { get; set; }
 
-        protected override void BeginProcessing() {
+        protected override void BeginProcessing()
+        {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
             WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
-                ThrowTerminatingError(new ErrorRecord(new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                ThrowTerminatingError(new ErrorRecord(
+                    new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
                     ErrorCategory.PermissionDenied, null));
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey("Properties")) {
-                    PSWUSettings.Add("Properties", new string[1] {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
+                    PSWUSettings.Add("Properties", new string[1]
+                    {
                         "*"
                     });
                 }
 
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                     SendReport = false;
                     WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
-            if (ComputerName != null) {
+            if (ComputerName != null)
+            {
                 return;
             }
 
-            ComputerName = new string[1] {
+            ComputerName = new string[1]
+            {
                 Environment.MachineName
             };
         }
 
-        private void CoreProcessing() {
+        private void CoreProcessing()
+        {
             Hashtable hashtable1 = new Hashtable();
             hashtable1.Add("DefaultOS", 0);
             hashtable1.Add("DisableAllExcludingRestart", 1);
@@ -624,15 +639,21 @@ namespace PSWindowsUpdate {
                 { 7, "Every Saturday" }
             };*/
 
-            foreach (var target in ComputerName) {
+            foreach (var target in ComputerName)
+            {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
-                try {
+                try
+                {
                     var pswuModule = WUToolsObj.GetPSWUModule(target);
                     WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
                     WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
-                } catch { }
+                }
+                catch
+                {
+                }
 
-                if (ShouldProcess(target, "(" + DateTime.Now + ") Set Windows Update settings")) {
+                if (ShouldProcess(target, "(" + DateTime.Now + ") Set Windows Update settings"))
+                {
                     var registryKey1 = !WUToolsObj.IsLocalHost(target)
                         ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
                         : RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
@@ -640,1348 +661,2103 @@ namespace PSWindowsUpdate {
                     var registryKey3 = registryKey1.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\\", true);
                     var sendToPipeline = new PSObject();
                     sendToPipeline.Properties.Add(new PSNoteProperty("ComputerName", target));
-                    if (registryKey2 != null) {
+                    if (registryKey2 != null)
+                    {
                         WriteVerbose("Some settings are managed by your system administrator. Changes may not be applied.");
                     }
 
-                    if (registryKey2 == null) {
+                    if (registryKey2 == null)
+                    {
                         registryKey1.CreateSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\");
                         registryKey2 = registryKey1.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\", true);
                         sendToPipeline.Properties.Add(new PSNoteProperty("RegistrySubKey1", "Created"));
                     }
 
-                    if (registryKey3 == null) {
+                    if (registryKey3 == null)
+                    {
                         registryKey1.CreateSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\\");
                         registryKey3 = registryKey1.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\AU\\", true);
                         sendToPipeline.Properties.Add(new PSNoteProperty("RegistrySubKey2", "Created"));
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("AcceptTrustedPublisherCerts")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("AcceptTrustedPublisherCerts"))
+                    {
                         bool flag1 = AcceptTrustedPublisherCerts.ToBool();
                         bool flag2 = false;
-                        try {
+                        try
+                        {
                             flag2 = Convert.ToBoolean(registryKey2.GetValue("AcceptTrustedPublisherCerts"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("AcceptTrustedPublisherCerts", flag1));
-                        if (flag1 != flag2) {
-                            try {
+                        if (flag1 != flag2)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " AcceptTrustedPublisherCerts: " + flag2 + " => " + flag1);
                                 registryKey2.SetValue("AcceptTrustedPublisherCerts", Convert.ToInt32(flag1), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AcceptTrustedPublisherCerts", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
                             }
-                        } else {
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AcceptTrustedPublisherCerts' have been modified.");
-                        }
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("DisableWindowsUpdateAccess")) {
-                        bool flag3 = DisableWindowsUpdateAccess.ToBool();
-                        bool flag4 = false;
-                        try {
-                            flag4 = Convert.ToBoolean(registryKey2.GetValue("DisableWindowsUpdateAccess"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DisableWindowsUpdateAccess", flag3));
-                        if (flag3 != flag4) {
-                            try {
-                                WriteVerbose(target + " DisableWindowsUpdateAccess: " + flag4 + " => " + flag3);
-                                registryKey2.SetValue("DisableWindowsUpdateAccess", Convert.ToInt32(flag3), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DisableWindowsUpdateAccess", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else {
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DisableWindowsUpdateAccess' have been modified.");
-                        }
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("ElevateNonAdmins")) {
-                        bool flag5 = ElevateNonAdmins.ToBool();
-                        bool flag6 = false;
-                        try {
-                            flag6 = Convert.ToBoolean(registryKey2.GetValue("ElevateNonAdmins"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("ElevateNonAdmins", flag5));
-                        if (flag5 != flag6) {
-                            try {
-                                WriteVerbose(target + " ElevateNonAdmins: " + flag6 + " => " + flag5);
-                                registryKey2.SetValue("ElevateNonAdmins", Convert.ToInt32(flag5), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ElevateNonAdmins", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ElevateNonAdmins' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("TargetGroup")) {
-                        string targetGroup = TargetGroup;
-                        string empty = string.Empty;
-                        try {
-                            empty = (string)registryKey2.GetValue("\r\n");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetGroup", targetGroup));
-                        if (targetGroup != empty) {
-                            try {
-                                WriteVerbose(target + " TargetGroup: " + empty + " => " + targetGroup);
-                                registryKey2.SetValue("TargetGroup", targetGroup, RegistryValueKind.String);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetGroup", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'TargetGroup' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("TargetGroupEnabled")) {
-                        bool flag7 = TargetGroupEnabled.ToBool();
-                        bool flag8 = false;
-                        try {
-                            flag8 = Convert.ToBoolean(registryKey2.GetValue("TargetGroupEnabled"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetGroupEnabled", flag7));
-                        if (flag7 != flag8) {
-                            try {
-                                WriteVerbose(target + " TargetGroupEnabled: " + flag8 + " => " + flag7);
-                                registryKey2.SetValue("TargetGroupEnabled", Convert.ToInt32(flag7), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetGroupEnabled", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'TargetGroupEnabled' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("WUServer")) {
-                        string wuServer = WUServer;
-                        string empty = string.Empty;
-                        try {
-                            empty = (string)registryKey2.GetValue("WUServer");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("WUServer", wuServer));
-                        if (wuServer != empty) {
-                            try {
-                                WriteVerbose(target + " WUServer: " + empty + " => " + wuServer);
-                                registryKey2.SetValue("WUServer", wuServer, RegistryValueKind.String);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "WUServer", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'WUServer' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("NoAutoUpdate")) {
-                        bool flag9 = TargetGroupEnabled.ToBool();
-                        bool flag10 = false;
-                        try {
-                            flag10 = Convert.ToBoolean(registryKey3.GetValue("NoAutoUpdate"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("NoAutoUpdate", flag9));
-                        if (flag9 != flag10) {
-                            try {
-                                WriteVerbose(target + " NoAutoUpdateNoAutoUpdate: " + flag10 + " => " + flag9);
-                                registryKey3.SetValue("TargetGroupEnabled", Convert.ToInt32(flag9), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "NoAutoUpdate", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'NoAutoUpdate' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("NotificationLevel")) {
-                        int num1 = (int)hashtable3[NotificationLevel];
-                        int num2 = 0;
-                        try {
-                            num2 = (int)registryKey3.GetValue("AUOptions");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("AUOptions", num1));
-                        if (num1 != num2) {
-                            try {
-                                WriteVerbose(target + " AUOptions: " + num2 + " => " + num1);
-                                registryKey3.SetValue("AUOptions", num1, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AUOptions", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AUOptions' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("AutoInstallMinorUpdates")) {
-                        bool flag11 = AutoInstallMinorUpdates.ToBool();
-                        bool flag12 = false;
-                        try {
-                            flag12 = Convert.ToBoolean(registryKey3.GetValue("AutoInstallMinorUpdates"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("AutoInstallMinorUpdates", flag11));
-                        if (flag11 != flag12) {
-                            try {
-                                WriteVerbose(target + " AutoInstallMinorUpdates: " + flag12 + " => " + flag11);
-                                registryKey3.SetValue("AutoInstallMinorUpdates", Convert.ToInt32(flag11), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AutoInstallMinorUpdates", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AutoInstallMinorUpdates' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("DetectionFrequency")) {
-                        int detectionFrequency = DetectionFrequency;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey3.GetValue("DetectionFrequency");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DetectionFrequency", detectionFrequency));
-                        if (detectionFrequency != num) {
-                            try {
-                                WriteVerbose(target + " DetectionFrequency: " + num + " => " + detectionFrequency);
-                                registryKey3.SetValue("DetectionFrequency", detectionFrequency, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DetectionFrequency", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DetectionFrequency' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("DetectionFrequencyEnabled")) {
-                        bool flag13 = DetectionFrequencyEnabled.ToBool();
-                        bool flag14 = false;
-                        try {
-                            flag14 = Convert.ToBoolean(registryKey3.GetValue("DetectionFrequencyEnabled"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DetectionFrequencyEnabled", flag13));
-                        if (flag13 != flag14) {
-                            try {
-                                WriteVerbose(target + " DetectionFrequencyEnabled: " + flag14 + " => " + flag13);
-                                registryKey3.SetValue("DetectionFrequencyEnabled", Convert.ToInt32(flag13), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DetectionFrequencyEnabled", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DetectionFrequencyEnabled' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("IncludeRecommendedUpdates")) {
-                        bool flag15 = IncludeRecommendedUpdates.ToBool();
-                        bool flag16 = false;
-                        try {
-                            flag16 = Convert.ToBoolean(registryKey3.GetValue("IncludeRecommendedUpdates"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("IncludeRecommendedUpdates", flag15));
-                        if (flag15 != flag16) {
-                            try {
-                                WriteVerbose(target + " IncludeRecommendedUpdates: " + flag16 + " => " + flag15);
-                                registryKey3.SetValue("IncludeRecommendedUpdates", Convert.ToInt32(flag15), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "IncludeRecommendedUpdates", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'IncludeRecommendedUpdates' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("NoAutoRebootWithLoggedOnUsers")) {
-                        bool flag17 = NoAutoRebootWithLoggedOnUsers.ToBool();
-                        bool flag18 = false;
-                        try {
-                            flag18 = Convert.ToBoolean(registryKey3.GetValue("NoAutoRebootWithLoggedOnUsers"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("NoAutoRebootWithLoggedOnUsers", flag17));
-                        if (flag17 != flag18) {
-                            try {
-                                WriteVerbose(target + " NoAutoRebootWithLoggedOnUsers: " + flag18 + " => " + flag17);
-                                registryKey3.SetValue("NoAutoRebootWithLoggedOnUsers", Convert.ToInt32(flag17), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(
-                                    new ErrorRecord(new Exception(target + ": Access denied."), "NoAutoRebootWithLoggedOnUsers", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'NoAutoRebootWithLoggedOnUsers' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("RebootRelaunchTimeout")) {
-                        int rebootRelaunchTimeout = RebootRelaunchTimeout;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey3.GetValue("RebootRelaunchTimeout");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootRelaunchTimeout", rebootRelaunchTimeout));
-                        if (rebootRelaunchTimeout != num) {
-                            try {
-                                WriteVerbose(target + " RebootRelaunchTimeout: " + num + " => " + rebootRelaunchTimeout);
-                                registryKey3.SetValue("RebootRelaunchTimeout", rebootRelaunchTimeout, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootRelaunchTimeout", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'RebootRelaunchTimeout' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("RebootRelaunchTimeoutEnabled")) {
-                        bool flag19 = RebootRelaunchTimeoutEnabled.ToBool();
-                        bool flag20 = false;
-                        try {
-                            flag20 = Convert.ToBoolean(registryKey3.GetValue("RebootRelaunchTimeoutEnabled"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootRelaunchTimeoutEnabled", flag19));
-                        if (flag19 != flag20) {
-                            try {
-                                WriteVerbose(target + " RebootRelaunchTimeoutEnabled: " + flag20 + " => " + flag19);
-                                registryKey3.SetValue("RebootRelaunchTimeoutEnabled", Convert.ToInt32(flag19), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootRelaunchTimeoutEnabled", ErrorCategory.CloseError,
-                                    null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'RebootRelaunchTimeoutEnabled' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("RebootWarningTimeout")) {
-                        int rebootWarningTimeout = RebootWarningTimeout;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey3.GetValue("RebootWarningTimeout");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootWarningTimeout", rebootWarningTimeout));
-                        if (rebootWarningTimeout != num) {
-                            try {
-                                WriteVerbose(target + " RebootWarningTimeout: " + num + " => " + rebootWarningTimeout);
-                                registryKey3.SetValue("RebootWarningTimeout", rebootWarningTimeout, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootWarningTimeout", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'RebootWarningTimeout' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("RebootWarningTimeoutEnabled")) {
-                        bool flag21 = RebootWarningTimeoutEnabled.ToBool();
-                        bool flag22 = false;
-                        try {
-                            flag22 = Convert.ToBoolean(registryKey3.GetValue("RebootWarningTimeoutEnabled"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootWarningTimeoutEnabled", flag21));
-                        if (flag21 != flag22) {
-                            try {
-                                WriteVerbose(target + " RebootWarningTimeoutEnabled: " + flag22 + " => " + flag21);
-                                registryKey3.SetValue("RebootWarningTimeoutEnabled", Convert.ToInt32(flag21), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootWarningTimeoutEnabled", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'RebootWarningTimeoutEnabled' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("ScheduledInstallDay")) {
-                        int num3 = (int)hashtable4[ScheduledInstallDay];
-                        int num4 = 0;
-                        try {
-                            num4 = (int)registryKey3.GetValue("ScheduledInstallDay");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("ScheduledInstallDay", num3));
-                        if (num3 != num4) {
-                            try {
-                                WriteVerbose(target + " ScheduledInstallDay: " + num4 + " => " + num3);
-                                registryKey3.SetValue("ScheduledInstallDay", num3, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduledInstallDay", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ScheduledInstallDay' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("ScheduledInstallTime")) {
-                        int scheduledInstallTime = ScheduledInstallTime;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey3.GetValue("ScheduledInstallTime");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("ScheduledInstallTime", scheduledInstallTime));
-                        if (scheduledInstallTime != num) {
-                            try {
-                                WriteVerbose(target + " ScheduledInstallTime: " + num + " => " + scheduledInstallTime);
-                                registryKey3.SetValue("ScheduledInstallTime", scheduledInstallTime, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduledInstallTime", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ScheduledInstallTime' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("UseWUServer")) {
-                        bool flag23 = UseWUServer.ToBool();
-                        bool flag24 = false;
-                        try {
-                            flag24 = Convert.ToBoolean(registryKey3.GetValue("UseWUServer"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("UseWUServer", flag23));
-                        if (flag23 != flag24) {
-                            try {
-                                WriteVerbose(target + " UseWUServer: " + flag24 + " => " + flag23);
-                                registryKey3.SetValue("UseWUServer", Convert.ToInt32(flag23), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "UseWUServer", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'UseWUServer' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("TargetReleaseVersion")) {
-                        bool flag25 = TargetReleaseVersion.ToBool();
-                        bool flag26 = false;
-                        try {
-                            flag26 = Convert.ToBoolean(registryKey2.GetValue("TargetReleaseVersion"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetReleaseVersion", flag25));
-                        if (flag25 != flag26) {
-                            try {
-                                WriteVerbose(target + " TargetReleaseVersion: " + flag26 + " => " + flag25);
-                                registryKey2.SetValue("TargetReleaseVersion", Convert.ToInt32(flag25), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetReleaseVersion", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'TargetReleaseVersion' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("TargetReleaseVersionInfo")) {
-                        string releaseVersionInfo = TargetReleaseVersionInfo;
-                        string empty = string.Empty;
-                        try {
-                            empty = (string)registryKey2.GetValue("TargetReleaseVersionInfo");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetReleaseVersionInfo", releaseVersionInfo));
-                        if (releaseVersionInfo != empty) {
-                            try {
-                                WriteVerbose(target + " TargetRelTargetReleaseVersionInfoeaseVersion: " + empty + " => " + releaseVersionInfo);
-                                registryKey2.SetValue("TargetReleaseVersionInfo", releaseVersionInfo, RegistryValueKind.String);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetReleaseVersionInfo", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'TargetReleaseVersionInfo' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("ProductVersion")) {
-                        string productVersion = ProductVersion;
-                        string empty = string.Empty;
-                        try {
-                            empty = (string)registryKey2.GetValue("ProductVersion");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("ProductVersion", productVersion));
-                        if (productVersion != empty) {
-                            try {
-                                WriteVerbose(target + " ProductVersion: " + empty + " => " + productVersion);
-                                registryKey2.SetValue("ProductVersion", productVersion, RegistryValueKind.String);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ProductVersion", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ProductVersion' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("DisableWUfBSafeguards")) {
-                        bool flag27 = DisableWUfBSafeguards.ToBool();
-                        bool flag28 = false;
-                        try {
-                            flag28 = Convert.ToBoolean(registryKey2.GetValue("DisableWUfBSafeguards"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DisableWUfBSafeguards", flag27));
-                        if (flag27 != flag28) {
-                            try {
-                                WriteVerbose(target + " DisableWUfBSafeguards: " + flag28 + " => " + flag27);
-                                registryKey2.SetValue("DisableWUfBSafeguards", Convert.ToInt32(flag27), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DisableWUfBSafeguards", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DisableWUfBSafeguards' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("ManagePreviewBuilds")) {
-                        int managePreviewBuilds = ManagePreviewBuilds;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey2.GetValue("ManagePreviewBuildsPolicyValue");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("ManagePreviewBuilds", 1));
-                        sendToPipeline.Properties.Add(new PSNoteProperty("ManagePreviewBuildsPolicyValue", managePreviewBuilds));
-                        if (managePreviewBuilds != num) {
-                            try {
-                                WriteVerbose(target + " ManagePreviewBuildsPolicyValue: " + num + " => " + managePreviewBuilds);
-                                registryKey2.SetValue("ManagePreviewBuilds", 1, RegistryValueKind.DWord);
-                                registryKey2.SetValue("ManagePreviewBuildsPolicyValue", managePreviewBuilds, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ManagePreviewBuilds", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ManagePreviewBuilds' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("DeferFeatureUpdatesPeriodInDays")) {
-                        int updatesPeriodInDays = DeferFeatureUpdatesPeriodInDays;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey2.GetValue("DeferFeatureUpdatesPeriodInDays");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferFeatureUpdates", 1));
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferFeatureUpdatesPeriodInDays", updatesPeriodInDays));
-                        if (updatesPeriodInDays != num) {
-                            try {
-                                WriteVerbose(target + " DeferFeatureUpdatesPeriodInDays: " + num + " => " + updatesPeriodInDays);
-                                registryKey2.SetValue("DeferFeatureUpdates", 1, RegistryValueKind.DWord);
-                                registryKey2.SetValue("DeferFeatureUpdatesPeriodInDays", updatesPeriodInDays, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferFeatureUpdates", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DeferFeatureUpdates' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("DeferQualityUpdatesPeriodInDays")) {
-                        int updatesPeriodInDays = DeferQualityUpdatesPeriodInDays;
-                        int num = 0;
-                        try {
-                            num = (int)registryKey2.GetValue("DeferQualityUpdatesPeriodInDays");
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferQualityUpdates", 1));
-                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferQualityUpdatesPeriodInDays", updatesPeriodInDays));
-                        if (updatesPeriodInDays != num) {
-                            try {
-                                WriteVerbose(target + " DeferQualityUpdatesPeriodInDays: " + num + " => " + updatesPeriodInDays);
-                                registryKey2.SetValue("DeferQualityUpdates", 1, RegistryValueKind.DWord);
-                                registryKey2.SetValue("DeferQualityUpdatesPeriodInDays", updatesPeriodInDays, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferQualityUpdates", ErrorCategory.CloseError, null));
-                                WriteDebug(DateTime.Now + " Skip to next computer");
-                                break;
-                            }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DeferQualityUpdates' have been modified.");
-                    }
-
-                    if (MyInvocation.BoundParameters.ContainsKey("AllowAutoWindowsUpdateDownloadOverMeteredNetwork")) {
-                        bool flag29 = AllowAutoWindowsUpdateDownloadOverMeteredNetwork.ToBool();
-                        bool flag30 = false;
-                        try {
-                            flag30 = Convert.ToBoolean(registryKey2.GetValue("AllowAutoWindowsUpdateDownloadOverMeteredNetwork"));
-                        } catch { }
-
-                        sendToPipeline.Properties.Add(new PSNoteProperty("AllowAutoWindowsUpdateDownloadOverMeteredNetwork", flag29));
-                        if (flag29 != flag30) {
-                            try {
-                                WriteVerbose(target + " AllowAutoWindowsUpdateDownloadOverMeteredNetwork: " + flag30 + " => " + flag29);
-                                registryKey2.SetValue("AllowAutoWindowsUpdateDownloadOverMeteredNetwork", Convert.ToInt32(flag29), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AllowAutoWindowsUpdateDownloadOverMeteredNetwork",
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AcceptTrustedPublisherCerts",
                                     ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
+                        }
+                        else
+                        {
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AcceptTrustedPublisherCerts' have been modified.");
+                        }
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("DisableWindowsUpdateAccess"))
+                    {
+                        bool flag3 = DisableWindowsUpdateAccess.ToBool();
+                        bool flag4 = false;
+                        try
+                        {
+                            flag4 = Convert.ToBoolean(registryKey2.GetValue("DisableWindowsUpdateAccess"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DisableWindowsUpdateAccess", flag3));
+                        if (flag3 != flag4)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " DisableWindowsUpdateAccess: " + flag4 + " => " + flag3);
+                                registryKey2.SetValue("DisableWindowsUpdateAccess", Convert.ToInt32(flag3), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DisableWindowsUpdateAccess",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DisableWindowsUpdateAccess' have been modified.");
+                        }
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("ElevateNonAdmins"))
+                    {
+                        bool flag5 = ElevateNonAdmins.ToBool();
+                        bool flag6 = false;
+                        try
+                        {
+                            flag6 = Convert.ToBoolean(registryKey2.GetValue("ElevateNonAdmins"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ElevateNonAdmins", flag5));
+                        if (flag5 != flag6)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " ElevateNonAdmins: " + flag6 + " => " + flag5);
+                                registryKey2.SetValue("ElevateNonAdmins", Convert.ToInt32(flag5), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ElevateNonAdmins",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ElevateNonAdmins' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("TargetGroup"))
+                    {
+                        string targetGroup = TargetGroup;
+                        string empty = string.Empty;
+                        try
+                        {
+                            empty = (string)registryKey2.GetValue("\r\n");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetGroup", targetGroup));
+                        if (targetGroup != empty)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " TargetGroup: " + empty + " => " + targetGroup);
+                                registryKey2.SetValue("TargetGroup", targetGroup, RegistryValueKind.String);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetGroup",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(
+                                target + " The command completed successfully but no settings of 'TargetGroup' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("TargetGroupEnabled"))
+                    {
+                        bool flag7 = TargetGroupEnabled.ToBool();
+                        bool flag8 = false;
+                        try
+                        {
+                            flag8 = Convert.ToBoolean(registryKey2.GetValue("TargetGroupEnabled"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetGroupEnabled", flag7));
+                        if (flag7 != flag8)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " TargetGroupEnabled: " + flag8 + " => " + flag7);
+                                registryKey2.SetValue("TargetGroupEnabled", Convert.ToInt32(flag7), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetGroupEnabled",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'TargetGroupEnabled' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("WUServer"))
+                    {
+                        string wuServer = WUServer;
+                        string empty = string.Empty;
+                        try
+                        {
+                            empty = (string)registryKey2.GetValue("WUServer");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("WUServer", wuServer));
+                        if (wuServer != empty)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " WUServer: " + empty + " => " + wuServer);
+                                registryKey2.SetValue("WUServer", wuServer, RegistryValueKind.String);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "WUServer", ErrorCategory.CloseError,
+                                    null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target + " The command completed successfully but no settings of 'WUServer' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("NoAutoUpdate"))
+                    {
+                        bool flag9 = TargetGroupEnabled.ToBool();
+                        bool flag10 = false;
+                        try
+                        {
+                            flag10 = Convert.ToBoolean(registryKey3.GetValue("NoAutoUpdate"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("NoAutoUpdate", flag9));
+                        if (flag9 != flag10)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " NoAutoUpdateNoAutoUpdate: " + flag10 + " => " + flag9);
+                                registryKey3.SetValue("TargetGroupEnabled", Convert.ToInt32(flag9), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "NoAutoUpdate",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'NoAutoUpdate' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("NotificationLevel"))
+                    {
+                        int num1 = (int)hashtable3[NotificationLevel];
+                        int num2 = 0;
+                        try
+                        {
+                            num2 = (int)registryKey3.GetValue("AUOptions");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("AUOptions", num1));
+                        if (num1 != num2)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " AUOptions: " + num2 + " => " + num1);
+                                registryKey3.SetValue("AUOptions", num1, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AUOptions",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target + " The command completed successfully but no settings of 'AUOptions' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("AutoInstallMinorUpdates"))
+                    {
+                        bool flag11 = AutoInstallMinorUpdates.ToBool();
+                        bool flag12 = false;
+                        try
+                        {
+                            flag12 = Convert.ToBoolean(registryKey3.GetValue("AutoInstallMinorUpdates"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("AutoInstallMinorUpdates", flag11));
+                        if (flag11 != flag12)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " AutoInstallMinorUpdates: " + flag12 + " => " + flag11);
+                                registryKey3.SetValue("AutoInstallMinorUpdates", Convert.ToInt32(flag11), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AutoInstallMinorUpdates",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AutoInstallMinorUpdates' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("DetectionFrequency"))
+                    {
+                        int detectionFrequency = DetectionFrequency;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey3.GetValue("DetectionFrequency");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DetectionFrequency", detectionFrequency));
+                        if (detectionFrequency != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " DetectionFrequency: " + num + " => " + detectionFrequency);
+                                registryKey3.SetValue("DetectionFrequency", detectionFrequency, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DetectionFrequency",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DetectionFrequency' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("DetectionFrequencyEnabled"))
+                    {
+                        bool flag13 = DetectionFrequencyEnabled.ToBool();
+                        bool flag14 = false;
+                        try
+                        {
+                            flag14 = Convert.ToBoolean(registryKey3.GetValue("DetectionFrequencyEnabled"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DetectionFrequencyEnabled", flag13));
+                        if (flag13 != flag14)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " DetectionFrequencyEnabled: " + flag14 + " => " + flag13);
+                                registryKey3.SetValue("DetectionFrequencyEnabled", Convert.ToInt32(flag13), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DetectionFrequencyEnabled",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DetectionFrequencyEnabled' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("IncludeRecommendedUpdates"))
+                    {
+                        bool flag15 = IncludeRecommendedUpdates.ToBool();
+                        bool flag16 = false;
+                        try
+                        {
+                            flag16 = Convert.ToBoolean(registryKey3.GetValue("IncludeRecommendedUpdates"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("IncludeRecommendedUpdates", flag15));
+                        if (flag15 != flag16)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " IncludeRecommendedUpdates: " + flag16 + " => " + flag15);
+                                registryKey3.SetValue("IncludeRecommendedUpdates", Convert.ToInt32(flag15), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "IncludeRecommendedUpdates",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'IncludeRecommendedUpdates' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("NoAutoRebootWithLoggedOnUsers"))
+                    {
+                        bool flag17 = NoAutoRebootWithLoggedOnUsers.ToBool();
+                        bool flag18 = false;
+                        try
+                        {
+                            flag18 = Convert.ToBoolean(registryKey3.GetValue("NoAutoRebootWithLoggedOnUsers"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("NoAutoRebootWithLoggedOnUsers", flag17));
+                        if (flag17 != flag18)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " NoAutoRebootWithLoggedOnUsers: " + flag18 + " => " + flag17);
+                                registryKey3.SetValue("NoAutoRebootWithLoggedOnUsers", Convert.ToInt32(flag17), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(
+                                    new ErrorRecord(new Exception(target + ": Access denied."), "NoAutoRebootWithLoggedOnUsers",
+                                        ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'NoAutoRebootWithLoggedOnUsers' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("RebootRelaunchTimeout"))
+                    {
+                        int rebootRelaunchTimeout = RebootRelaunchTimeout;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey3.GetValue("RebootRelaunchTimeout");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootRelaunchTimeout", rebootRelaunchTimeout));
+                        if (rebootRelaunchTimeout != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " RebootRelaunchTimeout: " + num + " => " + rebootRelaunchTimeout);
+                                registryKey3.SetValue("RebootRelaunchTimeout", rebootRelaunchTimeout, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootRelaunchTimeout",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'RebootRelaunchTimeout' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("RebootRelaunchTimeoutEnabled"))
+                    {
+                        bool flag19 = RebootRelaunchTimeoutEnabled.ToBool();
+                        bool flag20 = false;
+                        try
+                        {
+                            flag20 = Convert.ToBoolean(registryKey3.GetValue("RebootRelaunchTimeoutEnabled"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootRelaunchTimeoutEnabled", flag19));
+                        if (flag19 != flag20)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " RebootRelaunchTimeoutEnabled: " + flag20 + " => " + flag19);
+                                registryKey3.SetValue("RebootRelaunchTimeoutEnabled", Convert.ToInt32(flag19), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootRelaunchTimeoutEnabled",
+                                    ErrorCategory.CloseError,
+                                    null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'RebootRelaunchTimeoutEnabled' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("RebootWarningTimeout"))
+                    {
+                        int rebootWarningTimeout = RebootWarningTimeout;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey3.GetValue("RebootWarningTimeout");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootWarningTimeout", rebootWarningTimeout));
+                        if (rebootWarningTimeout != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " RebootWarningTimeout: " + num + " => " + rebootWarningTimeout);
+                                registryKey3.SetValue("RebootWarningTimeout", rebootWarningTimeout, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootWarningTimeout",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'RebootWarningTimeout' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("RebootWarningTimeoutEnabled"))
+                    {
+                        bool flag21 = RebootWarningTimeoutEnabled.ToBool();
+                        bool flag22 = false;
+                        try
+                        {
+                            flag22 = Convert.ToBoolean(registryKey3.GetValue("RebootWarningTimeoutEnabled"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("RebootWarningTimeoutEnabled", flag21));
+                        if (flag21 != flag22)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " RebootWarningTimeoutEnabled: " + flag22 + " => " + flag21);
+                                registryKey3.SetValue("RebootWarningTimeoutEnabled", Convert.ToInt32(flag21), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RebootWarningTimeoutEnabled",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'RebootWarningTimeoutEnabled' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("ScheduledInstallDay"))
+                    {
+                        int num3 = (int)hashtable4[ScheduledInstallDay];
+                        int num4 = 0;
+                        try
+                        {
+                            num4 = (int)registryKey3.GetValue("ScheduledInstallDay");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ScheduledInstallDay", num3));
+                        if (num3 != num4)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " ScheduledInstallDay: " + num4 + " => " + num3);
+                                registryKey3.SetValue("ScheduledInstallDay", num3, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduledInstallDay",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ScheduledInstallDay' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("ScheduledInstallTime"))
+                    {
+                        int scheduledInstallTime = ScheduledInstallTime;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey3.GetValue("ScheduledInstallTime");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ScheduledInstallTime", scheduledInstallTime));
+                        if (scheduledInstallTime != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " ScheduledInstallTime: " + num + " => " + scheduledInstallTime);
+                                registryKey3.SetValue("ScheduledInstallTime", scheduledInstallTime, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduledInstallTime",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ScheduledInstallTime' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("UseWUServer"))
+                    {
+                        bool flag23 = UseWUServer.ToBool();
+                        bool flag24 = false;
+                        try
+                        {
+                            flag24 = Convert.ToBoolean(registryKey3.GetValue("UseWUServer"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("UseWUServer", flag23));
+                        if (flag23 != flag24)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " UseWUServer: " + flag24 + " => " + flag23);
+                                registryKey3.SetValue("UseWUServer", Convert.ToInt32(flag23), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "UseWUServer",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(
+                                target + " The command completed successfully but no settings of 'UseWUServer' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("TargetReleaseVersion"))
+                    {
+                        bool flag25 = TargetReleaseVersion.ToBool();
+                        bool flag26 = false;
+                        try
+                        {
+                            flag26 = Convert.ToBoolean(registryKey2.GetValue("TargetReleaseVersion"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetReleaseVersion", flag25));
+                        if (flag25 != flag26)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " TargetReleaseVersion: " + flag26 + " => " + flag25);
+                                registryKey2.SetValue("TargetReleaseVersion", Convert.ToInt32(flag25), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetReleaseVersion",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'TargetReleaseVersion' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("TargetReleaseVersionInfo"))
+                    {
+                        string releaseVersionInfo = TargetReleaseVersionInfo;
+                        string empty = string.Empty;
+                        try
+                        {
+                            empty = (string)registryKey2.GetValue("TargetReleaseVersionInfo");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("TargetReleaseVersionInfo", releaseVersionInfo));
+                        if (releaseVersionInfo != empty)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " TargetRelTargetReleaseVersionInfoeaseVersion: " + empty + " => " +
+                                             releaseVersionInfo);
+                                registryKey2.SetValue("TargetReleaseVersionInfo", releaseVersionInfo, RegistryValueKind.String);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "TargetReleaseVersionInfo",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'TargetReleaseVersionInfo' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("ProductVersion"))
+                    {
+                        string productVersion = ProductVersion;
+                        string empty = string.Empty;
+                        try
+                        {
+                            empty = (string)registryKey2.GetValue("ProductVersion");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ProductVersion", productVersion));
+                        if (productVersion != empty)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " ProductVersion: " + empty + " => " + productVersion);
+                                registryKey2.SetValue("ProductVersion", productVersion, RegistryValueKind.String);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ProductVersion",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ProductVersion' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("DisableWUfBSafeguards"))
+                    {
+                        bool flag27 = DisableWUfBSafeguards.ToBool();
+                        bool flag28 = false;
+                        try
+                        {
+                            flag28 = Convert.ToBoolean(registryKey2.GetValue("DisableWUfBSafeguards"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DisableWUfBSafeguards", flag27));
+                        if (flag27 != flag28)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " DisableWUfBSafeguards: " + flag28 + " => " + flag27);
+                                registryKey2.SetValue("DisableWUfBSafeguards", Convert.ToInt32(flag27), RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DisableWUfBSafeguards",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DisableWUfBSafeguards' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("ManagePreviewBuilds"))
+                    {
+                        int managePreviewBuilds = ManagePreviewBuilds;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey2.GetValue("ManagePreviewBuildsPolicyValue");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ManagePreviewBuilds", 1));
+                        sendToPipeline.Properties.Add(new PSNoteProperty("ManagePreviewBuildsPolicyValue", managePreviewBuilds));
+                        if (managePreviewBuilds != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " ManagePreviewBuildsPolicyValue: " + num + " => " + managePreviewBuilds);
+                                registryKey2.SetValue("ManagePreviewBuilds", 1, RegistryValueKind.DWord);
+                                registryKey2.SetValue("ManagePreviewBuildsPolicyValue", managePreviewBuilds, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ManagePreviewBuilds",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ManagePreviewBuilds' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("DeferFeatureUpdatesPeriodInDays"))
+                    {
+                        int updatesPeriodInDays = DeferFeatureUpdatesPeriodInDays;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey2.GetValue("DeferFeatureUpdatesPeriodInDays");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferFeatureUpdates", 1));
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferFeatureUpdatesPeriodInDays", updatesPeriodInDays));
+                        if (updatesPeriodInDays != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " DeferFeatureUpdatesPeriodInDays: " + num + " => " + updatesPeriodInDays);
+                                registryKey2.SetValue("DeferFeatureUpdates", 1, RegistryValueKind.DWord);
+                                registryKey2.SetValue("DeferFeatureUpdatesPeriodInDays", updatesPeriodInDays, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferFeatureUpdates",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DeferFeatureUpdates' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("DeferQualityUpdatesPeriodInDays"))
+                    {
+                        int updatesPeriodInDays = DeferQualityUpdatesPeriodInDays;
+                        int num = 0;
+                        try
+                        {
+                            num = (int)registryKey2.GetValue("DeferQualityUpdatesPeriodInDays");
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferQualityUpdates", 1));
+                        sendToPipeline.Properties.Add(new PSNoteProperty("DeferQualityUpdatesPeriodInDays", updatesPeriodInDays));
+                        if (updatesPeriodInDays != num)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " DeferQualityUpdatesPeriodInDays: " + num + " => " + updatesPeriodInDays);
+                                registryKey2.SetValue("DeferQualityUpdates", 1, RegistryValueKind.DWord);
+                                registryKey2.SetValue("DeferQualityUpdatesPeriodInDays", updatesPeriodInDays, RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferQualityUpdates",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DeferQualityUpdates' have been modified.");
+                    }
+
+                    if (MyInvocation.BoundParameters.ContainsKey("AllowAutoWindowsUpdateDownloadOverMeteredNetwork"))
+                    {
+                        bool flag29 = AllowAutoWindowsUpdateDownloadOverMeteredNetwork.ToBool();
+                        bool flag30 = false;
+                        try
+                        {
+                            flag30 = Convert.ToBoolean(registryKey2.GetValue("AllowAutoWindowsUpdateDownloadOverMeteredNetwork"));
+                        }
+                        catch
+                        {
+                        }
+
+                        sendToPipeline.Properties.Add(new PSNoteProperty("AllowAutoWindowsUpdateDownloadOverMeteredNetwork", flag29));
+                        if (flag29 != flag30)
+                        {
+                            try
+                            {
+                                WriteVerbose(target + " AllowAutoWindowsUpdateDownloadOverMeteredNetwork: " + flag30 + " => " + flag29);
+                                registryKey2.SetValue("AllowAutoWindowsUpdateDownloadOverMeteredNetwork", Convert.ToInt32(flag29),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "AllowAutoWindowsUpdateDownloadOverMeteredNetwork",
+                                    ErrorCategory.CloseError, null));
+                                WriteDebug(DateTime.Now + " Skip to next computer");
+                                break;
+                            }
+                        }
+                        else
                             WriteVerbose(target +
                                          " The command completed successfully but no settings of 'AllowAutoWindowsUpdateDownloadOverMeteredNetwork' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("AlwaysAutoRebootAtScheduledTime")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("AlwaysAutoRebootAtScheduledTime"))
+                    {
                         bool flag31 = AlwaysAutoRebootAtScheduledTime.ToBool();
                         bool flag32 = false;
-                        try {
+                        try
+                        {
                             flag32 = Convert.ToBoolean(registryKey3.GetValue("AlwaysAutoRebootAtScheduledTime"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("AlwaysAutoRebootAtScheduledTime", flag31));
-                        if (flag31 != flag32) {
-                            try {
+                        if (flag31 != flag32)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " AlwaysAutoRebootAtScheduledTime: " + flag32 + " => " + flag31);
                                 registryKey3.SetValue("AlwaysAutoRebootAtScheduledTime", Convert.ToInt32(flag31), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AlwaysAutoRebootAtScheduledTime", ErrorCategory.CloseError,
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AlwaysAutoRebootAtScheduledTime",
+                                    ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AlwaysAutoRebootAtScheduledTime' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AlwaysAutoRebootAtScheduledTime' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("AlwaysAutoRebootAtScheduledTimeMinutes")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("AlwaysAutoRebootAtScheduledTimeMinutes"))
+                    {
                         int scheduledTimeMinutes = AlwaysAutoRebootAtScheduledTimeMinutes;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey3.GetValue("AlwaysAutoRebootAtScheduledTimeMinutes");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("AlwaysAutoRebootAtScheduledTimeMinutes", scheduledTimeMinutes));
-                        if (scheduledTimeMinutes != num) {
-                            try {
+                        if (scheduledTimeMinutes != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " AlwaysAutoRebootAtScheduledTimeMinutes: " + num + " => " + scheduledTimeMinutes);
-                                registryKey3.SetValue("AlwaysAutoRebootAtScheduledTimeMinutes", scheduledTimeMinutes, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AlwaysAutoRebootAtScheduledTimeMinutes", ErrorCategory.CloseError,
+                                registryKey3.SetValue("AlwaysAutoRebootAtScheduledTimeMinutes", scheduledTimeMinutes,
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "AlwaysAutoRebootAtScheduledTimeMinutes", ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AlwaysAutoRebootAtScheduledTimeMinutes' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AlwaysAutoRebootAtScheduledTimeMinutes' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartNotificationConfig")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartNotificationConfig"))
+                    {
                         bool flag33 = SetAutoRestartNotificationConfig.ToBool();
                         bool flag34 = false;
-                        try {
+                        try
+                        {
                             flag34 = Convert.ToBoolean(registryKey2.GetValue("SetAutoRestartNotificationConfig"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetAutoRestartNotificationConfig", flag33));
-                        if (flag33 != flag34) {
-                            try {
+                        if (flag33 != flag34)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetAutoRestartNotificationConfig: " + flag34 + " => " + flag33);
                                 registryKey2.SetValue("SetAutoRestartNotificationConfig", Convert.ToInt32(flag33), RegistryValueKind.DWord);
-                            } catch {
+                            }
+                            catch
+                            {
                                 WriteError(
-                                    new ErrorRecord(new Exception(target + ": Access denied."), "SetAutoRestartNotificationConfig", ErrorCategory.CloseError, null));
+                                    new ErrorRecord(new Exception(target + ": Access denied."), "SetAutoRestartNotificationConfig",
+                                        ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetAutoRestartNotificationConfig' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetAutoRestartNotificationConfig' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("AutoRestartNotificationSchedule")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("AutoRestartNotificationSchedule"))
+                    {
                         int notificationSchedule = AutoRestartNotificationSchedule;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey3.GetValue("AutoRestartNotificationSchedule");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("AutoRestartNotificationSchedule", notificationSchedule));
-                        if (notificationSchedule != num) {
-                            try {
+                        if (notificationSchedule != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " AutoRestartNotificationSchedule: " + num + " => " + notificationSchedule);
                                 registryKey3.SetValue("AutoRestartNotificationSchedule", notificationSchedule, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AutoRestartNotificationSchedule", ErrorCategory.CloseError,
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AutoRestartNotificationSchedule",
+                                    ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AutoRestartNotificationSchedule' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AutoRestartNotificationSchedule' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartRequiredNotificationDismissal")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartRequiredNotificationDismissal"))
+                    {
                         bool flag35 = SetAutoRestartRequiredNotificationDismissal.ToBool();
                         bool flag36 = false;
-                        try {
+                        try
+                        {
                             flag36 = Convert.ToBoolean(registryKey2.GetValue("SetAutoRestartRequiredNotificationDismissal"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetAutoRestartRequiredNotificationDismissal", flag35));
-                        if (flag35 != flag36) {
-                            try {
+                        if (flag35 != flag36)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetAutoRestartRequiredNotificationDismissal: " + flag36 + " => " + flag35);
-                                registryKey2.SetValue("SetAutoRestartRequiredNotificationDismissal", Convert.ToInt32(flag35), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetAutoRestartRequiredNotificationDismissal", ErrorCategory.CloseError,
+                                registryKey2.SetValue("SetAutoRestartRequiredNotificationDismissal", Convert.ToInt32(flag35),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "SetAutoRestartRequiredNotificationDismissal", ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetAutoRestartRequiredNotificationDismissal' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetAutoRestartRequiredNotificationDismissal' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("AutoRestartRequiredNotificationDismissal")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("AutoRestartRequiredNotificationDismissal"))
+                    {
                         int num5 = (int)hashtable2[AutoRestartRequiredNotificationDismissal];
                         int num6 = 0;
-                        try {
+                        try
+                        {
                             num6 = (int)registryKey2.GetValue("AutoRestartRequiredNotificationDismissal");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("AutoRestartRequiredNotificationDismissal", num5));
-                        if (num5 != num6) {
-                            try {
+                        if (num5 != num6)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " AutoRestartRequiredNotificationDismissal: " + num6 + " => " + num5);
                                 registryKey2.SetValue("AutoRestartRequiredNotificationDismissal", num5, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AutoRestartRequiredNotificationDismissal", ErrorCategory.CloseError,
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "AutoRestartRequiredNotificationDismissal", ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AutoRestartRequiredNotificationDismissal' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AutoRestartRequiredNotificationDismissal' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetRestartWarningSchd")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetRestartWarningSchd"))
+                    {
                         bool flag37 = SetRestartWarningSchd.ToBool();
                         bool flag38 = false;
-                        try {
+                        try
+                        {
                             flag38 = Convert.ToBoolean(registryKey2.GetValue("SetRestartWarningSchd"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetRestartWarningSchd", flag37));
-                        if (flag37 != flag38) {
-                            try {
+                        if (flag37 != flag38)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetRestartWarningSchd: " + flag38 + " => " + flag37);
                                 registryKey2.SetValue("SetRestartWarningSchd", Convert.ToInt32(flag37), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetRestartWarningSchd", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetRestartWarningSchd",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetRestartWarningSchd' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetRestartWarningSchd' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("ScheduleRestartWarning")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("ScheduleRestartWarning"))
+                    {
                         int scheduleRestartWarning = ScheduleRestartWarning;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("ScheduleRestartWarning");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("ScheduleRestartWarning", scheduleRestartWarning));
-                        if (scheduleRestartWarning != num) {
-                            try {
+                        if (scheduleRestartWarning != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " ScheduleRestartWarning: " + num + " => " + scheduleRestartWarning);
                                 registryKey2.SetValue("ScheduleRestartWarning", scheduleRestartWarning, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduleRestartWarning", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduleRestartWarning",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ScheduleRestartWarning' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ScheduleRestartWarning' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("ScheduleImminentRestartWarning")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("ScheduleImminentRestartWarning"))
+                    {
                         int imminentRestartWarning = ScheduleImminentRestartWarning;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("ScheduleImminentRestartWarning");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("ScheduleImminentRestartWarning", imminentRestartWarning));
-                        if (imminentRestartWarning != num) {
-                            try {
+                        if (imminentRestartWarning != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " ScheduleImminentRestartWarning: " + num + " => " + imminentRestartWarning);
                                 registryKey2.SetValue("ScheduleImminentRestartWarning", imminentRestartWarning, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduleImminentRestartWarning", ErrorCategory.CloseError,
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ScheduleImminentRestartWarning",
+                                    ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ScheduleImminentRestartWarning' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ScheduleImminentRestartWarning' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("DeferUpgrade")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("DeferUpgrade"))
+                    {
                         bool flag39 = DeferUpgrade.ToBool();
                         bool flag40 = false;
-                        try {
+                        try
+                        {
                             flag40 = Convert.ToBoolean(registryKey2.GetValue("DeferUpgrade"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("DeferUpgrade", flag39));
-                        if (flag39 != flag40) {
-                            try {
+                        if (flag39 != flag40)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " DeferUpgrade: " + flag40 + " => " + flag39);
                                 registryKey2.SetValue("DeferUpgrade", Convert.ToInt32(flag39), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferUpgrade", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferUpgrade",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DeferUpgrade' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DeferUpgrade' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("DeferUpgradePeriod")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("DeferUpgradePeriod"))
+                    {
                         int deferUpgradePeriod = DeferUpgradePeriod;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("DeferUpgradePeriod");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("DeferUpgradePeriod", deferUpgradePeriod));
-                        if (deferUpgradePeriod != num) {
-                            try {
+                        if (deferUpgradePeriod != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " DeferUpgradePeriod: " + num + " => " + deferUpgradePeriod);
                                 registryKey2.SetValue("DeferUpgradePeriod", deferUpgradePeriod, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferUpgradePeriod", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferUpgradePeriod",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DeferUpgradePeriod' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DeferUpgradePeriod' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("DeferUpdatePeriod")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("DeferUpdatePeriod"))
+                    {
                         int deferUpdatePeriod = DeferUpdatePeriod;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("DeferUpdatePeriod");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("DeferUpdatePeriod", deferUpdatePeriod));
-                        if (deferUpdatePeriod != num) {
-                            try {
+                        if (deferUpdatePeriod != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " DeferUpdatePeriod: " + num + " => " + deferUpdatePeriod);
                                 registryKey2.SetValue("DeferUpdatePeriod", deferUpdatePeriod, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferUpdatePeriod", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "DeferUpdatePeriod",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'DeferUpdatePeriod' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'DeferUpdatePeriod' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("PauseDeferrals")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("PauseDeferrals"))
+                    {
                         bool flag41 = PauseDeferrals.ToBool();
                         bool flag42 = false;
-                        try {
+                        try
+                        {
                             flag42 = Convert.ToBoolean(registryKey2.GetValue("PauseDeferrals"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("PauseDeferrals", flag41));
-                        if (flag41 != flag42) {
-                            try {
+                        if (flag41 != flag42)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " PauseDeferrals: " + flag42 + " => " + flag41);
                                 registryKey2.SetValue("PauseDeferrals", Convert.ToInt32(flag41), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "PauseDeferrals", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "PauseDeferrals",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'PauseDeferrals' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'PauseDeferrals' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetUpdateNotificationLevel")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetUpdateNotificationLevel"))
+                    {
                         bool flag43 = SetUpdateNotificationLevel.ToBool();
                         bool flag44 = false;
-                        try {
+                        try
+                        {
                             flag44 = Convert.ToBoolean(registryKey2.GetValue("SetUpdateNotificationLevel"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetUpdateNotificationLevel", flag43));
-                        if (flag43 != flag44) {
-                            try {
+                        if (flag43 != flag44)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetUpdateNotificationLevel: " + flag44 + " => " + flag43);
                                 registryKey2.SetValue("SetUpdateNotificationLevel", Convert.ToInt32(flag43), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetUpdateNotificationLevel", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetUpdateNotificationLevel",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetUpdateNotificationLevel' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetUpdateNotificationLevel' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("UpdateNotificationLevel")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("UpdateNotificationLevel"))
+                    {
                         int num7 = (int)hashtable1[UpdateNotificationLevel];
                         int num8 = 0;
-                        try {
+                        try
+                        {
                             num8 = (int)registryKey2.GetValue("UpdateNotificationLevel");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("UpdateNotificationLevel", num7));
-                        if (num7 != num8) {
-                            try {
+                        if (num7 != num8)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " UpdateNotificationLevel: " + num8 + " => " + num7);
                                 registryKey2.SetValue("UpdateNotificationLevel", num7, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "UpdateNotificationLevel", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "UpdateNotificationLevel",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'UpdateNotificationLevel' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'UpdateNotificationLevel' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("NoAUShutdownOption")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("NoAUShutdownOption"))
+                    {
                         bool flag45 = NoAUShutdownOption.ToBool();
                         bool flag46 = false;
-                        try {
+                        try
+                        {
                             flag46 = Convert.ToBoolean(registryKey2.GetValue("NoAUShutdownOption"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("NoAUShutdownOption", flag45));
-                        if (flag45 != flag46) {
-                            try {
+                        if (flag45 != flag46)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " NoAUShutdownOption: " + flag46 + " => " + flag45);
                                 registryKey2.SetValue("NoAUShutdownOption", Convert.ToInt32(flag45), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "NoAUShutdownOption", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "NoAUShutdownOption",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'NoAUShutdownOption' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'NoAUShutdownOption' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("AUPowerManagement")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("AUPowerManagement"))
+                    {
                         bool flag47 = AUPowerManagement.ToBool();
                         bool flag48 = false;
-                        try {
+                        try
+                        {
                             flag48 = Convert.ToBoolean(registryKey2.GetValue("AUPowerManagement"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("AUPowerManagement", flag47));
-                        if (flag47 != flag48) {
-                            try {
+                        if (flag47 != flag48)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " AUPowerManagement: " + flag48 + " => " + flag47);
                                 registryKey2.SetValue("AUPowerManagement", Convert.ToInt32(flag47), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AUPowerManagement", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "AUPowerManagement",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'AUPowerManagement' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'AUPowerManagement' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetDisablePauseUXAccess")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetDisablePauseUXAccess"))
+                    {
                         bool flag49 = SetDisablePauseUXAccess.ToBool();
                         bool flag50 = false;
-                        try {
+                        try
+                        {
                             flag50 = Convert.ToBoolean(registryKey2.GetValue("SetDisablePauseUXAccess"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetDisablePauseUXAccess", flag49));
-                        if (flag49 != flag50) {
-                            try {
+                        if (flag49 != flag50)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetDisablePauseUXAccess: " + flag50 + " => " + flag49);
                                 registryKey2.SetValue("SetDisablePauseUXAccess", Convert.ToInt32(flag49), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetDisablePauseUXAccess", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetDisablePauseUXAccess",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetDisablePauseUXAccess' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetDisablePauseUXAccess' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetDisableUXWUAccess")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetDisableUXWUAccess"))
+                    {
                         bool flag51 = SetDisableUXWUAccess.ToBool();
                         bool flag52 = false;
-                        try {
+                        try
+                        {
                             flag52 = Convert.ToBoolean(registryKey2.GetValue("SetDisableUXWUAccess"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetDisableUXWUAccess", flag51));
-                        if (flag51 != flag52) {
-                            try {
+                        if (flag51 != flag52)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetDisablePauseUXAccess: " + flag52 + " => " + flag51);
                                 registryKey2.SetValue("SetDisablePauseUXAccess", Convert.ToInt32(flag51), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetDisableUXWUAccess", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetDisableUXWUAccess",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetDisableUXWUAccess' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetDisableUXWUAccess' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("RescheduleWaitTimeEnabled")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("RescheduleWaitTimeEnabled"))
+                    {
                         bool flag53 = RescheduleWaitTimeEnabled.ToBool();
                         bool flag54 = false;
-                        try {
+                        try
+                        {
                             flag54 = Convert.ToBoolean(registryKey3.GetValue("RescheduleWaitTimeEnabled"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("RescheduleWaitTimeEnabledRescheduleWaitTimeEnabled", flag53));
-                        if (flag53 != flag54) {
-                            try {
+                        if (flag53 != flag54)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " RescheduleWaitTimeEnabled: " + flag54 + " => " + flag53);
                                 registryKey3.SetValue("RescheduleWaitTimeEnabled", Convert.ToInt32(flag53), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RescheduleWaitTimeEnabled", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RescheduleWaitTimeEnabled",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'RescheduleWaitTimeEnabled' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'RescheduleWaitTimeEnabled' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("RescheduleWaitTime")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("RescheduleWaitTime"))
+                    {
                         int rescheduleWaitTime = RescheduleWaitTime;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey3.GetValue("RescheduleWaitTime");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("RescheduleWaitTime", rescheduleWaitTime));
-                        if (rescheduleWaitTime != num) {
-                            try {
+                        if (rescheduleWaitTime != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " RescheduleWaitTime: " + num + " => " + rescheduleWaitTime);
                                 registryKey3.SetValue("RescheduleWaitTime", rescheduleWaitTime, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RescheduleWaitTime", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "RescheduleWaitTime",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'RescheduleWaitTime' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'RescheduleWaitTime' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetActiveHoursMaxRange")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetActiveHoursMaxRange"))
+                    {
                         bool flag55 = SetActiveHoursMaxRange.ToBool();
                         bool flag56 = false;
-                        try {
+                        try
+                        {
                             flag56 = Convert.ToBoolean(registryKey2.GetValue("SetActiveHoursMaxRange"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetActiveHoursMaxRange", flag55));
-                        if (flag55 != flag56) {
-                            try {
+                        if (flag55 != flag56)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetActiveHoursMaxRange: " + flag56 + " => " + flag55);
                                 registryKey2.SetValue("SetActiveHoursMaxRange", Convert.ToInt32(flag55), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetActiveHoursMaxRange", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetActiveHoursMaxRange",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetActiveHoursMaxRange' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetActiveHoursMaxRange' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursMaxRange")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursMaxRange"))
+                    {
                         int activeHoursMaxRange = ActiveHoursMaxRange;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("ActiveHoursMaxRange");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("ActiveHoursMaxRange", activeHoursMaxRange));
-                        if (activeHoursMaxRange != num) {
-                            try {
+                        if (activeHoursMaxRange != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " ActiveHoursMaxRange: " + num + " => " + activeHoursMaxRange);
                                 registryKey2.SetValue("ActiveHoursMaxRange", activeHoursMaxRange, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ActiveHoursMaxRange", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ActiveHoursMaxRange",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ActiveHoursMaxRange' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ActiveHoursMaxRange' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("UseUpdateClassPolicySource")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("UseUpdateClassPolicySource"))
+                    {
                         bool flag57 = UseUpdateClassPolicySource.ToBool();
                         bool flag58 = false;
-                        try {
+                        try
+                        {
                             flag58 = Convert.ToBoolean(registryKey3.GetValue("UseUpdateClassPolicySource"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("UseUpdateClassPolicySource", flag57));
-                        if (flag57 != flag58) {
-                            try {
+                        if (flag57 != flag58)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " UseUpdateClassPolicySource: " + flag58 + " => " + flag57);
                                 registryKey3.SetValue("UseUpdateClassPolicySource", Convert.ToInt32(flag57), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "UseUpdateClassPolicySource", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "UseUpdateClassPolicySource",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'UseUpdateClassPolicySource' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'UseUpdateClassPolicySource' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForFeatureUpdates")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForFeatureUpdates"))
+                    {
                         bool flag59 = SetPolicyDrivenUpdateSourceForFeatureUpdates.ToBool();
                         bool flag60 = false;
-                        try {
+                        try
+                        {
                             flag60 = Convert.ToBoolean(registryKey2.GetValue("SetPolicyDrivenUpdateSourceForFeatureUpdates"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetPolicyDrivenUpdateSourceForFeatureUpdates", flag59));
-                        if (flag59 != flag60) {
-                            try {
+                        if (flag59 != flag60)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetPolicyDrivenUpdateSourceForFeatureUpdates: " + flag60 + " => " + flag59);
-                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForFeatureUpdates", Convert.ToInt32(flag59), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetPolicyDrivenUpdateSourceForFeatureUpdates",
+                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForFeatureUpdates", Convert.ToInt32(flag59),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "SetPolicyDrivenUpdateSourceForFeatureUpdates",
                                     ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForFeatureUpdates' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForFeatureUpdates' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForQualityUpdates")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForQualityUpdates"))
+                    {
                         bool flag61 = SetPolicyDrivenUpdateSourceForQualityUpdates.ToBool();
                         bool flag62 = false;
-                        try {
+                        try
+                        {
                             flag62 = Convert.ToBoolean(registryKey2.GetValue("SetPolicyDrivenUpdateSourceForQualityUpdates"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetPolicyDrivenUpdateSourceForQualityUpdates", flag61));
-                        if (flag61 != flag62) {
-                            try {
+                        if (flag61 != flag62)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetPolicyDrivenUpdateSourceForQualityUpdates: " + flag62 + " => " + flag61);
-                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForQualityUpdates", Convert.ToInt32(flag61), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetPolicyDrivenUpdateSourceForQualityUpdates",
+                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForQualityUpdates", Convert.ToInt32(flag61),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "SetPolicyDrivenUpdateSourceForQualityUpdates",
                                     ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForQualityUpdates' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForQualityUpdates' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForDriverUpdates")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForDriverUpdates"))
+                    {
                         bool flag63 = SetPolicyDrivenUpdateSourceForDriverUpdates.ToBool();
                         bool flag64 = false;
-                        try {
+                        try
+                        {
                             flag64 = Convert.ToBoolean(registryKey2.GetValue("SetPolicyDrivenUpdateSourceForDriverUpdates"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetPolicyDrivenUpdateSourceForDriverUpdates", flag63));
-                        if (flag63 != flag64) {
-                            try {
+                        if (flag63 != flag64)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetPolicyDrivenUpdateSourceForDriverUpdates: " + flag64 + " => " + flag63);
-                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForDriverUpdates", Convert.ToInt32(flag63), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetPolicyDrivenUpdateSourceForDriverUpdates", ErrorCategory.CloseError,
+                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForDriverUpdates", Convert.ToInt32(flag63),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "SetPolicyDrivenUpdateSourceForDriverUpdates", ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForDriverUpdates' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForDriverUpdates' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForOtherUpdates")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetPolicyDrivenUpdateSourceForOtherUpdates"))
+                    {
                         bool flag65 = SetPolicyDrivenUpdateSourceForOtherUpdates.ToBool();
                         bool flag66 = false;
-                        try {
+                        try
+                        {
                             flag66 = Convert.ToBoolean(registryKey2.GetValue("SetPolicyDrivenUpdateSourceForOtherUpdates"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetPolicyDrivenUpdateSourceForOtherUpdates", flag65));
-                        if (flag65 != flag66) {
-                            try {
+                        if (flag65 != flag66)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetPolicyDrivenUpdateSourceForOtherUpdates: " + flag66 + " => " + flag65);
-                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForOtherUpdates", Convert.ToInt32(flag65), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetPolicyDrivenUpdateSourceForOtherUpdates", ErrorCategory.CloseError,
+                                registryKey2.SetValue("SetPolicyDrivenUpdateSourceForOtherUpdates", Convert.ToInt32(flag65),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."),
+                                    "SetPolicyDrivenUpdateSourceForOtherUpdates", ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForOtherUpdates' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetPolicyDrivenUpdateSourceForOtherUpdates' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetActiveHours")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetActiveHours"))
+                    {
                         bool flag67 = SetActiveHours.ToBool();
                         bool flag68 = false;
-                        try {
+                        try
+                        {
                             flag68 = Convert.ToBoolean(registryKey2.GetValue("SetActiveHours"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetActiveHours", flag67));
-                        if (flag67 != flag68) {
-                            try {
+                        if (flag67 != flag68)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetActiveHours: " + flag68 + " => " + flag67);
                                 registryKey2.SetValue("SetActiveHours", Convert.ToInt32(flag67), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetActiveHours", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetActiveHours",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetActiveHours' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetActiveHours' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursStart")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursStart"))
+                    {
                         int activeHoursStart = ActiveHoursStart;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("ActiveHoursStart");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("ActiveHoursStart", activeHoursStart));
-                        if (activeHoursStart != num) {
-                            try {
+                        if (activeHoursStart != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " ActiveHoursStart: " + num + " => " + activeHoursStart);
                                 registryKey2.SetValue("ActiveHoursStart", activeHoursStart, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ActiveHoursStart", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ActiveHoursStart",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ActiveHoursStart' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ActiveHoursStart' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursEnd")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("ActiveHoursEnd"))
+                    {
                         int activeHoursEnd = ActiveHoursEnd;
                         int num = 0;
-                        try {
+                        try
+                        {
                             num = (int)registryKey2.GetValue("ActiveHoursEnd");
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("ActiveHoursEnd", activeHoursEnd));
-                        if (activeHoursEnd != num) {
-                            try {
+                        if (activeHoursEnd != num)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " ActiveHoursEnd: " + num + " => " + activeHoursEnd);
                                 registryKey2.SetValue("ActiveHoursEnd", activeHoursEnd, RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ActiveHoursEnd", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "ActiveHoursEnd",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'ActiveHoursEnd' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'ActiveHoursEnd' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartNotificationDisable")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetAutoRestartNotificationDisable"))
+                    {
                         bool flag69 = SetAutoRestartNotificationDisable.ToBool();
                         bool flag70 = false;
-                        try {
+                        try
+                        {
                             flag70 = Convert.ToBoolean(registryKey2.GetValue("SetAutoRestartNotificationDisable"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetAutoRestartNotificationDisable", flag69));
-                        if (flag69 != flag70) {
-                            try {
+                        if (flag69 != flag70)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetAutoRestartNotificationDisable: " + flag70 + " => " + flag69);
-                                registryKey2.SetValue("SetAutoRestartNotificationDisable", Convert.ToInt32(flag69), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetAutoRestartNotificationDisable", ErrorCategory.CloseError,
+                                registryKey2.SetValue("SetAutoRestartNotificationDisable", Convert.ToInt32(flag69),
+                                    RegistryValueKind.DWord);
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetAutoRestartNotificationDisable",
+                                    ErrorCategory.CloseError,
                                     null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetAutoRestartNotificationDisable' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetAutoRestartNotificationDisable' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("EnableFeaturedSoftware")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("EnableFeaturedSoftware"))
+                    {
                         bool flag71 = EnableFeaturedSoftware.ToBool();
                         bool flag72 = false;
-                        try {
+                        try
+                        {
                             flag72 = Convert.ToBoolean(registryKey3.GetValue("EnableFeaturedSoftware"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("EnableFeaturedSoftware", flag71));
-                        if (flag71 != flag72) {
-                            try {
+                        if (flag71 != flag72)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " EnableFeaturedSoftware: " + flag72 + " => " + flag71);
                                 registryKey3.SetValue("EnableFeaturedSoftware", Convert.ToInt32(flag71), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "EnableFeaturedSoftware", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "EnableFeaturedSoftware",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'EnableFeaturedSoftware' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'EnableFeaturedSoftware' have been modified.");
                     }
 
-                    if (MyInvocation.BoundParameters.ContainsKey("SetEDURestart")) {
+                    if (MyInvocation.BoundParameters.ContainsKey("SetEDURestart"))
+                    {
                         bool flag73 = SetEDURestart.ToBool();
                         bool flag74 = false;
-                        try {
+                        try
+                        {
                             flag74 = Convert.ToBoolean(registryKey2.GetValue("SetEDURestart"));
-                        } catch { }
+                        }
+                        catch
+                        {
+                        }
 
                         sendToPipeline.Properties.Add(new PSNoteProperty("SetEDURestart", flag73));
-                        if (flag73 != flag74) {
-                            try {
+                        if (flag73 != flag74)
+                        {
+                            try
+                            {
                                 WriteVerbose(target + " SetEDURestart: " + flag74 + " => " + flag73);
                                 registryKey2.SetValue("SetEDURestart", Convert.ToInt32(flag73), RegistryValueKind.DWord);
-                            } catch {
-                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetEDURestart", ErrorCategory.CloseError, null));
+                            }
+                            catch
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Access denied."), "SetEDURestart",
+                                    ErrorCategory.CloseError, null));
                                 WriteDebug(DateTime.Now + " Skip to next computer");
                                 break;
                             }
-                        } else
-                            WriteVerbose(target + " The command completed successfully but no settings of 'SetEDURestart' have been modified.");
+                        }
+                        else
+                            WriteVerbose(target +
+                                         " The command completed successfully but no settings of 'SetEDURestart' have been modified.");
                     }
 
                     WriteObject(sendToPipeline, true);
@@ -1990,16 +2766,20 @@ namespace PSWindowsUpdate {
             }
         }
 
-        protected override void ProcessRecord() {
+        protected override void ProcessRecord()
+        {
             var flag = false;
-            if (Credential != null) {
+            if (Credential != null)
+            {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) +
+                           "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
-                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str1 = "RunAs";
                 }
 
@@ -2013,13 +2793,16 @@ namespace PSWindowsUpdate {
                 WriteDebug(string.Concat(strArray1));
                 var logonType = WUImpersonator.LogonSessionType.Interactive;
                 var logonProvider = WUImpersonator.LogonProvider.Default;
-                if (!WUToolsObj.IsLocalHost(ComputerName[0])) {
+                if (!WUToolsObj.IsLocalHost(ComputerName[0]))
+                {
                     logonType = WUImpersonator.LogonSessionType.NewCredentials;
                     logonProvider = WUImpersonator.LogonProvider.WinNT50;
                 }
 
-                using (new WUImpersonator(userName, domain, password, logonType, logonProvider)) {
-                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                using (new WUImpersonator(userName, domain, password, logonType, logonProvider))
+                {
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
                         var str2 = "RunAs";
                         var strArray2 = new string[9];
                         now = DateTime.Now;
@@ -2033,14 +2816,19 @@ namespace PSWindowsUpdate {
                         strArray2[7] = " ";
                         strArray2[8] = str2;
                         WriteDebug(string.Concat(strArray2));
-                        try {
+                        try
+                        {
                             CoreProcessing();
                             flag = false;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         var str3 = "Can't RunAs";
                         var strArray3 = new string[9];
                         now = DateTime.Now;
@@ -2063,36 +2851,44 @@ namespace PSWindowsUpdate {
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str4 = "";
-                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str4 = "RunAs";
                 }
 
                 WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
-            } else {
+            }
+            else
+            {
                 flag = true;
             }
 
-            if (!flag) {
+            if (!flag)
+            {
                 return;
             }
 
             CoreProcessing();
         }
 
-        protected override void EndProcessing() {
+        protected override void EndProcessing()
+        {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Send report");
-                if (!PSWUSettings.ContainsKey("Properties")) {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
                     PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                 }
             }

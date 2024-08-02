@@ -1,9 +1,11 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for credentials from Credential Manager.</para>
     /// </summary>
-    public class PSCredMan {
+    public class PSCredMan
+    {
         /// <summary>Username</summary>
         public string Username { get; set; }
 

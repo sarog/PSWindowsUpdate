@@ -7,7 +7,8 @@ using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// <para type="synopsis">Enable firewall rules for PSWindowsUpdate remoting.</para>
     /// <para type="description">Use Enable-WURemoting cmdlet to enable nessesery firewall rules for PSWindowsUpdate remoting.</para>
@@ -21,7 +22,8 @@ namespace PSWindowsUpdate {
     /// </code>
     /// </example>
     [Cmdlet("Enable", "WURemoting", SupportsShouldProcess = true, ConfirmImpact = ConfirmImpact.High)]
-    public class EnableWURemoting : PSCmdlet {
+    public class EnableWURemoting : PSCmdlet
+    {
         /// <summary>
         /// <para type="description">Specify one or more computer names for remote connection.</para>
         /// </summary>
@@ -63,38 +65,48 @@ namespace PSWindowsUpdate {
         private static DateTime CmdletEnd { get; set; }
 
         /// <summary>Begin</summary>
-        protected override void BeginProcessing() {
+        protected override void BeginProcessing()
+        {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
             WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
-                ThrowTerminatingError(new ErrorRecord(new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                ThrowTerminatingError(new ErrorRecord(
+                    new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
                     ErrorCategory.PermissionDenied, null));
             }
 
-            if (ComputerName != null) {
+            if (ComputerName != null)
+            {
                 return;
             }
 
-            ComputerName = new string[1] {
+            ComputerName = new string[1]
+            {
                 Environment.MachineName
             };
         }
 
-        private void CoreProcessing() {
+        private void CoreProcessing()
+        {
             var wUTools = new WUTools();
             var invocationName = MyInvocation.InvocationName;
             var computerName = ComputerName;
-            foreach (var target in computerName) {
+            foreach (var target in computerName)
+            {
                 var netFwPolicy = (INetFwPolicy2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FwPolicy2"));
                 var rule1Enabled = false;
-                foreach (INetFwRule rule in netFwPolicy.Rules) {
-                    if (rule.Name == "PSWindowsUpdate (RPC Dynamics Ports)") {
+                foreach (INetFwRule rule in netFwPolicy.Rules)
+                {
+                    if (rule.Name == "PSWindowsUpdate (RPC Dynamics Ports)")
+                    {
                         rule1Enabled = true;
                     }
                 }
 
-                if (!rule1Enabled) {
+                if (!rule1Enabled)
+                {
                     WriteVerbose("Create firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
                     var netFwRule2 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
                     netFwRule2.Grouping = "PSWindowsUpdate";
@@ -106,22 +118,30 @@ namespace PSWindowsUpdate {
                     netFwRule2.ApplicationName = "%SystemRoot%\\System32\\dllhost.exe";
                     netFwRule2.Name = "PSWindowsUpdate (RPC Dynamics Ports)";
                     netFwPolicy.Rules.Add(netFwRule2);
-                } else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"]) {
+                }
+                else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"])
+                {
                     WriteVerbose("Enable firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
                     netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
-                } else {
+                }
+                else
+                {
                     WriteDebug(DateTime.Now + " PSWindowsUpdate (RPC Dynamics Ports) firewall rule is enabled");
                 }
 
-                if (WinRMPublic) {
+                if (WinRMPublic)
+                {
                     var rule2Enabled = false;
-                    foreach (INetFwRule rule2 in netFwPolicy.Rules) {
-                        if (rule2.Name == "PSWindowsUpdate (WinRM Public)") {
+                    foreach (INetFwRule rule2 in netFwPolicy.Rules)
+                    {
+                        if (rule2.Name == "PSWindowsUpdate (WinRM Public)")
+                        {
                             rule2Enabled = true;
                         }
                     }
 
-                    if (!rule2Enabled) {
+                    if (!rule2Enabled)
+                    {
                         WriteVerbose("Create firewall rule: PSWindowsUpdate (WinRM Public)");
                         var netFwRule4 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
                         netFwRule4.Grouping = "PSWindowsUpdate";
@@ -133,99 +153,136 @@ namespace PSWindowsUpdate {
                         netFwRule4.ApplicationName = "System";
                         netFwRule4.Name = "PSWindowsUpdate (WinRM Public)";
                         netFwPolicy.Rules.Add(netFwRule4);
-                    } else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"]) {
+                    }
+                    else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"])
+                    {
                         WriteVerbose("Enable firewall rule: PSWindowsUpdate (WinRM Public)");
                         netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
-                    } else {
+                    }
+                    else
+                    {
                         WriteDebug(DateTime.Now + " PSWindowsUpdate (WinRM Public) firewall rule is enabled");
                     }
                 }
 
-                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Remote Scheduled Tasks Management"]) {
+                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Remote Scheduled Tasks Management"])
+                {
                     WriteVerbose("Enable firewall rules: Remote Scheduled Tasks Management");
                     netFwPolicy.EnableRuleGroup(int.MaxValue, "Remote Scheduled Tasks Management", true);
-                } else {
+                }
+                else
+                {
                     WriteDebug(DateTime.Now + " Remote Scheduled Tasks Management firewall rules are enabled");
                 }
 
-                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Windows Management Instrumentation (WMI)"]) {
+                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Windows Management Instrumentation (WMI)"])
+                {
                     WriteVerbose("Enable firewall rules: Windows Management Instrumentation (WMI)");
                     netFwPolicy.EnableRuleGroup(int.MaxValue, "Windows Management Instrumentation (WMI)", true);
-                } else {
+                }
+                else
+                {
                     WriteDebug(DateTime.Now + " Windows Management Instrumentation (WMI) firewall rules are enabled");
                 }
 
-                if (LocalAccountTokenFilterPolicy) {
+                if (LocalAccountTokenFilterPolicy)
+                {
                     WriteVerbose("Set LocalAccountTokenFilterPolicy=1 registry entry");
                     var registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
                     var registryKey2 = registryKey.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\system\\", true);
                     registryKey2.SetValue("LocalAccountTokenFilterPolicy", Convert.ToInt32(1), RegistryValueKind.DWord);
                 }
 
-                try {
+                try
+                {
                     var script = "(Get-Item WSMan:\\localhost\\Client\\TrustedHosts).Value -match '\\*';";
                     Collection<PSObject> collection;
-                    using (var powerShell = PowerShell.Create()) {
+                    using (var powerShell = PowerShell.Create())
+                    {
                         powerShell.AddScript(script);
                         collection = powerShell.Invoke();
                     }
 
-                    if (collection[0].ToString() == "False") {
+                    if (collection[0].ToString() == "False")
+                    {
                         WriteVerbose("Enable PSRemoting");
                         script =
                             "Enable -PSRemoting –force; \r\nStart-Service WinRM; \r\nSet-ItemProperty -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord;\r\nSet-ItemProperty -Path HKLM:\\System\\CurrentControlSet\\Control\\Lsa -Name ForceGuest -Value 0;\r\nSet-Item WSMan:\\localhost\\Client\\TrustedHosts -Value * -Force -Concatenate;";
                         using var powerShell2 = PowerShell.Create();
                         powerShell2.AddScript(script);
                         collection = powerShell2.Invoke();
-                    } else {
+                    }
+                    else
+                    {
                         WriteDebug(DateTime.Now + " PSRemoting TrustedHosts are set");
                     }
-                } catch (Exception exception) {
+                }
+                catch (Exception exception)
+                {
                     WriteError(new ErrorRecord(exception, "PSRemoting", ErrorCategory.ResourceUnavailable, null));
                 }
 
-                try {
+                try
+                {
                     var num = 1u;
                     var queryString = "SELECT * FROM Win32_Service WHERE Name = 'RemoteRegistry'";
                     var managementObjectSearcher = new ManagementObjectSearcher(queryString);
                     var managementObjectCollection = managementObjectSearcher.Get();
-                    foreach (ManagementObject item in managementObjectCollection) {
-                        if (Convert.ToString(item.GetPropertyValue("StartMode")) == "Disabled") {
+                    foreach (ManagementObject item in managementObjectCollection)
+                    {
+                        if (Convert.ToString(item.GetPropertyValue("StartMode")) == "Disabled")
+                        {
                             WriteVerbose("Change startmode service: Remote Registry");
                             var methodParameters = item.GetMethodParameters("ChangeStartMode");
                             methodParameters["startmode"] = "Automatic";
                             var managementBaseObject = item.InvokeMethod("ChangeStartMode", methodParameters, null);
                             num = Convert.ToUInt16(managementBaseObject.Properties["ReturnValue"].Value);
-                        } else {
+                        }
+                        else
+                        {
                             WriteDebug(DateTime.Now + " Remote Registry service start mode is ok");
                         }
                     }
-                } catch (Exception exception2) {
+                }
+                catch (Exception exception2)
+                {
                     WriteError(new ErrorRecord(exception2, "RemoteRegistry", ErrorCategory.ResourceUnavailable, null));
                 }
 
-                try {
+                try
+                {
                     var num2 = 1u;
                     var queryString2 = "SELECT * FROM Win32_Service WHERE Name = 'RemoteRegistry'";
                     var managementObjectSearcher2 = new ManagementObjectSearcher(queryString2);
                     var managementObjectCollection2 = managementObjectSearcher2.Get();
-                    foreach (ManagementObject item2 in managementObjectCollection2) {
-                        if (Convert.ToString(item2.GetPropertyValue("State")) == "Stopped") {
+                    foreach (ManagementObject item2 in managementObjectCollection2)
+                    {
+                        if (Convert.ToString(item2.GetPropertyValue("State")) == "Stopped")
+                        {
                             WriteVerbose("Start service: Remote Registry");
                             var managementBaseObject2 = item2.InvokeMethod("StartService", null, null);
                             num2 = Convert.ToUInt16(managementBaseObject2.Properties["ReturnValue"].Value);
-                        } else {
+                        }
+                        else
+                        {
                             WriteDebug(DateTime.Now + " Remote Registry service is Running");
                         }
                     }
-                } catch (COMException ex) {
+                }
+                catch (COMException ex)
+                {
                     var wUApiCodeDetails = wUTools.GetWUApiCodeDetails(ex.ErrorCode);
-                    if (wUApiCodeDetails != null) {
+                    if (wUApiCodeDetails != null)
+                    {
                         var codeType = wUApiCodeDetails.CodeType;
-                        if (codeType == 2) {
-                            WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult, ErrorCategory.CloseError, null));
+                        if (codeType == 2)
+                        {
+                            WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                ErrorCategory.CloseError, null));
                         }
-                    } else if (Debuger) {
+                    }
+                    else if (Debuger)
+                    {
                         var errorRecord = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
                         ThrowTerminatingError(errorRecord);
                     }
@@ -234,16 +291,20 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Process</summary>
-        protected override void ProcessRecord() {
+        protected override void ProcessRecord()
+        {
             var flag = false;
-            if (Credential != null) {
+            if (Credential != null)
+            {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) +
+                           "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
-                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str1 = "RunAs";
                 }
 
@@ -257,13 +318,16 @@ namespace PSWindowsUpdate {
                 WriteDebug(string.Concat(strArray1));
                 var logonType = WUImpersonator.LogonSessionType.Interactive;
                 var logonProvider = WUImpersonator.LogonProvider.Default;
-                if (!WUToolsObj.IsLocalHost(ComputerName[0])) {
+                if (!WUToolsObj.IsLocalHost(ComputerName[0]))
+                {
                     logonType = WUImpersonator.LogonSessionType.NewCredentials;
                     logonProvider = WUImpersonator.LogonProvider.WinNT50;
                 }
 
-                using (new WUImpersonator(userName, domain, password, logonType, logonProvider)) {
-                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                using (new WUImpersonator(userName, domain, password, logonType, logonProvider))
+                {
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
                         var str2 = "RunAs";
                         var strArray2 = new string[9];
                         now = DateTime.Now;
@@ -277,14 +341,19 @@ namespace PSWindowsUpdate {
                         strArray2[7] = " ";
                         strArray2[8] = str2;
                         WriteDebug(string.Concat(strArray2));
-                        try {
+                        try
+                        {
                             CoreProcessing();
                             flag = false;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         var str3 = "Can't RunAs";
                         var strArray3 = new string[9];
                         now = DateTime.Now;
@@ -307,16 +376,20 @@ namespace PSWindowsUpdate {
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str4 = "";
-                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str4 = "RunAs";
                 }
 
                 WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
-            } else {
+            }
+            else
+            {
                 flag = true;
             }
 
-            if (!flag) {
+            if (!flag)
+            {
                 return;
             }
 
@@ -324,7 +397,8 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>End</summary>
-        protected override void EndProcessing() {
+        protected override void EndProcessing()
+        {
             WriteDebug(DateTime.Now + " CmdletEnd");
         }
     }

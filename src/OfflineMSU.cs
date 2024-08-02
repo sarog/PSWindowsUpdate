@@ -1,9 +1,11 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for MSU objects.</para>
     /// </summary>
-    public class OfflineMSU {
+    public class OfflineMSU
+    {
         /// <summary>Status</summary>
         public string Status { get; set; }
 

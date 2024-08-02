@@ -10,7 +10,8 @@ using System.Security.Principal;
 using System.Text.RegularExpressions;
 using MSHTML;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// <para type="synopsis">Get offline MSU package.</para>
     /// <para type="description">Use Get-WUOfflineMSU cmdlet to download MSU package from Microsoft Update Catalog website.</para>
@@ -61,8 +62,8 @@ namespace PSWindowsUpdate {
     ///  </example>
     [Cmdlet("Get", "WUOfflineMSU", ConfirmImpact = ConfirmImpact.High, SupportsShouldProcess = true)]
     [OutputType(typeof(OfflineMSU))]
-    public class GetWUOfflineMSU : PSCmdlet {
-
+    public class GetWUOfflineMSU : PSCmdlet
+    {
         private Hashtable _PSWUSettings = new Hashtable();
 
         /// <summary>
@@ -92,7 +93,8 @@ namespace PSWindowsUpdate {
         /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
         /// </summary>
         [Parameter]
-        private Hashtable PSWUSettings {
+        private Hashtable PSWUSettings
+        {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
@@ -134,47 +136,58 @@ namespace PSWindowsUpdate {
         private static DateTime CmdletEnd { get; set; }
 
         /// <summary>Begin</summary>
-        protected override void BeginProcessing() {
+        protected override void BeginProcessing()
+        {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
             WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
             WUBitsObj = new WUBits();
             OutputObj = new Collection<PSObject>();
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey("Properties")) {
-                    PSWUSettings.Add("Properties", new string[1] {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
+                    PSWUSettings.Add("Properties", new string[1]
+                    {
                         "*"
                     });
                 }
 
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                     SendReport = false;
                     WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
-            if (ComputerName != null) {
+            if (ComputerName != null)
+            {
                 return;
             }
 
-            ComputerName = new string[1] {
+            ComputerName = new string[1]
+            {
                 Environment.MachineName
             };
         }
 
-        private void CoreProcessing() {
+        private void CoreProcessing()
+        {
             var invocationName = MyInvocation.InvocationName;
             var computerNames = ComputerName;
-            foreach (var target in computerNames) {
-                if (!Regex.IsMatch(KBArticleID, "KB", RegexOptions.IgnoreCase)) {
+            foreach (var target in computerNames)
+            {
+                if (!Regex.IsMatch(KBArticleID, "KB", RegexOptions.IgnoreCase))
+                {
                     KBArticleID = "KB" + KBArticleID;
                 }
 
@@ -183,7 +196,8 @@ namespace PSWindowsUpdate {
                 WriteDebug(DateTime.Now + " " + reqUrl);
                 var text3 = WUToolsObj.InvokeRestMethod(reqUrl, WUTools.HttpWebRequestMethod.GET, null, null);
                 var psarray = new object[1] { text3 };
-                var hTMLDocument = (HTMLDocument)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("25336920-03F9-11CF-8FD0-00AA00686F13")));
+                var hTMLDocument =
+                    (HTMLDocument)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("25336920-03F9-11CF-8FD0-00AA00686F13")));
                 var iHTMLDocument = (IHTMLDocument2)hTMLDocument;
                 iHTMLDocument.write(psarray);
                 var regex = new Regex("(id=\\\"(?<id>.*?)\\\"(.*?)value='Download')", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -197,7 +211,8 @@ namespace PSWindowsUpdate {
                 var progressRecord = new ProgressRecord(activityId, activity, statusDescription);
                 var collection = new Collection<PSObject>();
                 var num2 = 0;
-                foreach (Match item in matchCollection) {
+                foreach (Match item in matchCollection)
+                {
                     var pSObject = new PSObject();
                     pSObject.Properties.Add(new PSNoteProperty("X", 1));
                     var groups = item.Groups;
@@ -230,10 +245,13 @@ namespace PSWindowsUpdate {
                     num++;
                     WriteDebug(DateTime.Now + " Show update to accept: " + updateTitle);
                     var flag = false;
-                    flag = AcceptAll || (ShouldProcess(target, "(" + DateTime.Now + ") " + updateTitle + "[" + updateSize + "]") ? true : false);
+                    flag = AcceptAll || (ShouldProcess(target, "(" + DateTime.Now + ") " + updateTitle + "[" + updateSize + "]")
+                        ? true
+                        : false);
                     var pStatus = "";
                     var pResult = "";
-                    if (flag) {
+                    if (flag)
+                    {
                         pStatus += "A";
                         pResult = "Accepted";
                         WriteDebug(DateTime.Now + " " + pResult);
@@ -245,14 +263,17 @@ namespace PSWindowsUpdate {
                         dictionary.Add("updateIDs", "[{\"uidInfo\":\"" + updateId + "\",\"updateID\":\"" + updateId + "\",\"size\":0}]");
                         WriteDebug(DateTime.Now + " " + dictionary["updateIDs"]);
                         var input = WUToolsObj.InvokeRestMethod(requestUrl, WUTools.HttpWebRequestMethod.POST, dictionary, null);
-                        var regex2 = new Regex("(?<url>http[s]?\\://download\\.windowsupdate\\.com/[^\\'\\\"]*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                        var regex2 = new Regex("(?<url>http[s]?\\://download\\.windowsupdate\\.com/[^\\'\\\"]*)",
+                            RegexOptions.IgnoreCase | RegexOptions.Compiled);
                         var matchCollection2 = regex2.Matches(input);
                         var downloadUrl = matchCollection2[0].Groups["url"].Value;
                         var fileName = Path.GetFileName(downloadUrl);
                         pSObject.Properties.Add(new PSNoteProperty("DownloadUrl", downloadUrl));
                         pSObject.Properties.Add(new PSNoteProperty("FileName", fileName));
                         WriteDebug(DateTime.Now + " " + downloadUrl);
-                    } else {
+                    }
+                    else
+                    {
                         pStatus += "R";
                         pResult = "Rejected";
                         WriteDebug(DateTime.Now + " " + pResult);
@@ -277,7 +298,8 @@ namespace PSWindowsUpdate {
                 var activity2 = "Download updates for " + target;
                 var statusDescription2 = "[" + num4 + "/" + totalAccepted + "]";
                 var progressRecord2 = new ProgressRecord(activityId2, activity2, statusDescription2);
-                foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted")) {
+                foreach (var item2 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted"))
+                {
                     item2.Properties.Add(new PSNoteProperty("X", 2));
                     var source = item2.Properties["DownloadUrl"].Value.ToString();
                     var path = item2.Properties["FileName"].Value.ToString();
@@ -289,20 +311,24 @@ namespace PSWindowsUpdate {
                     progressRecord2.PercentComplete = num4 * 100 / totalAccepted;
                     WriteProgress(progressRecord2);
                     num4++;
-                    if (!Directory.Exists(Destination)) {
+                    if (!Directory.Exists(Destination))
+                    {
                         Directory.CreateDirectory(Destination);
                         WriteDebug(DateTime.Now + " Creatig destination: " + Destination);
                     }
 
-                    if (Directory.Exists(Destination)) {
-                        if (File.Exists(text7)) {
+                    if (Directory.Exists(Destination))
+                    {
+                        if (File.Exists(text7))
+                        {
                             WriteDebug(DateTime.Now + " File exist and will be overwited: " + text7);
                         }
 
                         var text10 = WUBitsObj.StartBitsTransfer(source, text7);
                         WriteDebug(DateTime.Now + " " + text10);
                         var status = item2.Properties["Status"].Value.ToString();
-                        switch (text10) {
+                        switch (text10)
+                        {
                             case "ERROR":
                                 status += "E";
                                 item2.Properties.Add(new PSNoteProperty("DownloadResult", "Error"));
@@ -332,16 +358,20 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Process</summary>
-        protected override void ProcessRecord() {
+        protected override void ProcessRecord()
+        {
             var flag = false;
-            if (Credential != null) {
+            if (Credential != null)
+            {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) +
+                           "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
-                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str1 = "RunAs";
                 }
 
@@ -355,13 +385,16 @@ namespace PSWindowsUpdate {
                 WriteDebug(string.Concat(strArray1));
                 var logonType = WUImpersonator.LogonSessionType.Interactive;
                 var logonProvider = WUImpersonator.LogonProvider.Default;
-                if (!WUToolsObj.IsLocalHost(ComputerName[0])) {
+                if (!WUToolsObj.IsLocalHost(ComputerName[0]))
+                {
                     logonType = WUImpersonator.LogonSessionType.NewCredentials;
                     logonProvider = WUImpersonator.LogonProvider.WinNT50;
                 }
 
-                using (new WUImpersonator(userName, domain, password, logonType, logonProvider)) {
-                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                using (new WUImpersonator(userName, domain, password, logonType, logonProvider))
+                {
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
                         var str2 = "RunAs";
                         var strArray2 = new string[9];
                         now = DateTime.Now;
@@ -375,14 +408,19 @@ namespace PSWindowsUpdate {
                         strArray2[7] = " ";
                         strArray2[8] = str2;
                         WriteDebug(string.Concat(strArray2));
-                        try {
+                        try
+                        {
                             CoreProcessing();
                             flag = false;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         var str3 = "Can't RunAs";
                         var strArray3 = new string[9];
                         now = DateTime.Now;
@@ -405,16 +443,20 @@ namespace PSWindowsUpdate {
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str4 = "";
-                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str4 = "RunAs";
                 }
 
                 WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
-            } else {
+            }
+            else
+            {
                 flag = true;
             }
 
-            if (!flag) {
+            if (!flag)
+            {
                 return;
             }
 
@@ -422,20 +464,24 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>End</summary>
-        protected override void EndProcessing() {
+        protected override void EndProcessing()
+        {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Send report");
-                if (!PSWUSettings.ContainsKey("Properties")) {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
                     PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                 }
             }

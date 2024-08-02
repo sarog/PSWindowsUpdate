@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Management.Automation;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>Return Windows Update API COM object.</summary>
-    public class WUAPIObject {
+    public class WUAPIObject
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

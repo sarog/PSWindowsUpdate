@@ -1,10 +1,12 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     ///     Enum CredentialType
     ///
     ///     The type of the credential. This member cannot be changed after the credential is created.
     /// </summary>
-    public enum CredentialType : uint {
+    public enum CredentialType : uint
+    {
         /// <summary>The lack of credential type</summary>
         None,
 

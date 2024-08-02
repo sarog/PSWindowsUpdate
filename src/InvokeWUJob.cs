@@ -6,7 +6,8 @@ using System.Security.Principal;
 using System.Threading;
 using TaskScheduler;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// <para type="synopsis">Invoke WUJobs by Task Schduler.</para>
     /// <para type="description">Use Invoke-WUJobs cmdlet to invoke PSWindowsUpdate actions remotly. It Based on TaskScheduler because CreateUpdateDownloader() and CreateUpdateInstaller() methods can't be called from a remote computer - E_ACCESSDENIED.</para>
@@ -26,7 +27,8 @@ namespace PSWindowsUpdate {
     /// </code>
     /// </example>
     [Cmdlet("Invoke", "WUJob", ConfirmImpact = ConfirmImpact.High, DefaultParameterSetName = "RunNow", SupportsShouldProcess = true)]
-    public class InvokeWUJob : Cmdlet {
+    public class InvokeWUJob : Cmdlet
+    {
         private string _TaskName = "PSWindowsUpdate";
         private bool _Hidden = true;
         private string _Script = "ipmo PSWindowsUpdate; Get-WindowsUpdate -AcceptAll -Install | Out-File $Env:TEMP\\PSWindowsUpdate.log";
@@ -47,7 +49,8 @@ namespace PSWindowsUpdate {
         /// <para type="description">Specify custom name for Task Scheduler job. Default is 'PSWindowsUpdate'.</para>
         /// </summary>
         [Parameter]
-        public string TaskName {
+        public string TaskName
+        {
             get => _TaskName;
             set => _TaskName = value;
         }
@@ -56,7 +59,8 @@ namespace PSWindowsUpdate {
         /// <para type="description">Specify if task must be hidden. Default is true.</para>
         /// </summary>
         [Parameter]
-        public SwitchParameter Hidden {
+        public SwitchParameter Hidden
+        {
             get => _Hidden;
             set => _Hidden = value;
         }
@@ -91,7 +95,8 @@ namespace PSWindowsUpdate {
         /// <para type="description">Specify PowerShell script that you what to run. Default is {ipmo PSWindowsUpdate; Get-WindowsUpdate -AcceptAll -Install | Out-File $Env:TEMP\PSWindowsUpdate.log}</para>
         /// </summary>
         [Parameter]
-        public string Script {
+        public string Script
+        {
             get => _Script;
             set => _Script = value;
         }
@@ -125,28 +130,35 @@ namespace PSWindowsUpdate {
         private static DateTime CmdletEnd { get; set; }
 
         /// <summary>Begin</summary>
-        protected override void BeginProcessing() {
+        protected override void BeginProcessing()
+        {
             CmdletStart = DateTime.Now;
             WriteDebug(DateTime.Now + " CmdletStart: Invoke-WUJob");
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
-                ThrowTerminatingError(new ErrorRecord(new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                ThrowTerminatingError(new ErrorRecord(
+                    new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
                     ErrorCategory.PermissionDenied, null));
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if (ComputerName != null) {
+            if (ComputerName != null)
+            {
                 return;
             }
 
-            ComputerName = new string[1] {
+            ComputerName = new string[1]
+            {
                 Environment.MachineName
             };
         }
 
-        private void CoreProcessing() {
+        private void CoreProcessing()
+        {
             var taskScheduler =
-                (TaskScheduler.TaskScheduler)Activator.CreateInstance(Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
+                (TaskScheduler.TaskScheduler)Activator.CreateInstance(
+                    Marshal.GetTypeFromCLSID(new Guid("0F87369F-A4E5-4CFC-BD3E-73E6154572DD")));
 
             var taskDefinition = taskScheduler.NewTask(0u);
 
@@ -165,19 +177,24 @@ namespace PSWindowsUpdate {
             execAction.Path = "powershell.exe";
             execAction.Arguments = "-Command \"" + Script + "\"";
 
-            if (TriggerDate != DateTime.MinValue) {
+            if (TriggerDate != DateTime.MinValue)
+            {
                 var timeTrigger = (ITimeTrigger)taskDefinition.Triggers.Create(_TASK_TRIGGER_TYPE2.TASK_TRIGGER_TIME);
                 timeTrigger.StartBoundary = TriggerDate.ToString("yyyy-MM-ddTHH:mm:ss");
                 timeTrigger.EndBoundary = EndBoundary != DateTime.MinValue
                     ? EndBoundary.ToString("yyyy-MM-ddTHH:mm:ss")
                     : TriggerDate.AddHours(1.0).ToString("yyyy-MM-ddTHH:mm:ss");
-            } else if (TriggerAtStart) {
+            }
+            else if (TriggerAtStart)
+            {
                 var bootTrigger = (IBootTrigger)taskDefinition.Triggers.Create(_TASK_TRIGGER_TYPE2.TASK_TRIGGER_BOOT);
                 bootTrigger.Delay = "PT30S";
                 bootTrigger.EndBoundary = EndBoundary != DateTime.MinValue
                     ? EndBoundary.ToString("yyyy-MM-ddTHH:mm:ss")
                     : DateTime.Now.AddDays(1.0).ToString("yyyy-MM-ddTHH:mm:ss");
-            } else {
+            }
+            else
+            {
                 var timeTrigger2 = (ITimeTrigger)taskDefinition.Triggers.Create(_TASK_TRIGGER_TYPE2.TASK_TRIGGER_TIME);
                 timeTrigger2.StartBoundary = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
                 timeTrigger2.EndBoundary = EndBoundary != DateTime.MinValue
@@ -187,50 +204,75 @@ namespace PSWindowsUpdate {
 
             taskDefinition.Principal.RunLevel = _TASK_RUNLEVEL.TASK_RUNLEVEL_HIGHEST;
 
-            foreach (var target in ComputerName) {
+            foreach (var target in ComputerName)
+            {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
 
                 var pSObject = new PSObject();
 
-                try {
+                try
+                {
                     var errorRecord = WUToolsObj.CheckPSWUModule(target);
-                    if (errorRecord != null) {
+                    if (errorRecord != null)
+                    {
                         WriteError(errorRecord);
                     }
-                } catch {
-                    WriteWarning(target + ": Can't check PSWindowsUpdate on destination machine - check WinRM. Can't guarantee Invoke success.");
+                }
+                catch
+                {
+                    WriteWarning(target +
+                                 ": Can't check PSWindowsUpdate on destination machine - check WinRM. Can't guarantee Invoke success.");
                 }
 
-                if (!ShouldProcess(target, "(" + DateTime.Now + ") Invoke WU job: " + execAction.Path + " " + execAction.Arguments)) {
+                if (!ShouldProcess(target, "(" + DateTime.Now + ") Invoke WU job: " + execAction.Path + " " + execAction.Arguments))
+                {
                     continue;
                 }
 
-                for (var j = 1; j <= 3; j++) {
-                    try {
-                        if (Credential != null) {
+                for (var j = 1; j <= 3; j++)
+                {
+                    try
+                    {
+                        if (Credential != null)
+                        {
                             WriteVerbose("Try to connect " + target + ". Test " + j);
                             // todo: use PSCredMan.cs or switch to PSCredential?
                             taskScheduler.Connect(target, UserName, Domain, Password);
-                        } else {
+                        }
+                        else
+                        {
                             WriteVerbose("Try to connect " + target + ". Test " + j);
                             taskScheduler.Connect(target, Type.Missing, Type.Missing, Type.Missing);
                         }
-                    } catch (COMException ex) {
-                        if (j >= 3) {
+                    }
+                    catch (COMException ex)
+                    {
+                        if (j >= 3)
+                        {
                             var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                            if (wUApiCodeDetails != null) {
+                            if (wUApiCodeDetails != null)
+                            {
                                 var codeType = wUApiCodeDetails.CodeType;
                                 var num = codeType;
-                                if (num == 2) {
-                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult, ErrorCategory.CloseError, null));
+                                if (num == 2)
+                                {
+                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                        ErrorCategory.CloseError, null));
                                 }
-                            } else if (Debuger) {
+                            }
+                            else if (Debuger)
+                            {
                                 var errorRecord2 = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
                                 ThrowTerminatingError(errorRecord2);
-                            } else {
-                                WriteError(new ErrorRecord(new Exception(target + ": Unknown failure. Try debug."), "Unknown", ErrorCategory.CloseError, null));
                             }
-                        } else {
+                            else
+                            {
+                                WriteError(new ErrorRecord(new Exception(target + ": Unknown failure. Try debug."), "Unknown",
+                                    ErrorCategory.CloseError, null));
+                            }
+                        }
+                        else
+                        {
                             Thread.Sleep(500);
                         }
                     }
@@ -240,33 +282,43 @@ namespace PSWindowsUpdate {
                 var num2 = 1;
                 var runningTasks = taskScheduler.GetRunningTasks(0);
                 IRunningTask runningTask = null;
-                foreach (IRunningTask item in runningTasks) {
-                    if (item.Name == TaskName) {
+                foreach (IRunningTask item in runningTasks)
+                {
+                    if (item.Name == TaskName)
+                    {
                         runningTask = item;
                         break;
                     }
                 }
 
-                if (runningTask != null) {
+                if (runningTask != null)
+                {
                     num2 = 0;
-                    if (Force) {
+                    if (Force)
+                    {
                         WriteVerbose("Stopping task: " + TaskName);
                         folder.GetTask(TaskName).Stop(0);
                         num2 = 1;
-                    } else {
+                    }
+                    else
+                    {
                         var task = folder.GetTask(TaskName);
                         var path = ((IExecAction)task.Definition.Actions[0]).Path;
                         var arguments = ((IExecAction)task.Definition.Actions[0]).Arguments;
-                        var errorRecord3 = new ErrorRecord(new Exception(target + ": Job " + TaskName + " (" + path + " " + arguments + ") is still running."),
+                        var errorRecord3 = new ErrorRecord(
+                            new Exception(target + ": Job " + TaskName + " (" + path + " " + arguments + ") is still running."),
                             "RegisterTaskDefinition", ErrorCategory.CloseError, null);
                         ThrowTerminatingError(errorRecord3);
                     }
                 }
 
-                if (num2 == 1) {
+                if (num2 == 1)
+                {
                     WriteVerbose("Registering task: " + TaskName);
-                    folder.RegisterTaskDefinition(TaskName, taskDefinition, 6, "SYSTEM", null, _TASK_LOGON_TYPE.TASK_LOGON_PASSWORD, Type.Missing);
-                    if (RunNow) {
+                    folder.RegisterTaskDefinition(TaskName, taskDefinition, 6, "SYSTEM", null, _TASK_LOGON_TYPE.TASK_LOGON_PASSWORD,
+                        Type.Missing);
+                    if (RunNow)
+                    {
                         Thread.Sleep(5000);
                         WriteVerbose("Starting task: " + TaskName);
                         folder.GetTask(TaskName).Run(0);
@@ -274,15 +326,22 @@ namespace PSWindowsUpdate {
                 }
 
                 var tasks = folder.GetTasks(0);
-                foreach (IRegisteredTask registeredTask in tasks) {
+                foreach (IRegisteredTask registeredTask in tasks)
+                {
                     var infoSource = "";
-                    try {
+                    try
+                    {
                         infoSource = registeredTask.Definition.RegistrationInfo.Source;
-                    } catch {
+                    }
+                    catch
+                    {
                         WriteVerbose("Task source error. Skipping clear");
                     }
-                    if (infoSource == "PSWindowsUpdate" && DateTime.Parse(registeredTask.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
-                        registeredTask.State != _TASK_STATE.TASK_STATE_RUNNING) {
+
+                    if (infoSource == "PSWindowsUpdate" &&
+                        DateTime.Parse(registeredTask.Definition.Triggers[1].EndBoundary) < DateTime.Now &&
+                        registeredTask.State != _TASK_STATE.TASK_STATE_RUNNING)
+                    {
                         folder.DeleteTask(registeredTask.Name, 0);
                     }
                 }
@@ -290,16 +349,20 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Process</summary>
-        protected override void ProcessRecord() {
+        protected override void ProcessRecord()
+        {
             var flag = false;
-            if (Credential != null) {
+            if (Credential != null)
+            {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) +
+                           "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
-                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str1 = "RunAs";
                 }
 
@@ -313,13 +376,16 @@ namespace PSWindowsUpdate {
                 WriteDebug(string.Concat(strArray1));
                 var logonType = WUImpersonator.LogonSessionType.Interactive;
                 var logonProvider = WUImpersonator.LogonProvider.Default;
-                if (!WUToolsObj.IsLocalHost(ComputerName[0])) {
+                if (!WUToolsObj.IsLocalHost(ComputerName[0]))
+                {
                     logonType = WUImpersonator.LogonSessionType.NewCredentials;
                     logonProvider = WUImpersonator.LogonProvider.WinNT50;
                 }
 
-                using (new WUImpersonator(userName, domain, password, logonType, logonProvider)) {
-                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                using (new WUImpersonator(userName, domain, password, logonType, logonProvider))
+                {
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
                         var str2 = "RunAs";
                         var strArray2 = new string[9];
                         now = DateTime.Now;
@@ -333,14 +399,19 @@ namespace PSWindowsUpdate {
                         strArray2[7] = " ";
                         strArray2[8] = str2;
                         WriteDebug(string.Concat(strArray2));
-                        try {
+                        try
+                        {
                             CoreProcessing();
                             flag = false;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         var str3 = "Can't RunAs";
                         var strArray3 = new string[9];
                         now = DateTime.Now;
@@ -363,16 +434,20 @@ namespace PSWindowsUpdate {
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str4 = "";
-                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str4 = "RunAs";
                 }
 
                 WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
-            } else {
+            }
+            else
+            {
                 flag = true;
             }
 
-            if (!flag) {
+            if (!flag)
+            {
                 return;
             }
 

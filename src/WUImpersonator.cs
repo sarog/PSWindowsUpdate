@@ -4,14 +4,16 @@ using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Security.Principal;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// Impersonation of a user. Allows to execute code under another user context.
     /// Please note that the account that instantiates the Impersonator class
     /// needs to have the 'Act as part of operating system' privilege set.
     /// </summary>
     [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
-    public class WUImpersonator : IDisposable {
+    public class WUImpersonator : IDisposable
+    {
         private WindowsImpersonationContext impersonationContext;
 
         /// <summary>
@@ -22,7 +24,9 @@ namespace PSWindowsUpdate {
         /// Local Service or Network Service. These users can only be impersonated
         /// by code running as System.</param>
         public WUImpersonator(BuiltinUser builtinUser)
-            : this(string.Empty, "NT AUTHORITY", string.Empty, LogonSessionType.Service, builtinUser: BuiltinUser.LocalService) { }
+            : this(string.Empty, "NT AUTHORITY", string.Empty, LogonSessionType.Service, builtinUser: BuiltinUser.LocalService)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:PSWindowsUpdate.WUImpersonator" /> class and
@@ -38,7 +42,9 @@ namespace PSWindowsUpdate {
         /// local account database.</param>
         /// <param name="password">The plaintext password for the user account.</param>
         public WUImpersonator(string username, string domain, string password)
-            : this(username, domain, password, LogonSessionType.Interactive) { }
+            : this(username, domain, password, LogonSessionType.Interactive)
+        {
+        }
 
         /// <summary>
         /// Constructor. Starts the impersonation with the given credentials.
@@ -57,10 +63,13 @@ namespace PSWindowsUpdate {
             string password,
             LogonSessionType logonType = LogonSessionType.Interactive,
             LogonProvider logonProvider = LogonProvider.Default,
-            BuiltinUser builtinUser = BuiltinUser.None) {
-            switch (builtinUser) {
+            BuiltinUser builtinUser = BuiltinUser.None)
+        {
+            switch (builtinUser)
+            {
                 case BuiltinUser.None:
-                    if (string.IsNullOrEmpty(userName)) {
+                    if (string.IsNullOrEmpty(userName))
+                    {
                         return;
                     }
 
@@ -77,7 +86,8 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Destructor</summary>
-        public void Dispose() {
+        public void Dispose()
+        {
             UndoImpersonation();
         }
 
@@ -113,37 +123,48 @@ namespace PSWindowsUpdate {
             string domainName,
             string password,
             LogonSessionType logonType,
-            LogonProvider logonProvider) {
+            LogonProvider logonProvider)
+        {
             var phToken = IntPtr.Zero;
             var hNewToken = IntPtr.Zero;
-            try {
-                if (!RevertToSelf()) {
+            try
+            {
+                if (!RevertToSelf())
+                {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                if (LogonUser(userName, domainName, password, (int)logonType, (int)logonProvider, out phToken) == 0) {
+                if (LogonUser(userName, domainName, password, (int)logonType, (int)logonProvider, out phToken) == 0)
+                {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                if (DuplicateToken(phToken, 3, out hNewToken) == 0) {
+                if (DuplicateToken(phToken, 3, out hNewToken) == 0)
+                {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
                 impersonationContext = new WindowsIdentity(hNewToken).Impersonate();
-            } finally {
-                if (phToken != IntPtr.Zero) {
+            }
+            finally
+            {
+                if (phToken != IntPtr.Zero)
+                {
                     CloseHandle(phToken);
                 }
 
-                if (hNewToken != IntPtr.Zero) {
+                if (hNewToken != IntPtr.Zero)
+                {
                     CloseHandle(hNewToken);
                 }
             }
         }
 
         /// <summary>Reverts the impersonation.</summary>
-        private void UndoImpersonation() {
-            if (impersonationContext == null) {
+        private void UndoImpersonation()
+        {
+            if (impersonationContext == null)
+            {
                 return;
             }
 
@@ -151,7 +172,8 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Specifies the type of login session used.</summary>
-        public enum LogonSessionType {
+        public enum LogonSessionType
+        {
             /// <summary>
             /// Intended for users who are interactively using the machine, such as a user being logged on by a terminal server, remote shell, or similar process.
             /// </summary>
@@ -210,7 +232,8 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Specifies the logon provider.</summary>
-        public enum LogonProvider {
+        public enum LogonProvider
+        {
             /// <summary>
             /// Use the standard logon provider for the system. The default security provider is negotiate, unless you pass NULL for the domain name and the user name is not in UPN format. In this case, the default provider is NTLM.
             /// </summary>
@@ -228,7 +251,8 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Specifies the impersonation level.</summary>
-        public enum ImpersonationLevel {
+        public enum ImpersonationLevel
+        {
             /// <summary>
             /// The client is anonymous to the server. The server process can impersonate the client, but the impersonation token does not contain any information about the client. This level is only supported over the local interprocess communication transport. All other transports silently promote this level to identify.
             /// </summary>
@@ -251,7 +275,8 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Specifies the BuiltinUser type.</summary>
-        public enum BuiltinUser {
+        public enum BuiltinUser
+        {
             /// <summary>None.</summary>
             None,
 

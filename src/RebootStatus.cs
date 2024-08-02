@@ -1,11 +1,13 @@
 ﻿using System;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for RebootStatus objects.</para>
     /// </summary>
-    public class RebootStatus {
+    public class RebootStatus
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

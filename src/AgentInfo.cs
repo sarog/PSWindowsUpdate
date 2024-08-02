@@ -1,9 +1,11 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for AgentInfo objects.</para>
     /// </summary>
-    public class AgentInfo {
+    public class AgentInfo
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

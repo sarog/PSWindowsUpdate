@@ -1,4 +1,5 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     ///     Wrapper for advapi32.dll library.
     ///     Advanced Services
@@ -11,7 +12,8 @@
     ///     Enum PersistenceType
     ///     Defines the persistence of this credential. This member can be read and written.
     /// </summary>
-    public enum PersistenceType : uint {
+    public enum PersistenceType : uint
+    {
         /// <summary>
         ///     The session persistence type
         ///     The credential persists for the life of the logon session.

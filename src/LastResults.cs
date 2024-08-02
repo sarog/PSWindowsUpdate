@@ -1,11 +1,13 @@
 ﻿using System;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for LastResult objects.</para>
     /// </summary>
-    public class LastResults {
+    public class LastResults
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

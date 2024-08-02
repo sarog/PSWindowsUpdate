@@ -7,7 +7,8 @@ using System.Security.Principal;
 using Microsoft.Win32;
 using WUApiLib;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// <para type="synopsis">Get Windows Update reboot status.</para>
     /// <para type="description">Use Get-WURebootStatus cmdlet to check if reboot is needed.</para>
@@ -36,9 +37,11 @@ namespace PSWindowsUpdate {
     /// <para>MG-PC        True           31.08.2017 18:00:00</para>
     /// </code>
     /// </example>
-    [Cmdlet("Get", "WURebootStatus", ConfirmImpact = ConfirmImpact.Medium, DefaultParameterSetName = "ManualReboot", SupportsShouldProcess = true)]
+    [Cmdlet("Get", "WURebootStatus", ConfirmImpact = ConfirmImpact.Medium, DefaultParameterSetName = "ManualReboot",
+        SupportsShouldProcess = true)]
     [OutputType(typeof(RebootStatus))]
-    public class GetWURebootStatus : PSCmdlet {
+    public class GetWURebootStatus : PSCmdlet
+    {
         private Hashtable _PSWUSettings = new Hashtable();
 
         /// <summary>
@@ -68,7 +71,8 @@ namespace PSWindowsUpdate {
         /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
         /// </summary>
         [Parameter]
-        public Hashtable PSWUSettings {
+        public Hashtable PSWUSettings
+        {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
@@ -119,67 +123,87 @@ namespace PSWindowsUpdate {
         private static DateTime CmdletEnd { get; set; }
 
         /// <summary>Begin</summary>
-        protected override void BeginProcessing() {
+        protected override void BeginProcessing()
+        {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
             WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
-                ThrowTerminatingError(new ErrorRecord(new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                ThrowTerminatingError(new ErrorRecord(
+                    new Exception("To perform operations you must run an elevated Windows PowerShell console."), "AccessDenied",
                     ErrorCategory.PermissionDenied, null));
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey("Properties")) {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
                     PSWUSettings.Add("Properties", new RebootStatus());
                 }
 
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                     SendReport = false;
                     WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
-            if (ComputerName != null) {
+            if (ComputerName != null)
+            {
                 return;
             }
 
-            ComputerName = new string[1] {
+            ComputerName = new string[1]
+            {
                 Environment.MachineName
             };
             WriteDebug(DateTime.Now + " Connect to local machine: " + ComputerName[0]);
         }
 
-        private void CoreProcessing() {
-            foreach (var target in ComputerName) {
+        private void CoreProcessing()
+        {
+            foreach (var target in ComputerName)
+            {
                 var dateTime = DateTime.Now;
                 WriteDebug(dateTime + " " + target + ": Connecting...");
-                try {
+                try
+                {
                     var pswuModule = WUToolsObj.GetPSWUModule(target);
                     dateTime = DateTime.Now;
                     WriteDebug(dateTime + " Module version: " + pswuModule.Properties["Version"].Value);
                     dateTime = DateTime.Now;
                     WriteDebug(dateTime + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
-                } catch { }
+                }
+                catch
+                {
+                }
 
                 // var target = target;
                 dateTime = DateTime.Now;
                 var action = "(" + dateTime + ") Get Windows Update reboot status";
-                if (ShouldProcess(target, action)) {
+                if (ShouldProcess(target, action))
+                {
                     bool rebootRequired;
-                    if (WUToolsObj.IsLocalHost(target)) {
+                    if (WUToolsObj.IsLocalHost(target))
+                    {
                         var apiSystemInfoObj = WUToolsObj.GetWUApiSystemInfoObj(target);
                         dateTime = DateTime.Now;
                         WriteDebug(dateTime + " SystemInfoObj mode: " + apiSystemInfoObj.Mode);
-                        if (apiSystemInfoObj.Status) {
+                        if (apiSystemInfoObj.Status)
+                        {
                             SystemInfoObj = (SystemInformation)apiSystemInfoObj.Object;
                             rebootRequired = SystemInfoObj.RebootRequired;
-                        } else {
-                            if (Debuger) {
+                        }
+                        else
+                        {
+                            if (Debuger)
+                            {
                                 WriteError(new ErrorRecord(apiSystemInfoObj.Exception, "Debug", ErrorCategory.CloseError, null));
                                 continue;
                             }
@@ -187,31 +211,42 @@ namespace PSWindowsUpdate {
                             WriteError(apiSystemInfoObj.Error);
                             continue;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         rebootRequired = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
-                            .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\").GetSubKeyNames().Contains("RebootRequired");
+                            .OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\").GetSubKeyNames()
+                            .Contains("RebootRequired");
                     }
 
                     var rebootStatus = new PSObject();
                     rebootStatus.Properties.Add(new PSNoteProperty("ComputerName", target));
                     rebootStatus.Properties.Add(new PSNoteProperty("RebootRequired", rebootRequired));
 
-                    if (ScheduleReboot != DateTime.MinValue) {
+                    if (ScheduleReboot != DateTime.MinValue)
+                    {
                         rebootStatus.Properties.Add(new PSNoteProperty("RebootScheduled", ScheduleReboot));
-                    } else {
+                    }
+                    else
+                    {
                         rebootStatus.Properties.Add(new PSNoteProperty("RebootScheduled", null));
                     }
 
-                    if (Silent) {
+                    if (Silent)
+                    {
                         WriteObject(rebootRequired, true);
-                    } else {
+                    }
+                    else
+                    {
                         WriteObject(rebootStatus, true);
                     }
 
                     OutputObj.Add(rebootStatus);
 
-                    if (rebootRequired) {
-                        if (ScheduleReboot != DateTime.MinValue) {
+                    if (rebootRequired)
+                    {
+                        if (ScheduleReboot != DateTime.MinValue)
+                        {
                             var strArray = new string[5];
                             dateTime = DateTime.Now;
                             strArray[0] = dateTime.ToString();
@@ -223,14 +258,20 @@ namespace PSWindowsUpdate {
                             WriteDebug(string.Concat(strArray));
                             WUToolsObj.CancelReboot(target);
                             WriteVerbose(WUToolsObj.ScheduleReboot(target, ScheduleReboot));
-                        } else if (AutoReboot) {
+                        }
+                        else if (AutoReboot)
+                        {
                             dateTime = DateTime.Now;
                             WriteDebug(dateTime + " " + target + ": Auto Reboot");
                             WUToolsObj.CancelReboot(target);
                             WriteVerbose(WUToolsObj.RunReboot(target));
-                        } else if (!Silent) {
-                            Host.UI.WriteLine(ConsoleColor.White, Host.UI.RawUI.BackgroundColor, "Reboot is required. Do it now? [Y / N] (default is 'N')");
-                            if (Console.ReadLine().ToUpper() == "Y") {
+                        }
+                        else if (!Silent)
+                        {
+                            Host.UI.WriteLine(ConsoleColor.White, Host.UI.RawUI.BackgroundColor,
+                                "Reboot is required. Do it now? [Y / N] (default is 'N')");
+                            if (Console.ReadLine().ToUpper() == "Y")
+                            {
                                 dateTime = DateTime.Now;
                                 WriteDebug(dateTime + " " + target + ": Manually Reboot");
                                 WUToolsObj.CancelReboot(target);
@@ -239,7 +280,8 @@ namespace PSWindowsUpdate {
                         }
                     }
 
-                    if (CancelReboot) {
+                    if (CancelReboot)
+                    {
                         dateTime = DateTime.Now;
                         WriteDebug(dateTime + " " + target + ": Cancel Reboot");
                         WriteVerbose(WUToolsObj.CancelReboot(target));
@@ -249,16 +291,20 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Process</summary>
-        protected override void ProcessRecord() {
+        protected override void ProcessRecord()
+        {
             var flag = false;
-            if (Credential != null) {
+            if (Credential != null)
+            {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) +
+                           "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
-                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str1 = "RunAs";
                 }
 
@@ -272,13 +318,16 @@ namespace PSWindowsUpdate {
                 WriteDebug(string.Concat(strArray1));
                 var logonType = WUImpersonator.LogonSessionType.Interactive;
                 var logonProvider = WUImpersonator.LogonProvider.Default;
-                if (!WUToolsObj.IsLocalHost(ComputerName[0])) {
+                if (!WUToolsObj.IsLocalHost(ComputerName[0]))
+                {
                     logonType = WUImpersonator.LogonSessionType.NewCredentials;
                     logonProvider = WUImpersonator.LogonProvider.WinNT50;
                 }
 
-                using (new WUImpersonator(userName, domain, password, logonType, logonProvider)) {
-                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                using (new WUImpersonator(userName, domain, password, logonType, logonProvider))
+                {
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
                         var str2 = "RunAs";
                         var strArray2 = new string[9];
                         now = DateTime.Now;
@@ -292,14 +341,19 @@ namespace PSWindowsUpdate {
                         strArray2[7] = " ";
                         strArray2[8] = str2;
                         WriteDebug(string.Concat(strArray2));
-                        try {
+                        try
+                        {
                             CoreProcessing();
                             flag = false;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         var str3 = "Can't RunAs";
                         var strArray3 = new string[9];
                         now = DateTime.Now;
@@ -322,16 +376,20 @@ namespace PSWindowsUpdate {
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str4 = "";
-                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str4 = "RunAs";
                 }
 
                 WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
-            } else {
+            }
+            else
+            {
                 flag = true;
             }
 
-            if (!flag) {
+            if (!flag)
+            {
                 return;
             }
 
@@ -339,20 +397,24 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>End</summary>
-        protected override void EndProcessing() {
+        protected override void EndProcessing()
+        {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Send report");
-                if (!PSWUSettings.ContainsKey("Properties")) {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
                     PSWUSettings.Add("Properties", new RebootStatus());
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                 }
             }

@@ -2,16 +2,21 @@
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     [SuppressUnmanagedCodeSecurity]
-    internal static class SecureStringHelper {
-        internal static unsafe SecureString CreateSecureString(string plainString) {
-            if (string.IsNullOrEmpty(plainString)) {
+    internal static class SecureStringHelper
+    {
+        internal static unsafe SecureString CreateSecureString(string plainString)
+        {
+            if (string.IsNullOrEmpty(plainString))
+            {
                 return new SecureString();
             }
 
             SecureString secureString;
-            fixed (char* chPtr = plainString) {
+            fixed (char* chPtr = plainString)
+            {
                 secureString = new SecureString(chPtr, plainString.Length);
                 secureString.MakeReadOnly();
             }
@@ -19,18 +24,24 @@ namespace PSWindowsUpdate {
             return secureString;
         }
 
-        internal static string CreateString(SecureString secureString) {
-            if (secureString == null || secureString.Length == 0) {
+        internal static string CreateString(SecureString secureString)
+        {
+            if (secureString == null || secureString.Length == 0)
+            {
                 return string.Empty;
             }
 
             var num = IntPtr.Zero;
             string stringBstr;
-            try {
+            try
+            {
                 num = Marshal.SecureStringToBSTR(secureString);
                 stringBstr = Marshal.PtrToStringBSTR(num);
-            } finally {
-                if (num != IntPtr.Zero) {
+            }
+            finally
+            {
+                if (num != IntPtr.Zero)
+                {
                     Marshal.ZeroFreeBSTR(num);
                 }
             }

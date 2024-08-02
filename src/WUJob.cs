@@ -1,9 +1,11 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for WUJob.</para>
     /// </summary>
-    public class WUJob {
+    public class WUJob
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

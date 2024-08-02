@@ -1,9 +1,11 @@
-﻿namespace PSWindowsUpdate {
+﻿namespace PSWindowsUpdate
+{
     /// <summary>
     /// OutputType
     /// <para type="description">OutputType for ServiceManager objects.</para>
     /// </summary>
-    public class ServiceManager {
+    public class ServiceManager
+    {
         /// <summary>ComputerName</summary>
         public string ComputerName { get; set; }
 

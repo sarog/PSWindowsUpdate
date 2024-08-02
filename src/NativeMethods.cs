@@ -5,8 +5,10 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PSWindowsUpdate {
-    public class NativeMethods {
+namespace PSWindowsUpdate
+{
+    public class NativeMethods
+    {
         /// <summary>
         ///     The CredRead function reads a credential from the user's credential set.
         ///     The credential set used is the one associated with the logon session of the current token.
@@ -125,15 +127,18 @@ namespace PSWindowsUpdate {
             out int count,
             out IntPtr pCredentials);
 
-        internal static IEnumerable<CREDENTIAL> CredEnumerate() {
+        internal static IEnumerable<CREDENTIAL> CredEnumerate()
+        {
             int count;
             IntPtr pCredentials;
-            if (!CredEnumerate(null, 0, out count, out pCredentials)) {
+            if (!CredEnumerate(null, 0, out count, out pCredentials))
+            {
                 throw new Exception("Failed to enumerate credentials");
             }
 
             var source = new IntPtr[count];
-            for (var index = 0; index < count; ++index) {
+            for (var index = 0; index < count; ++index)
+            {
                 source[index] = Marshal.ReadIntPtr(pCredentials, index * Marshal.SizeOf(typeof(IntPtr)));
             }
 
@@ -145,7 +150,8 @@ namespace PSWindowsUpdate {
         ///
         /// See CREDENTIAL structure <see href="http://msdn.microsoft.com/en-us/library/windows/desktop/aa374788(v=vs.85).aspx">documentation.</see>
         /// </summary>
-        internal struct CREDENTIAL {
+        internal struct CREDENTIAL
+        {
             public int Flags;
             public int Type;
             [MarshalAs(UnmanagedType.LPWStr)] public string TargetName;
@@ -160,21 +166,27 @@ namespace PSWindowsUpdate {
             [MarshalAs(UnmanagedType.LPWStr)] public string UserName;
         }
 
-        internal sealed class CriticalCredentialHandle : CriticalHandleZeroOrMinusOneIsInvalid {
-            internal CriticalCredentialHandle(IntPtr preexistingHandle) {
+        internal sealed class CriticalCredentialHandle : CriticalHandleZeroOrMinusOneIsInvalid
+        {
+            internal CriticalCredentialHandle(IntPtr preexistingHandle)
+            {
                 SetHandle(preexistingHandle);
             }
 
-            internal CREDENTIAL GetCredential() {
-                if (!IsInvalid) {
+            internal CREDENTIAL GetCredential()
+            {
+                if (!IsInvalid)
+                {
                     return (CREDENTIAL)Marshal.PtrToStructure(handle, typeof(CREDENTIAL));
                 }
 
                 throw new InvalidOperationException("Invalid CriticalHandle!");
             }
 
-            protected override bool ReleaseHandle() {
-                if (IsInvalid) {
+            protected override bool ReleaseHandle()
+            {
+                if (IsInvalid)
+                {
                     return false;
                 }
 

@@ -5,7 +5,8 @@ using System.Management.Automation;
 using System.Security;
 using System.Security.Principal;
 
-namespace PSWindowsUpdate {
+namespace PSWindowsUpdate
+{
     /// <summary>
     /// <para type="synopsis">Save PSWUSettings.</para>
     /// <para type="description">Use Set-PSWUSettings save PSWindowsUpdate module settings to XML file.</para>
@@ -20,7 +21,8 @@ namespace PSWindowsUpdate {
     /// </code>
     /// </example>
     [Cmdlet("Set", "PSWUSettings", ConfirmImpact = ConfirmImpact.Medium, SupportsShouldProcess = true)]
-    public class SetPSWUSettings : PSCmdlet {
+    public class SetPSWUSettings : PSCmdlet
+    {
         private Hashtable _PSWUSettings = new Hashtable();
         private int _Port = 25;
 
@@ -51,7 +53,8 @@ namespace PSWindowsUpdate {
         /// \r\nExport-Clixml @{SmtpServer="your.smtp.server";From="sender@email.address";To="recipient@email.address";[Port=25]}"</para>
         /// </summary>
         [Parameter]
-        private Hashtable PSWUSettings {
+        private Hashtable PSWUSettings
+        {
             get => _PSWUSettings;
             set => _PSWUSettings = value;
         }
@@ -66,7 +69,8 @@ namespace PSWindowsUpdate {
         /// <para type="description">Save smtp port to PSWUSettings file.</para>
         /// </summary>
         [Parameter]
-        public int SmtpPort {
+        public int SmtpPort
+        {
             get => _Port;
             set => _Port = value;
         }
@@ -137,43 +141,52 @@ namespace PSWindowsUpdate {
         private static DateTime CmdletEnd { get; set; }
 
         /// <summary>Begin</summary>
-        protected override void BeginProcessing() {
+        protected override void BeginProcessing()
+        {
             CmdletStart = DateTime.Now;
             var invocationName = MyInvocation.InvocationName;
             WriteDebug(DateTime.Now + " CmdletStart: " + invocationName);
-            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+            if (!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
                 WriteWarning("To perform some operations you must run an elevated Windows PowerShell console.");
             }
 
             WUToolsObj = new WUTools();
             OutputObj = new Collection<PSObject>();
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Test smtp settings");
-                if (!PSWUSettings.ContainsKey("Properties")) {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
                     PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.TestMail(PSWUSettings);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                     SendReport = false;
                     WriteDebug(DateTime.Now + " Disabling -SendReport");
                 }
             }
 
-            if (ComputerName != null) {
+            if (ComputerName != null)
+            {
                 return;
             }
 
-            ComputerName = new string[1] {
+            ComputerName = new string[1]
+            {
                 Environment.MachineName
             };
         }
 
-        private void CoreProcessing() {
+        private void CoreProcessing()
+        {
             var invocationName = MyInvocation.InvocationName;
             var collection = new Collection<PSObject>();
-            foreach (var target in ComputerName) {
+            foreach (var target in ComputerName)
+            {
                 var num1 = 1;
                 var dateTime1 = new DateTime(1970, 1, 1);
                 var now = DateTime.Now;
@@ -188,19 +201,27 @@ namespace PSWindowsUpdate {
                 WriteDebug(now + " " + randPass2);
                 var psObject = new PSObject();
                 psObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                if (MyInvocation.BoundParameters.ContainsKey("SaveAsSystem")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SaveAsSystem"))
+                {
                     now = DateTime.Now;
                     WriteDebug(now + " Catched encrypted string: " + SaveAsSystem);
                     string str2;
-                    try {
+                    try
+                    {
                         str2 = WUTools.DecryptString(SaveAsSystem, randPass1.ToString());
-                    } catch (Exception ex1) {
+                    }
+                    catch (Exception ex1)
+                    {
                         WriteDebug(DateTime.Now + " Cant decrypt with current secret.");
-                        try {
+                        try
+                        {
                             str2 = WUTools.DecryptString(SaveAsSystem, randPass2.ToString());
-                        } catch (Exception ex2) {
+                        }
+                        catch (Exception ex2)
+                        {
                             WriteDebug(DateTime.Now + " Cant decrypt with previous secret. Job is too old.");
-                            WriteError(new ErrorRecord(new Exception("Cant decrypt with previous secret. Job is too old."), "Decrypt", ErrorCategory.CloseError, null));
+                            WriteError(new ErrorRecord(new Exception("Cant decrypt with previous secret. Job is too old."), "Decrypt",
+                                ErrorCategory.CloseError, null));
                             return;
                         }
                     }
@@ -212,32 +233,41 @@ namespace PSWindowsUpdate {
                     now = DateTime.Now;
                     WriteDebug(now + " Decrypted UserName: " + userName);
                     var password = new SecureString();
-                    foreach (var c in str3.ToCharArray()) {
+                    foreach (var c in str3.ToCharArray())
+                    {
                         password.AppendChar(c);
                     }
 
                     SmtpCredential = new PSCredential(userName, password);
                 }
 
-                if (SmtpCredential != null) {
+                if (SmtpCredential != null)
+                {
                     now = DateTime.Now;
                     WriteDebug(now + " Save credential to Credential Manager");
-                    WUToolsObj.SaveCredential(SmtpCredential.GetNetworkCredential().UserName, SmtpCredential.GetNetworkCredential().Password);
-                    if (!MyInvocation.BoundParameters.ContainsKey("SaveAsSystem")) {
-                        var str4 = WUTools.EncryptString(SmtpCredential.GetNetworkCredential().UserName + "|" + SmtpCredential.GetNetworkCredential().Password, randPass1.ToString());
+                    WUToolsObj.SaveCredential(SmtpCredential.GetNetworkCredential().UserName,
+                        SmtpCredential.GetNetworkCredential().Password);
+                    if (!MyInvocation.BoundParameters.ContainsKey("SaveAsSystem"))
+                    {
+                        var str4 = WUTools.EncryptString(
+                            SmtpCredential.GetNetworkCredential().UserName + "|" + SmtpCredential.GetNetworkCredential().Password,
+                            randPass1.ToString());
                         now = DateTime.Now;
                         WriteDebug(now + " Encrypted string to SaveAsSystem: " + str4);
                         var str5 = "$DebugPreference = 'continue'; Set-PSWUSettings -SaveAsSystem '" + str4 + "'";
-                        if (SendReport) {
+                        if (SendReport)
+                        {
                             str5 += " -SendReport";
                         }
 
                         var str6 = str5 + " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                         var invokeWuJob1 = new InvokeWUJob();
-                        invokeWuJob1.ComputerName = new string[1] {
+                        invokeWuJob1.ComputerName = new string[1]
+                        {
                             target
                         };
-                        if (Credential != null) {
+                        if (Credential != null)
+                        {
                             invokeWuJob1.Credential = Credential;
                         }
 
@@ -250,7 +280,8 @@ namespace PSWindowsUpdate {
                         invokeWuJob1.RunNow = true;
                         WriteVerbose("Invoke-WUJob: " + invokeWuJob1.TaskName + " " + target + " (Now)");
                         WriteVerbose("powershell.exe -Command \"" + str6 + "\"");
-                        foreach (var sendToPipeline in invokeWuJob1.Invoke()) {
+                        foreach (var sendToPipeline in invokeWuJob1.Invoke())
+                        {
                             WriteObject(sendToPipeline);
                         }
                     }
@@ -260,9 +291,11 @@ namespace PSWindowsUpdate {
 
                 var flag = false;
                 var pswuSettings = WUToolsObj.GetPSWUSettings();
-                if (MyInvocation.BoundParameters.ContainsKey("SmtpServer")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SmtpServer"))
+                {
                     flag = true;
-                    if (pswuSettings.ContainsKey("SmtpServer")) {
+                    if (pswuSettings.ContainsKey("SmtpServer"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -272,7 +305,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = SmtpServer;
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["SmtpServer"] = SmtpServer;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         WriteDebug(now + " Add SmtpServer: " + SmtpServer);
                         pswuSettings.Add("SmtpServer", SmtpServer);
@@ -281,10 +316,12 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("SmtpServer", SmtpServer));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("SmtpPort")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SmtpPort"))
+                {
                     flag = true;
                     int smtpPort;
-                    if (pswuSettings.ContainsKey("Port")) {
+                    if (pswuSettings.ContainsKey("Port"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -295,7 +332,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = smtpPort.ToString();
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["Port"] = SmtpPort;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         var str7 = now.ToString();
                         smtpPort = SmtpPort;
@@ -307,10 +346,12 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("Port", SmtpPort));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("SmtpEnableSsl")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SmtpEnableSsl"))
+                {
                     flag = true;
                     bool smtpEnableSsl;
-                    if (pswuSettings.ContainsKey("EnableSsl")) {
+                    if (pswuSettings.ContainsKey("EnableSsl"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -321,7 +362,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = smtpEnableSsl.ToString();
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["EnableSsl"] = SmtpEnableSsl;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         var str9 = now.ToString();
                         smtpEnableSsl = SmtpEnableSsl;
@@ -333,9 +376,11 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("EnableSsl", SmtpEnableSsl));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("SmtpTo")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SmtpTo"))
+                {
                     flag = true;
-                    if (pswuSettings.ContainsKey("To")) {
+                    if (pswuSettings.ContainsKey("To"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -345,7 +390,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = SmtpTo;
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["To"] = SmtpTo;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         WriteDebug(now + " Add To: " + SmtpTo);
                         pswuSettings.Add("To", SmtpTo);
@@ -354,9 +401,11 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("To", SmtpTo));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("SmtpFrom")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SmtpFrom"))
+                {
                     flag = true;
-                    if (pswuSettings.ContainsKey("From")) {
+                    if (pswuSettings.ContainsKey("From"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -366,7 +415,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = SmtpFrom;
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["From"] = SmtpFrom;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         WriteDebug(now + " Add From: " + SmtpFrom);
                         pswuSettings.Add("From", SmtpFrom);
@@ -375,9 +426,11 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("From", SmtpFrom));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("SmtpSubject")) {
+                if (MyInvocation.BoundParameters.ContainsKey("SmtpSubject"))
+                {
                     flag = true;
-                    if (pswuSettings.ContainsKey("Subject")) {
+                    if (pswuSettings.ContainsKey("Subject"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -387,7 +440,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = SmtpSubject;
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["Subject"] = SmtpSubject;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         WriteDebug(now + " Add Subject: " + SmtpSubject);
                         pswuSettings.Add("Subject", SmtpSubject);
@@ -396,9 +451,11 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("Subject", SmtpSubject));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("Properties")) {
+                if (MyInvocation.BoundParameters.ContainsKey("Properties"))
+                {
                     flag = true;
-                    if (pswuSettings.ContainsKey("Properties")) {
+                    if (pswuSettings.ContainsKey("Properties"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -408,7 +465,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = Properties;
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["Properties"] = Properties;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         WriteDebug(now + " Add Properties: " + Properties);
                         pswuSettings.Add("Properties", Properties);
@@ -417,9 +476,11 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("Properties", Properties));
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("Style")) {
+                if (MyInvocation.BoundParameters.ContainsKey("Style"))
+                {
                     flag = true;
-                    if (pswuSettings.ContainsKey("Style")) {
+                    if (pswuSettings.ContainsKey("Style"))
+                    {
                         var strArray = new string[5];
                         now = DateTime.Now;
                         strArray[0] = now.ToString();
@@ -429,7 +490,9 @@ namespace PSWindowsUpdate {
                         strArray[4] = Style;
                         WriteDebug(string.Concat(strArray));
                         pswuSettings["Style"] = Style;
-                    } else {
+                    }
+                    else
+                    {
                         now = DateTime.Now;
                         WriteDebug(now + " Add Style: " + Style);
                         pswuSettings.Add("Style", Style);
@@ -438,7 +501,8 @@ namespace PSWindowsUpdate {
                     psObject.Properties.Add(new PSNoteProperty("Style", Style));
                 }
 
-                if (flag) {
+                if (flag)
+                {
                     WUToolsObj.SetPSWUSettings(pswuSettings);
                     WriteVerbose("Save PSWUSetting to file: " + WUToolsObj.PSWUModulePath() + "\\PSWUSettings.xml");
                 }
@@ -451,16 +515,20 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>Process</summary>
-        protected override void ProcessRecord() {
+        protected override void ProcessRecord()
+        {
             var flag = false;
-            if (Credential != null) {
+            if (Credential != null)
+            {
                 var userName = Credential.GetNetworkCredential().UserName;
                 var domain = Credential.GetNetworkCredential().Domain;
                 var password = Credential.GetNetworkCredential().Password;
-                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) + "*****");
+                WriteDebug(DateTime.Now + " UserName: " + userName + "; Domain: " + domain + "; Password: " + password.Substring(0, 1) +
+                           "*****");
                 var windowsPrincipal1 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str1 = "";
-                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal1.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str1 = "RunAs";
                 }
 
@@ -474,13 +542,16 @@ namespace PSWindowsUpdate {
                 WriteDebug(string.Concat(strArray1));
                 var logonType = WUImpersonator.LogonSessionType.Interactive;
                 var logonProvider = WUImpersonator.LogonProvider.Default;
-                if (!WUToolsObj.IsLocalHost(ComputerName[0])) {
+                if (!WUToolsObj.IsLocalHost(ComputerName[0]))
+                {
                     logonType = WUImpersonator.LogonSessionType.NewCredentials;
                     logonProvider = WUImpersonator.LogonProvider.WinNT50;
                 }
 
-                using (new WUImpersonator(userName, domain, password, logonType, logonProvider)) {
-                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
+                using (new WUImpersonator(userName, domain, password, logonType, logonProvider))
+                {
+                    if (new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+                    {
                         var str2 = "RunAs";
                         var strArray2 = new string[9];
                         now = DateTime.Now;
@@ -494,14 +565,19 @@ namespace PSWindowsUpdate {
                         strArray2[7] = " ";
                         strArray2[8] = str2;
                         WriteDebug(string.Concat(strArray2));
-                        try {
+                        try
+                        {
                             CoreProcessing();
                             flag = false;
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             WriteDebug(DateTime.Now + " Something goes wrong: " + ex.Message);
                             flag = true;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         var str3 = "Can't RunAs";
                         var strArray3 = new string[9];
                         now = DateTime.Now;
@@ -524,16 +600,20 @@ namespace PSWindowsUpdate {
 
                 var windowsPrincipal2 = new WindowsPrincipal(WindowsIdentity.GetCurrent());
                 var str4 = "";
-                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator)) {
+                if (windowsPrincipal2.IsInRole(WindowsBuiltInRole.Administrator))
+                {
                     str4 = "RunAs";
                 }
 
                 WriteDebug(DateTime.Now + " After User: " + WindowsIdentity.GetCurrent().Name + " " + str4);
-            } else {
+            }
+            else
+            {
                 flag = true;
             }
 
-            if (!flag) {
+            if (!flag)
+            {
                 return;
             }
 
@@ -541,20 +621,24 @@ namespace PSWindowsUpdate {
         }
 
         /// <summary>End</summary>
-        protected override void EndProcessing() {
+        protected override void EndProcessing()
+        {
             CmdletEnd = DateTime.Now;
             var CmdletInfo = new PSObject();
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletStart", CmdletStart));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletEnd", CmdletEnd));
             CmdletInfo.Properties.Add(new PSNoteProperty("CmdletLine", MyInvocation.Line));
-            if (SendReport) {
+            if (SendReport)
+            {
                 WriteDebug(DateTime.Now + " Send report");
-                if (!PSWUSettings.ContainsKey("Properties")) {
+                if (!PSWUSettings.ContainsKey("Properties"))
+                {
                     PSWUSettings.Add("Properties", "*");
                 }
 
                 var psObject = WUToolsObj.SendMail(PSWUSettings, OutputObj, CmdletInfo);
-                if (psObject.Properties.Match("ErrorRecord").Count == 1) {
+                if (psObject.Properties.Match("ErrorRecord").Count == 1)
+                {
                     WriteError((ErrorRecord)psObject.Properties["ErrorRecord"].Value);
                 }
             }
