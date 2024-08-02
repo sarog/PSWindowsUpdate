@@ -149,7 +149,7 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -175,10 +175,10 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -186,202 +186,206 @@ namespace PSWindowsUpdate
             var invocationName = MyInvocation.InvocationName;
             foreach (var target in ComputerName)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 1: Stop Windows Update services");
-                Console.ForegroundColor = ConsoleColor.White;
-                WUToolsObj.StopService(target, "BITS");
-                WriteVerbose("Background Intelligent Transfer Service (BITS)");
-                WUToolsObj.StopService(target, "wuauserv");
-                WriteVerbose("Windows Update (wuauserv)");
-                WUToolsObj.StopService(target, "appidsvc");
-                WriteVerbose("Application Identity (appidsvc)");
-                WUToolsObj.StopService(target, "cryptsvc");
-                WriteVerbose("Cryptographic Services (cryptsvc)");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 2: Delete the qmgr*.dat files");
-                Console.ForegroundColor = ConsoleColor.White;
-                var environmentVariable1 = Environment.GetEnvironmentVariable("ALLUSERSPROFILE");
-                try
+                if (ShouldProcess(target,
+                        "Reset Windows Update service components. Cleanup SoftwareDistribution & Catroot2 folder. Reset Windows Update & BITS service. Reregister Windows Update  dlls. Reset WinSock & Proxy settings."))
                 {
-                    foreach (var file in Directory.GetFiles(environmentVariable1 + "\\Microsoft\\Network\\Downloader", "qmgr*.dat"))
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 1: Stop Windows Update services");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WUToolsObj.StopService(target, "BITS");
+                    WriteVerbose("Background Intelligent Transfer Service (BITS)");
+                    WUToolsObj.StopService(target, "wuauserv");
+                    WriteVerbose("Windows Update (wuauserv)");
+                    WUToolsObj.StopService(target, "appidsvc");
+                    WriteVerbose("Application Identity (appidsvc)");
+                    WUToolsObj.StopService(target, "cryptsvc");
+                    WriteVerbose("Cryptographic Services (cryptsvc)");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 2: Delete the qmgr*.dat files");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    var environmentVariable1 = Environment.GetEnvironmentVariable("ALLUSERSPROFILE");
+                    try
                     {
-                        WriteVerbose("Deleting the " + file + " files.");
-                        File.Delete(file);
+                        foreach (var file in Directory.GetFiles(environmentVariable1 + "\\Microsoft\\Network\\Downloader", "qmgr*.dat"))
+                        {
+                            WriteVerbose("Deleting the " + file + " files.");
+                            File.Delete(file);
+                        }
                     }
-                }
-                catch
-                {
-                }
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 3: Backup softare distribution folders");
-                Console.ForegroundColor = ConsoleColor.White;
-                var environmentVariable2 = Environment.GetEnvironmentVariable("SYSTEMROOT");
-                var str1 = environmentVariable2 + "\\SoftwareDistribution";
-                var str2 = environmentVariable2 + "\\SoftwareDistribution.bak";
-                if (Directory.Exists(str1))
-                {
-                    var path = str2;
-                    var num = 1;
-                    while (Directory.Exists(path))
+                    catch
                     {
-                        path = str2 + num;
-                        ++num;
                     }
 
-                    var str3 = path;
-                    Directory.Move(str1, str3);
-                    if (Directory.Exists(str3))
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 3: Backup softare distribution folders");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    var environmentVariable2 = Environment.GetEnvironmentVariable("SYSTEMROOT");
+                    var str1 = environmentVariable2 + "\\SoftwareDistribution";
+                    var str2 = environmentVariable2 + "\\SoftwareDistribution.bak";
+                    if (Directory.Exists(str1))
                     {
-                        WriteVerbose("Renaming Software Distribution folder to " + str3);
-                    }
-                }
+                        var path = str2;
+                        var num = 1;
+                        while (Directory.Exists(path))
+                        {
+                            path = str2 + num;
+                            ++num;
+                        }
 
-                var str4 = environmentVariable2 + "\\System32\\Catroot2";
-                var str5 = environmentVariable2 + "\\System32\\Catroot2.bak";
-                if (Directory.Exists(str4))
-                {
-                    var path = str5;
-                    var num = 1;
-                    while (Directory.Exists(path))
+                        var str3 = path;
+                        Directory.Move(str1, str3);
+                        if (Directory.Exists(str3))
+                        {
+                            WriteVerbose("Renaming Software Distribution folder to " + str3);
+                        }
+                    }
+
+                    var str4 = environmentVariable2 + "\\System32\\Catroot2";
+                    var str5 = environmentVariable2 + "\\System32\\Catroot2.bak";
+                    if (Directory.Exists(str4))
                     {
-                        path = str5 + num;
-                        ++num;
+                        var path = str5;
+                        var num = 1;
+                        while (Directory.Exists(path))
+                        {
+                            path = str5 + num;
+                            ++num;
+                        }
+
+                        var str6 = path;
+                        Directory.Move(str4, str6);
+                        if (Directory.Exists(str6))
+                        {
+                            WriteVerbose("Renaming CatRoot  folder to " + str6);
+                        }
                     }
 
-                    var str6 = path;
-                    Directory.Move(str4, str6);
-                    if (Directory.Exists(str6))
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 4: Remove old Windows Update logs");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    try
                     {
-                        WriteVerbose("Renaming CatRoot  folder to " + str6);
+                        foreach (var file in Directory.GetFiles(environmentVariable2, "WindowsUpdate.log"))
+                        {
+                            WriteVerbose("Deleting the " + file + " files.");
+                            File.Delete(file);
+                        }
                     }
-                }
-
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 4: Remove old Windows Update logs");
-                Console.ForegroundColor = ConsoleColor.White;
-                try
-                {
-                    foreach (var file in Directory.GetFiles(environmentVariable2, "WindowsUpdate.log"))
+                    catch
                     {
-                        WriteVerbose("Deleting the " + file + " files.");
-                        File.Delete(file);
                     }
-                }
-                catch
-                {
-                }
 
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 5: Reset Windows Update services");
-                Console.ForegroundColor = ConsoleColor.White;
-                WriteVerbose("Reset BITS service");
-                WUToolsObj.RunProcess("sc.exe",
-                    "sdset bits D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;AU)(A;;CCLCSWRPWPDTLOCRRC;;;PU)");
-                WriteVerbose("Reset Windows Update service");
-                WUToolsObj.RunProcess("sc.exe",
-                    "sdset wuauserv D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;AU)(A;;CCLCSWRPWPDTLOCRRC;;;PU)");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 6: Reregister dll's");
-                Console.ForegroundColor = ConsoleColor.White;
-                WriteVerbose("regsvr32.exe / s atl.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\atl.dll");
-                WriteVerbose("regsvr32.exe / s urlmon.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\urlmon.dll");
-                WriteVerbose("regsvr32.exe / s mshtml.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\mshtml.dll");
-                WriteVerbose("regsvr32.exe / s shdocvw.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\shdocvw.dll");
-                WriteVerbose("regsvr32.exe / s browseui.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\browseui.dll");
-                WriteVerbose("regsvr32.exe / s jscript.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\jscript.dll");
-                WriteVerbose("regsvr32.exe / s vbscript.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\vbscript.dll");
-                WriteVerbose("regsvr32.exe / s scrrun.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\scrrun.dll");
-                WriteVerbose("regsvr32.exe / s msxml.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\msxml.dll");
-                WriteVerbose("regsvr32.exe / s msxml3.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\msxml3.dll");
-                WriteVerbose("regsvr32.exe / s msxml6.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\msxml6.dll");
-                WriteVerbose("regsvr32.exe / s actxprxy.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\actxprxy.dll");
-                WriteVerbose("regsvr32.exe / s softpub.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\softpub.dll");
-                WriteVerbose("regsvr32.exe / s wintrust.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wintrust.dll");
-                WriteVerbose("regsvr32.exe / s dssenh.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\dssenh.dll");
-                WriteVerbose("regsvr32.exe / s rsaenh.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\rsaenh.dll");
-                WriteVerbose("regsvr32.exe / s gpkcsp.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\gpkcsp.dll");
-                WriteVerbose("regsvr32.exe / s sccbase.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\sccbase.dll");
-                WriteVerbose("regsvr32.exe / s slbcsp.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\slbcsp.dll");
-                WriteVerbose("regsvr32.exe / s cryptdlg.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\cryptdlg.dll");
-                WriteVerbose("regsvr32.exe / s oleaut32.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\oleaut32.dll");
-                WriteVerbose("regsvr32.exe / s ole32.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\ole32.dll");
-                WriteVerbose("regsvr32.exe / s shell32.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\shell32.dll");
-                WriteVerbose("regsvr32.exe / s initpki.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\initpki.dll");
-                WriteVerbose("regsvr32.exe / s wuapi.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuapi.dll");
-                WriteVerbose("regsvr32.exe / s wuaueng.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuaueng.dll");
-                WriteVerbose("regsvr32.exe / s wuaueng1.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuaueng1.dll");
-                WriteVerbose("regsvr32.exe / s wucltui.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wucltui.dll");
-                WriteVerbose("regsvr32.exe / s wups.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wups.dll");
-                WriteVerbose("regsvr32.exe / s wups2.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wups2.dll");
-                WriteVerbose("regsvr32.exe / s wuweb.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuweb.dll");
-                WriteVerbose("regsvr32.exe / s qmgr.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\qmgr.dll");
-                WriteVerbose("regsvr32.exe / s qmgrprxy.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\qmgrprxy.dll");
-                WriteVerbose("regsvr32.exe / s wucltux.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wucltux.dll");
-                WriteVerbose("regsvr32.exe / s muweb.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\muweb.dll");
-                WriteVerbose("regsvr32.exe / s wuwebv.dll");
-                WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuwebv.dll");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 7: Reset WinSock");
-                Console.ForegroundColor = ConsoleColor.White;
-                WriteVerbose("netsh winsock reset");
-                WUToolsObj.RunProcess("netsh.exe", "winsock reset");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 8: Reset Proxy");
-                Console.ForegroundColor = ConsoleColor.White;
-                WriteVerbose("netsh winhttp reset proxy");
-                WUToolsObj.RunProcess("netsh.exe", "winhttp reset proxy");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 9: Start Windows Update services");
-                Console.ForegroundColor = ConsoleColor.White;
-                WUToolsObj.StartService(target, "cryptsvc");
-                WriteVerbose("Cryptographic Services (cryptsvc)");
-                WUToolsObj.StartService(target, "appidsvc");
-                WriteVerbose("Application Identity (appidsvc)");
-                WUToolsObj.StartService(target, "wuauserv");
-                WriteVerbose("Windows Update (wuauserv)");
-                WUToolsObj.StartService(target, "BITS");
-                WriteVerbose("Background Intelligent Transfer Service (BITS)");
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Step 10: Start Windows Update services");
-                Console.ForegroundColor = ConsoleColor.White;
-                WriteVerbose("wuauclt /resetauthorization /detectnow");
-                WUToolsObj.RunProcess("wuauclt.exe", "/resetauthorization /detectnow");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 5: Reset Windows Update services");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WriteVerbose("Reset BITS service");
+                    WUToolsObj.RunProcess("sc.exe",
+                        "sdset bits D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;AU)(A;;CCLCSWRPWPDTLOCRRC;;;PU)");
+                    WriteVerbose("Reset Windows Update service");
+                    WUToolsObj.RunProcess("sc.exe",
+                        "sdset wuauserv D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;AU)(A;;CCLCSWRPWPDTLOCRRC;;;PU)");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 6: Reregister dll's");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WriteVerbose("regsvr32.exe / s atl.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\atl.dll");
+                    WriteVerbose("regsvr32.exe / s urlmon.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\urlmon.dll");
+                    WriteVerbose("regsvr32.exe / s mshtml.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\mshtml.dll");
+                    WriteVerbose("regsvr32.exe / s shdocvw.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\shdocvw.dll");
+                    WriteVerbose("regsvr32.exe / s browseui.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\browseui.dll");
+                    WriteVerbose("regsvr32.exe / s jscript.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\jscript.dll");
+                    WriteVerbose("regsvr32.exe / s vbscript.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\vbscript.dll");
+                    WriteVerbose("regsvr32.exe / s scrrun.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\scrrun.dll");
+                    WriteVerbose("regsvr32.exe / s msxml.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\msxml.dll");
+                    WriteVerbose("regsvr32.exe / s msxml3.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\msxml3.dll");
+                    WriteVerbose("regsvr32.exe / s msxml6.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\msxml6.dll");
+                    WriteVerbose("regsvr32.exe / s actxprxy.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\actxprxy.dll");
+                    WriteVerbose("regsvr32.exe / s softpub.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\softpub.dll");
+                    WriteVerbose("regsvr32.exe / s wintrust.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wintrust.dll");
+                    WriteVerbose("regsvr32.exe / s dssenh.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\dssenh.dll");
+                    WriteVerbose("regsvr32.exe / s rsaenh.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\rsaenh.dll");
+                    WriteVerbose("regsvr32.exe / s gpkcsp.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\gpkcsp.dll");
+                    WriteVerbose("regsvr32.exe / s sccbase.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\sccbase.dll");
+                    WriteVerbose("regsvr32.exe / s slbcsp.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\slbcsp.dll");
+                    WriteVerbose("regsvr32.exe / s cryptdlg.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\cryptdlg.dll");
+                    WriteVerbose("regsvr32.exe / s oleaut32.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\oleaut32.dll");
+                    WriteVerbose("regsvr32.exe / s ole32.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\ole32.dll");
+                    WriteVerbose("regsvr32.exe / s shell32.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\shell32.dll");
+                    WriteVerbose("regsvr32.exe / s initpki.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\initpki.dll");
+                    WriteVerbose("regsvr32.exe / s wuapi.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuapi.dll");
+                    WriteVerbose("regsvr32.exe / s wuaueng.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuaueng.dll");
+                    WriteVerbose("regsvr32.exe / s wuaueng1.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuaueng1.dll");
+                    WriteVerbose("regsvr32.exe / s wucltui.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wucltui.dll");
+                    WriteVerbose("regsvr32.exe / s wups.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wups.dll");
+                    WriteVerbose("regsvr32.exe / s wups2.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wups2.dll");
+                    WriteVerbose("regsvr32.exe / s wuweb.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuweb.dll");
+                    WriteVerbose("regsvr32.exe / s qmgr.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\qmgr.dll");
+                    WriteVerbose("regsvr32.exe / s qmgrprxy.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\qmgrprxy.dll");
+                    WriteVerbose("regsvr32.exe / s wucltux.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wucltux.dll");
+                    WriteVerbose("regsvr32.exe / s muweb.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\muweb.dll");
+                    WriteVerbose("regsvr32.exe / s wuwebv.dll");
+                    WUToolsObj.RunProcess("regsvr32.exe", "/s " + environmentVariable2 + "\\wuwebv.dll");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 7: Reset WinSock");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WriteVerbose("netsh winsock reset");
+                    WUToolsObj.RunProcess("netsh.exe", "winsock reset");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 8: Reset Proxy");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WriteVerbose("netsh winhttp reset proxy");
+                    WUToolsObj.RunProcess("netsh.exe", "winhttp reset proxy");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 9: Start Windows Update services");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WUToolsObj.StartService(target, "cryptsvc");
+                    WriteVerbose("Cryptographic Services (cryptsvc)");
+                    WUToolsObj.StartService(target, "appidsvc");
+                    WriteVerbose("Application Identity (appidsvc)");
+                    WUToolsObj.StartService(target, "wuauserv");
+                    WriteVerbose("Windows Update (wuauserv)");
+                    WUToolsObj.StartService(target, "BITS");
+                    WriteVerbose("Background Intelligent Transfer Service (BITS)");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Step 10: Start Windows Update services");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    WriteVerbose("wuauclt /resetauthorization /detectnow");
+                    WUToolsObj.RunProcess("wuauclt.exe", "/resetauthorization /detectnow");
+                }
             }
         }
 

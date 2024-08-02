@@ -149,7 +149,7 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new Collection<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -175,10 +175,10 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -251,14 +251,12 @@ namespace PSWindowsUpdate
                         }
                         catch (COMException ex)
                         {
-                            var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                            if (wUApiCodeDetails != null)
+                            var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                            if (wuApiCodeDetails != null)
                             {
-                                var codeType = wUApiCodeDetails.CodeType;
-                                var num = codeType;
-                                if (num == 2)
+                                if (wuApiCodeDetails.CodeType == 2)
                                 {
-                                    WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
+                                    WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
                                         ErrorCategory.CloseError, null));
                                 }
                             }
@@ -426,7 +424,7 @@ namespace PSWindowsUpdate
 
                 cmdLine += " -Verbose -Confirm:$false *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
                 var invokeWUJob = new InvokeWUJob();
-                invokeWUJob.ComputerName = new string[1] { target };
+                invokeWUJob.ComputerName = [target];
                 if (Credential != null)
                 {
                     invokeWUJob.Credential = Credential;

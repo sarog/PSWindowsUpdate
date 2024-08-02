@@ -82,209 +82,202 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
         {
-            var wUTools = new WUTools();
-            var invocationName = MyInvocation.InvocationName;
-            var computerName = ComputerName;
-            foreach (var target in computerName)
+            var wuTools = new WUTools();
+            foreach (var target in ComputerName)
             {
-                var netFwPolicy = (INetFwPolicy2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FwPolicy2"));
-                var rule1Enabled = false;
-                foreach (INetFwRule rule in netFwPolicy.Rules)
+                if (ShouldProcess(target, "Sets the required parameters for remote work: Firewall & WinRM"))
                 {
-                    if (rule.Name == "PSWindowsUpdate (RPC Dynamics Ports)")
+                    var netFwPolicy = (INetFwPolicy2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FwPolicy2"));
+                    var rule1Enabled = false;
+                    foreach (INetFwRule rule in netFwPolicy.Rules)
                     {
-                        rule1Enabled = true;
-                    }
-                }
-
-                if (!rule1Enabled)
-                {
-                    WriteVerbose("Create firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
-                    var netFwRule2 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
-                    netFwRule2.Grouping = "PSWindowsUpdate";
-                    netFwRule2.Enabled = true;
-                    netFwRule2.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
-                    netFwRule2.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
-                    netFwRule2.Protocol = 6;
-                    netFwRule2.LocalPorts = "RPC";
-                    netFwRule2.ApplicationName = "%SystemRoot%\\System32\\dllhost.exe";
-                    netFwRule2.Name = "PSWindowsUpdate (RPC Dynamics Ports)";
-                    netFwPolicy.Rules.Add(netFwRule2);
-                }
-                else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"])
-                {
-                    WriteVerbose("Enable firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
-                    netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
-                }
-                else
-                {
-                    WriteDebug(DateTime.Now + " PSWindowsUpdate (RPC Dynamics Ports) firewall rule is enabled");
-                }
-
-                if (WinRMPublic)
-                {
-                    var rule2Enabled = false;
-                    foreach (INetFwRule rule2 in netFwPolicy.Rules)
-                    {
-                        if (rule2.Name == "PSWindowsUpdate (WinRM Public)")
+                        if (rule.Name == "PSWindowsUpdate (RPC Dynamics Ports)")
                         {
-                            rule2Enabled = true;
+                            rule1Enabled = true;
                         }
                     }
 
-                    if (!rule2Enabled)
+                    if (!rule1Enabled)
                     {
-                        WriteVerbose("Create firewall rule: PSWindowsUpdate (WinRM Public)");
-                        var netFwRule4 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
-                        netFwRule4.Grouping = "PSWindowsUpdate";
-                        netFwRule4.Enabled = true;
-                        netFwRule4.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
-                        netFwRule4.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
-                        netFwRule4.Protocol = 6;
-                        netFwRule4.LocalPorts = "5985";
-                        netFwRule4.ApplicationName = "System";
-                        netFwRule4.Name = "PSWindowsUpdate (WinRM Public)";
-                        netFwPolicy.Rules.Add(netFwRule4);
+                        WriteVerbose("Create firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
+                        var netFwRule2 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
+                        netFwRule2.Grouping = "PSWindowsUpdate";
+                        netFwRule2.Enabled = true;
+                        netFwRule2.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+                        netFwRule2.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
+                        netFwRule2.Protocol = 6;
+                        netFwRule2.LocalPorts = "RPC";
+                        netFwRule2.ApplicationName = "%SystemRoot%\\System32\\dllhost.exe";
+                        netFwRule2.Name = "PSWindowsUpdate (RPC Dynamics Ports)";
+                        netFwPolicy.Rules.Add(netFwRule2);
                     }
                     else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"])
                     {
-                        WriteVerbose("Enable firewall rule: PSWindowsUpdate (WinRM Public)");
+                        WriteVerbose("Enable firewall rule: PSWindowsUpdate (RPC Dynamics Ports)");
                         netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
                     }
                     else
                     {
-                        WriteDebug(DateTime.Now + " PSWindowsUpdate (WinRM Public) firewall rule is enabled");
-                    }
-                }
-
-                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Remote Scheduled Tasks Management"])
-                {
-                    WriteVerbose("Enable firewall rules: Remote Scheduled Tasks Management");
-                    netFwPolicy.EnableRuleGroup(int.MaxValue, "Remote Scheduled Tasks Management", true);
-                }
-                else
-                {
-                    WriteDebug(DateTime.Now + " Remote Scheduled Tasks Management firewall rules are enabled");
-                }
-
-                if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Windows Management Instrumentation (WMI)"])
-                {
-                    WriteVerbose("Enable firewall rules: Windows Management Instrumentation (WMI)");
-                    netFwPolicy.EnableRuleGroup(int.MaxValue, "Windows Management Instrumentation (WMI)", true);
-                }
-                else
-                {
-                    WriteDebug(DateTime.Now + " Windows Management Instrumentation (WMI) firewall rules are enabled");
-                }
-
-                if (LocalAccountTokenFilterPolicy)
-                {
-                    WriteVerbose("Set LocalAccountTokenFilterPolicy=1 registry entry");
-                    var registryKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
-                    var registryKey2 = registryKey.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\system\\", true);
-                    registryKey2.SetValue("LocalAccountTokenFilterPolicy", Convert.ToInt32(1), RegistryValueKind.DWord);
-                }
-
-                try
-                {
-                    var script = "(Get-Item WSMan:\\localhost\\Client\\TrustedHosts).Value -match '\\*';";
-                    Collection<PSObject> collection;
-                    using (var powerShell = PowerShell.Create())
-                    {
-                        powerShell.AddScript(script);
-                        collection = powerShell.Invoke();
+                        WriteDebug(DateTime.Now + " PSWindowsUpdate (RPC Dynamics Ports) firewall rule is enabled");
                     }
 
-                    if (collection[0].ToString() == "False")
+                    if (WinRMPublic)
                     {
-                        WriteVerbose("Enable PSRemoting");
-                        script =
-                            "Enable -PSRemoting –force; \r\nStart-Service WinRM; \r\nSet-ItemProperty -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord;\r\nSet-ItemProperty -Path HKLM:\\System\\CurrentControlSet\\Control\\Lsa -Name ForceGuest -Value 0;\r\nSet-Item WSMan:\\localhost\\Client\\TrustedHosts -Value * -Force -Concatenate;";
-                        using var powerShell2 = PowerShell.Create();
-                        powerShell2.AddScript(script);
-                        collection = powerShell2.Invoke();
+                        var rule2Enabled = false;
+                        foreach (INetFwRule rule2 in netFwPolicy.Rules)
+                        {
+                            if (rule2.Name == "PSWindowsUpdate (WinRM Public)")
+                            {
+                                rule2Enabled = true;
+                            }
+                        }
+
+                        if (!rule2Enabled)
+                        {
+                            WriteVerbose("Create firewall rule: PSWindowsUpdate (WinRM Public)");
+                            var netFwRule4 = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
+                            netFwRule4.Grouping = "PSWindowsUpdate";
+                            netFwRule4.Enabled = true;
+                            netFwRule4.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+                            netFwRule4.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
+                            netFwRule4.Protocol = 6;
+                            netFwRule4.LocalPorts = "5985";
+                            netFwRule4.ApplicationName = "System";
+                            netFwRule4.Name = "PSWindowsUpdate (WinRM Public)";
+                            netFwPolicy.Rules.Add(netFwRule4);
+                        }
+                        else if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["PSWindowsUpdate"])
+                        {
+                            WriteVerbose("Enable firewall rule: PSWindowsUpdate (WinRM Public)");
+                            netFwPolicy.EnableRuleGroup(int.MaxValue, "PSWindowsUpdate", true);
+                        }
+                        else
+                        {
+                            WriteDebug(DateTime.Now + " PSWindowsUpdate (WinRM Public) firewall rule is enabled");
+                        }
+                    }
+
+                    if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Remote Scheduled Tasks Management"])
+                    {
+                        WriteVerbose("Enable firewall rules: Remote Scheduled Tasks Management");
+                        netFwPolicy.EnableRuleGroup(int.MaxValue, "Remote Scheduled Tasks Management", true);
                     }
                     else
                     {
-                        WriteDebug(DateTime.Now + " PSRemoting TrustedHosts are set");
+                        WriteDebug(DateTime.Now + " Remote Scheduled Tasks Management firewall rules are enabled");
                     }
-                }
-                catch (Exception exception)
-                {
-                    WriteError(new ErrorRecord(exception, "PSRemoting", ErrorCategory.ResourceUnavailable, null));
-                }
 
-                try
-                {
-                    var num = 1u;
-                    var queryString = "SELECT * FROM Win32_Service WHERE Name = 'RemoteRegistry'";
-                    var managementObjectSearcher = new ManagementObjectSearcher(queryString);
-                    var managementObjectCollection = managementObjectSearcher.Get();
-                    foreach (ManagementObject item in managementObjectCollection)
+                    if (!netFwPolicy.IsRuleGroupCurrentlyEnabled["Windows Management Instrumentation (WMI)"])
                     {
-                        if (Convert.ToString(item.GetPropertyValue("StartMode")) == "Disabled")
+                        WriteVerbose("Enable firewall rules: Windows Management Instrumentation (WMI)");
+                        netFwPolicy.EnableRuleGroup(int.MaxValue, "Windows Management Instrumentation (WMI)", true);
+                    }
+                    else
+                    {
+                        WriteDebug(DateTime.Now + " Windows Management Instrumentation (WMI) firewall rules are enabled");
+                    }
+
+                    if (LocalAccountTokenFilterPolicy)
+                    {
+                        WriteVerbose("Set LocalAccountTokenFilterPolicy=1 registry entry");
+                        RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default)
+                            .OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\system\\", true)
+                            .SetValue("LocalAccountTokenFilterPolicy", Convert.ToInt32(1), RegistryValueKind.DWord);
+                    }
+
+                    try
+                    {
+                        var script = "(Get-Item WSMan:\\localhost\\Client\\TrustedHosts).Value -match '\\*';";
+                        Collection<PSObject> collection;
+                        using (var powerShell = PowerShell.Create())
                         {
-                            WriteVerbose("Change startmode service: Remote Registry");
-                            var methodParameters = item.GetMethodParameters("ChangeStartMode");
-                            methodParameters["startmode"] = "Automatic";
-                            var managementBaseObject = item.InvokeMethod("ChangeStartMode", methodParameters, null);
-                            num = Convert.ToUInt16(managementBaseObject.Properties["ReturnValue"].Value);
+                            powerShell.AddScript(script);
+                            collection = powerShell.Invoke();
+                        }
+
+                        if (collection[0].ToString() == "False")
+                        {
+                            WriteVerbose("Enable PSRemoting");
+                            script =
+                                "Enable -PSRemoting –force; \r\nStart-Service WinRM; \r\nSet-ItemProperty -Path HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord;\r\nSet-ItemProperty -Path HKLM:\\System\\CurrentControlSet\\Control\\Lsa -Name ForceGuest -Value 0;\r\nSet-Item WSMan:\\localhost\\Client\\TrustedHosts -Value * -Force -Concatenate;";
+                            using var powerShell2 = PowerShell.Create();
+                            powerShell2.AddScript(script);
+                            collection = powerShell2.Invoke();
                         }
                         else
                         {
-                            WriteDebug(DateTime.Now + " Remote Registry service start mode is ok");
+                            WriteDebug(DateTime.Now + " PSRemoting TrustedHosts are set");
                         }
                     }
-                }
-                catch (Exception exception2)
-                {
-                    WriteError(new ErrorRecord(exception2, "RemoteRegistry", ErrorCategory.ResourceUnavailable, null));
-                }
+                    catch (Exception exception)
+                    {
+                        WriteError(new ErrorRecord(exception, "PSRemoting", ErrorCategory.ResourceUnavailable, null));
+                    }
 
-                try
-                {
-                    var num2 = 1u;
-                    var queryString2 = "SELECT * FROM Win32_Service WHERE Name = 'RemoteRegistry'";
-                    var managementObjectSearcher2 = new ManagementObjectSearcher(queryString2);
-                    var managementObjectCollection2 = managementObjectSearcher2.Get();
-                    foreach (ManagementObject item2 in managementObjectCollection2)
+                    try
                     {
-                        if (Convert.ToString(item2.GetPropertyValue("State")) == "Stopped")
+                        var mgmtObjCollection = new ManagementObjectSearcher("SELECT * FROM Win32_Service WHERE Name = 'RemoteRegistry'").Get();
+                        foreach (ManagementObject mgmtObj in mgmtObjCollection)
                         {
-                            WriteVerbose("Start service: Remote Registry");
-                            var managementBaseObject2 = item2.InvokeMethod("StartService", null, null);
-                            num2 = Convert.ToUInt16(managementBaseObject2.Properties["ReturnValue"].Value);
-                        }
-                        else
-                        {
-                            WriteDebug(DateTime.Now + " Remote Registry service is Running");
-                        }
-                    }
-                }
-                catch (COMException ex)
-                {
-                    var wUApiCodeDetails = wUTools.GetWUApiCodeDetails(ex.ErrorCode);
-                    if (wUApiCodeDetails != null)
-                    {
-                        var codeType = wUApiCodeDetails.CodeType;
-                        if (codeType == 2)
-                        {
-                            WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description), wUApiCodeDetails.HResult,
-                                ErrorCategory.CloseError, null));
+                            if (Convert.ToString(mgmtObj.GetPropertyValue("StartMode")) == "Disabled")
+                            {
+                                WriteVerbose("Change startmode service: Remote Registry");
+                                var methodParameters = mgmtObj.GetMethodParameters("ChangeStartMode");
+                                methodParameters["startmode"] = "Automatic";
+                                var managementBaseObject = mgmtObj.InvokeMethod("ChangeStartMode", methodParameters, null);
+                                Convert.ToUInt16(managementBaseObject.Properties["ReturnValue"].Value);
+                            }
+                            else
+                            {
+                                WriteDebug(DateTime.Now + " Remote Registry service start mode is ok");
+                            }
                         }
                     }
-                    else if (Debuger)
+                    catch (Exception exception2)
                     {
-                        var errorRecord = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
-                        ThrowTerminatingError(errorRecord);
+                        WriteError(new ErrorRecord(exception2, "RemoteRegistry", ErrorCategory.ResourceUnavailable, null));
+                    }
+
+                    try
+                    {
+                        var mgmtObjCollection = new ManagementObjectSearcher("SELECT * FROM Win32_Service WHERE Name = 'RemoteRegistry'").Get();
+                        foreach (ManagementObject mgmtObj in mgmtObjCollection)
+                        {
+                            if (Convert.ToString(mgmtObj.GetPropertyValue("State")) == "Stopped")
+                            {
+                                WriteVerbose("Start service: Remote Registry");
+                                var managementBaseObject2 = mgmtObj.InvokeMethod("StartService", null, null);
+                                Convert.ToUInt16(managementBaseObject2.Properties["ReturnValue"].Value);
+                            }
+                            else
+                            {
+                                WriteDebug(DateTime.Now + " Remote Registry service is Running");
+                            }
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        var wuApiCodeDetails = wuTools.GetWUApiCodeDetails(ex.ErrorCode);
+                        if (wuApiCodeDetails != null)
+                        {
+                            if (wuApiCodeDetails.CodeType == 2)
+                            {
+                                WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
+                                    ErrorCategory.CloseError, null));
+                            }
+                        }
+                        else if (Debuger)
+                        {
+                            ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                        }
                     }
                 }
             }

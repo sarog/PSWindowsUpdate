@@ -573,7 +573,7 @@ namespace PSWindowsUpdate
             }
 
             WUToolsObj = new WUTools();
-            OutputObj = new List<PSObject>();
+            OutputObj = [];
             if (SendReport)
             {
                 WriteDebug(DateTime.Now + " Test smtp settings");
@@ -602,10 +602,10 @@ namespace PSWindowsUpdate
                 return;
             }
 
-            ComputerName = new string[1]
-            {
+            ComputerName =
+            [
                 Environment.MachineName
-            };
+            ];
         }
 
         private void CoreProcessing()
@@ -635,34 +635,34 @@ namespace PSWindowsUpdate
                 WithHidden = true;
             }
 
-            string searchCriteria;
+            string criteria;
             if (Criteria != null)
             {
-                searchCriteria = Criteria;
-                WriteDebug(DateTime.Now + " Set pre search criteria: " + searchCriteria);
+                criteria = Criteria;
+                WriteDebug(DateTime.Now + " Set pre search criteria: " + criteria);
             }
             else
             {
                 if (IsInstalled)
                 {
-                    searchCriteria = "IsInstalled = 1";
+                    criteria = "IsInstalled = 1";
                     WriteDebug(DateTime.Now + " Set pre search criteria: IsInstalled = 1");
                 }
                 else
                 {
-                    searchCriteria = "IsInstalled = 0";
+                    criteria = "IsInstalled = 0";
                     WriteDebug(DateTime.Now + " Set pre search criteria: IsInstalled = 0");
                 }
 
                 if (UpdateType != null)
                 {
-                    searchCriteria = searchCriteria + " and Type = '" + UpdateType + "'";
+                    criteria = criteria + " and Type = '" + UpdateType + "'";
                     WriteDebug(DateTime.Now + " Set pre search criteria: Type = '" + UpdateType + "'");
                 }
 
                 if (IsHidden)
                 {
-                    searchCriteria += " and IsHidden = 1";
+                    criteria += " and IsHidden = 1";
                     WriteDebug(DateTime.Now + " Set pre search criteria: IsHidden = 1");
                 }
                 else if (WithHidden)
@@ -671,113 +671,109 @@ namespace PSWindowsUpdate
                 }
                 else
                 {
-                    searchCriteria += " and IsHidden = 0";
+                    criteria += " and IsHidden = 0";
                     WriteDebug(DateTime.Now + " Set pre search criteria: IsHidden = 0");
                 }
 
                 if (IgnoreRebootRequired)
                 {
-                    searchCriteria += " and RebootRequired = 0";
+                    criteria += " and RebootRequired = 0";
                     WriteDebug(DateTime.Now + " Set pre search criteria: RebootRequired = 0");
                 }
 
                 if (DeploymentAction != null)
                 {
-                    searchCriteria = searchCriteria + " and DeploymentAction = '" + DeploymentAction + "'";
+                    criteria = criteria + " and DeploymentAction = '" + DeploymentAction + "'";
                     WriteDebug(DateTime.Now + " Set pre search criteria: DeploymentAction = '" + DeploymentAction + "'");
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("IsAssigned"))
+                if (IsAssigned)
                 {
                     if (IsAssigned)
                     {
-                        searchCriteria += " and IsAssigned = 1";
+                        criteria += " and IsAssigned = 1";
                         WriteDebug(DateTime.Now + " Set pre search criteria: IsAssigned = 1");
                     }
                     else
                     {
-                        searchCriteria += " and IsAssigned = 0";
+                        criteria += " and IsAssigned = 0";
                         WriteDebug(DateTime.Now + " Set pre search criteria: IsAssigned = 0");
                     }
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("IsPresent"))
+                if (IsPresent)
                 {
                     if (IsPresent)
                     {
-                        searchCriteria += " and IsPresent = 1";
+                        criteria += " and IsPresent = 1";
                         WriteDebug(DateTime.Now + " Set pre search criteria: IsPresent = 1");
                     }
                     else
                     {
-                        searchCriteria += " and IsPresent = 0";
+                        criteria += " and IsPresent = 0";
                         WriteDebug(DateTime.Now + " Set pre search criteria: IsPresent = 0");
                     }
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("BrowseOnly"))
+                if (BrowseOnly)
                 {
                     if (BrowseOnly)
                     {
-                        searchCriteria += " and BrowseOnly = 1";
+                        criteria += " and BrowseOnly = 1";
                         WriteDebug(DateTime.Now + " Set pre search criteria: BrowseOnly = 1");
                     }
                     else
                     {
-                        searchCriteria += " and BrowseOnly = 0";
+                        criteria += " and BrowseOnly = 0";
                         WriteDebug(DateTime.Now + " Set pre search criteria: BrowseOnly = 0");
                     }
                 }
 
-                if (MyInvocation.BoundParameters.ContainsKey("AutoSelectOnWebSites"))
+                if (AutoSelectOnWebSites)
                 {
                     if (AutoSelectOnWebSites)
                     {
-                        searchCriteria += " and AutoSelectOnWebSites = 1";
+                        criteria += " and AutoSelectOnWebSites = 1";
                         WriteDebug(DateTime.Now + " Set pre search criteria: AutoSelectOnWebSites = 1");
                     }
                     else
                     {
-                        searchCriteria += " and AutoSelectOnWebSites = 0";
+                        criteria += " and AutoSelectOnWebSites = 0";
                         WriteDebug(DateTime.Now + " Set pre search criteria: AutoSelectOnWebSites = 0");
                     }
                 }
 
                 if (NotUpdateID != null)
                 {
-                    var notUpdateID = NotUpdateID;
-                    foreach (var uID in notUpdateID)
+                    foreach (var uid in NotUpdateID)
                     {
-                        searchCriteria = searchCriteria + " and UpdateID != '" + uID + "'";
-                        WriteDebug(DateTime.Now + " Set pre search criteria: NotUpdateID = " + uID);
+                        criteria = criteria + " and UpdateID != '" + uid + "'";
+                        WriteDebug(DateTime.Now + " Set pre search criteria: NotUpdateID = " + uid);
                     }
                 }
 
                 if (UpdateID != null)
                 {
-                    var text3 = searchCriteria;
-                    searchCriteria = "";
+                    var prevCriteria = criteria;
+                    criteria = "";
                     var num = 0;
-                    var updateID = UpdateID;
-                    foreach (var text4 in updateID)
+                    foreach (var uid in UpdateID)
                     {
                         if (num > 0)
                         {
-                            searchCriteria += " or ";
+                            criteria += " or ";
                             WriteDebug(DateTime.Now + " Set pre search criteria: or ");
                         }
 
                         if (RevisionNumber > 0)
                         {
-                            searchCriteria = searchCriteria + "(" + text3 + " and UpdateID = '" + text4 + "' and RevisionNumber = " +
-                                             RevisionNumber + ")";
-                            WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + text4 + "and RevisionNumber = " +
-                                       RevisionNumber);
+                            criteria = criteria + "(" + prevCriteria + " and UpdateID = '" + uid + "' and RevisionNumber = " + RevisionNumber + ")";
+                            WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + uid + "and RevisionNumber = " + RevisionNumber);
                         }
                         else
                         {
-                            searchCriteria = searchCriteria + "(" + text3 + " and UpdateID = '" + text4 + "')";
-                            WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + text4);
+                            criteria = criteria + "(" + prevCriteria + " and UpdateID = '" + uid + "')";
+                            WriteDebug(DateTime.Now + " Set pre search criteria: UpdateID = " + uid);
                         }
 
                         num++;
@@ -786,40 +782,38 @@ namespace PSWindowsUpdate
 
                 if (CategoryIDs != null)
                 {
-                    var text5 = searchCriteria;
-                    searchCriteria = "";
-                    var num2 = 0;
-                    var categoryIDs = CategoryIDs;
-                    foreach (var catID in categoryIDs)
+                    var prevCriteria = criteria;
+                    criteria = "";
+                    var num = 0;
+                    foreach (var catID in CategoryIDs)
                     {
-                        if (num2 > 0)
+                        if (num > 0)
                         {
-                            searchCriteria += " or ";
+                            criteria += " or ";
                             WriteDebug(DateTime.Now + " Set pre search criteria: or ");
                         }
 
-                        searchCriteria = searchCriteria + "(" + text5 + " and CategoryIDs contains '" + catID + "')";
+                        criteria = criteria + "(" + prevCriteria + " and CategoryIDs contains '" + catID + "')";
                         WriteDebug(DateTime.Now + " Set pre search criteria: CategoryIDs = " + catID);
-                        num2++;
+                        num++;
                     }
                 }
             }
 
-            WriteDebug(DateTime.Now + " Search criteria is: " + searchCriteria);
+            WriteDebug(DateTime.Now + " Search criteria is: " + criteria);
             if (ShowPreSearchCriteria)
             {
-                Host.UI.WriteLine(ConsoleColor.Green, Host.UI.RawUI.BackgroundColor, "PreSearchCriteria: " + searchCriteria);
+                Host.UI.WriteLine(ConsoleColor.Green, Host.UI.RawUI.BackgroundColor, "PreSearchCriteria: " + criteria);
             }
 
-            var computerName = ComputerName;
-            foreach (var target in computerName)
+            foreach (var target in ComputerName)
             {
                 WriteDebug(DateTime.Now + " " + target + ": Connecting...");
                 try
                 {
-                    var pSWUModule = WUToolsObj.GetPSWUModule(target);
-                    WriteDebug(DateTime.Now + " Module version: " + pSWUModule.Properties["Version"].Value);
-                    WriteDebug(DateTime.Now + " Dll version: " + pSWUModule.Properties["PSWUDllVersion"].Value);
+                    var pswuModule = WUToolsObj.GetPSWUModule(target);
+                    WriteDebug(DateTime.Now + " Module version: " + pswuModule.Properties["Version"].Value);
+                    WriteDebug(DateTime.Now + " Dll version: " + pswuModule.Properties["PSWUDllVersion"].Value);
                 }
                 catch
                 {
@@ -835,17 +829,17 @@ namespace PSWindowsUpdate
                     }
                 }
 
-                var wUApiUpdateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(target);
-                WriteDebug(DateTime.Now + " UpdateSessionObj mode: " + wUApiUpdateSessionObj.Mode);
-                if (wUApiUpdateSessionObj.Status)
+                var updateSessionObj = WUToolsObj.GetWUApiUpdateSessionObj(target);
+                WriteDebug(DateTime.Now + " UpdateSessionObj mode: " + updateSessionObj.Mode);
+                if (updateSessionObj.Status)
                 {
-                    UpdateSessionObj = (UpdateSession)wUApiUpdateSessionObj.Object;
+                    UpdateSessionObj = (UpdateSession)updateSessionObj.Object;
                     SearcherObj = UpdateSessionObj.CreateUpdateSearcher();
-                    var wUApiServiceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(target);
-                    WriteDebug(DateTime.Now + " ServiceManagerObj mode: " + wUApiServiceManagerObj.Mode);
-                    if (wUApiServiceManagerObj.Status)
+                    var serviceManagerObj = WUToolsObj.GetWUApiServiceManagerObj(target);
+                    WriteDebug(DateTime.Now + " ServiceManagerObj mode: " + serviceManagerObj.Mode);
+                    if (serviceManagerObj.Status)
                     {
-                        ServiceManagerObj = (UpdateServiceManager)wUApiServiceManagerObj.Object;
+                        ServiceManagerObj = (UpdateServiceManager)serviceManagerObj.Object;
                         var text8 = "";
                         if (WindowsUpdate)
                         {
@@ -883,7 +877,7 @@ namespace PSWindowsUpdate
                                     serviceController.Start();
                                     serviceController.WaitForStatus(ServiceControllerStatus.Running);
                                     ServiceManagerObj.AddService2("7971f918-a847-4430-9279-4a52d1efe18d", 2, null);
-                                    WriteDebug(DateTime.Now + " Register WUA Microsof Update service");
+                                    WriteDebug(DateTime.Now + " Register WUA Microsoft Update service");
                                     Thread.Sleep(500);
                                     serviceController.Stop();
                                     serviceController.WaitForStatus(ServiceControllerStatus.Stopped);
@@ -893,24 +887,23 @@ namespace PSWindowsUpdate
                                 }
                                 catch (COMException ex)
                                 {
-                                    var wUApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
-                                    if (wUApiCodeDetails != null)
+                                    var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                    if (wuApiCodeDetails != null)
                                     {
-                                        switch (wUApiCodeDetails.CodeType)
+                                        switch (wuApiCodeDetails.CodeType)
                                         {
                                             case 2:
-                                                WriteError(new ErrorRecord(new Exception(wUApiCodeDetails.Description),
-                                                    wUApiCodeDetails.HResult, ErrorCategory.CloseError, null));
+                                                WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description),
+                                                    wuApiCodeDetails.HResult, ErrorCategory.CloseError, null));
                                                 break;
                                             case 3:
-                                                WriteWarning(wUApiCodeDetails.HResult + ": " + wUApiCodeDetails.Description);
+                                                WriteWarning(wuApiCodeDetails.HResult + ": " + wuApiCodeDetails.Description);
                                                 break;
                                         }
                                     }
                                     else if (Debuger)
                                     {
-                                        var errorRecord2 = new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null);
-                                        ThrowTerminatingError(errorRecord2);
+                                        ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
                                     }
                                 }
 
@@ -923,23 +916,23 @@ namespace PSWindowsUpdate
                         {
                             try
                             {
-                                foreach (IUpdateService2 service2 in ServiceManagerObj.Services)
+                                foreach (IUpdateService2 service in ServiceManagerObj.Services)
                                 {
                                     if (ServiceID != null)
                                     {
-                                        if (service2.ServiceID == ServiceID)
+                                        if (service.ServiceID == ServiceID)
                                         {
-                                            WriteDebug(DateTime.Now + " Try ServiceID. Set source of updates to " + service2.Name);
+                                            WriteDebug(DateTime.Now + " Try ServiceID. Set source of updates to " + service.Name);
                                             SearcherObj.ServerSelection = ServerSelection.ssOthers;
                                             SearcherObj.ServiceID = ServiceID;
-                                            text8 = service2.Name;
+                                            text8 = service.Name;
                                             break;
                                         }
                                     }
-                                    else if (service2.IsDefaultAUService)
+                                    else if (service.IsDefaultAUService)
                                     {
-                                        WriteDebug(DateTime.Now + " Try Default. Set source of updates to " + service2.Name);
-                                        text8 = service2.Name;
+                                        WriteDebug(DateTime.Now + " Try Default. Set source of updates to " + service.Name);
+                                        text8 = service.Name;
                                         break;
                                     }
                                 }
@@ -963,41 +956,39 @@ namespace PSWindowsUpdate
 
                         if (text8 == "Windows Server Update Service")
                         {
-                            RegistryKey registryKey = null;
-                            registryKey = !WUToolsObj.IsLocalHost(target)
-                                ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
-                                : RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
-                            var registryKey2 = registryKey.OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\");
-                            var text9 = registryKey2.GetValue("WUServer").ToString();
-                            text8 = text8 + " (" + text9 + ")";
+                            var regValue = (!WUToolsObj.IsLocalHost(target)
+                                    ? RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, target)
+                                    : RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default))
+                                .OpenSubKey("SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsUpdate\\")
+                                .GetValue("WUServer").ToString();
+                            text8 = text8 + " (" + regValue + ")";
                         }
 
                         WriteVerbose(target + " (" + DateTime.Now + "): Connecting to " + text8 + " server. Please wait...");
                         ISearchResult searchResult;
                         try
                         {
-                            searchResult = SearcherObj.Search(searchCriteria);
+                            searchResult = SearcherObj.Search(criteria);
                         }
-                        catch (COMException ex2)
+                        catch (COMException ex)
                         {
-                            var wUApiCodeDetails2 = WUToolsObj.GetWUApiCodeDetails(ex2.ErrorCode);
-                            if (wUApiCodeDetails2 != null)
+                            var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                            if (wuApiCodeDetails != null)
                             {
-                                switch (wUApiCodeDetails2.CodeType)
+                                switch (wuApiCodeDetails.CodeType)
                                 {
                                     case 2:
-                                        WriteError(new ErrorRecord(new Exception(wUApiCodeDetails2.Description), wUApiCodeDetails2.HResult,
+                                        WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description), wuApiCodeDetails.HResult,
                                             ErrorCategory.CloseError, null));
                                         break;
                                     case 3:
-                                        WriteWarning(wUApiCodeDetails2.HResult + ": " + wUApiCodeDetails2.Description);
+                                        WriteWarning(wuApiCodeDetails.HResult + ": " + wuApiCodeDetails.Description);
                                         break;
                                 }
                             }
                             else if (Debuger)
                             {
-                                var errorRecord3 = new ErrorRecord(ex2, "Debug", ErrorCategory.CloseError, null);
-                                ThrowTerminatingError(errorRecord3);
+                                ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
                             }
 
                             WriteDebug(DateTime.Now + " Skip to next computer");
@@ -1006,1296 +997,1257 @@ namespace PSWindowsUpdate
 
                         var count = searchResult.Updates.Count;
                         WriteVerbose("Found [" + count + "] Updates in pre search criteria");
-                        if (count == 0)
+                        if (count != 0)
                         {
-                            continue;
-                        }
+                            UpdateCollection updateCollection;
 
-                        var updateCollection =
-                            (UpdateCollection)Activator.CreateInstance(
-                                Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
-                        if (RootCategories != null)
-                        {
-                            var updateCollection2 =
-                                (UpdateCollection)Activator.CreateInstance(
-                                    Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
-                            var rootCategories = RootCategories;
-                            foreach (var text10 in rootCategories)
+                            if (RootCategories != null)
                             {
-                                var index = -1;
-                                switch (text10)
-                                {
-                                    case "Critical Updates":
-                                        index = 0;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Definition Updates":
-                                        index = 1;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Drivers":
-                                        index = 2;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Feature Packs":
-                                        index = 3;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Security Updates":
-                                        index = 4;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Service Packs":
-                                        index = 5;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Tools":
-                                        index = 6;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Update Rollups":
-                                        index = 7;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Updates":
-                                        index = 8;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Upgrades":
-                                        index = 9;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                    case "Microsoft":
-                                        index = 10;
-                                        WriteDebug(DateTime.Now + " RootCategory: " + text10 + " - " + index);
-                                        break;
-                                }
+                                var updateCollection2 =
+                                    (UpdateCollection)Activator.CreateInstance(
+                                        Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
 
-                                try
+                                foreach (var rootCategory in RootCategories)
                                 {
-                                    foreach (IUpdate update6 in searchResult.RootCategories[index].Updates)
+                                    var index = -1;
+                                    switch (rootCategory)
                                     {
-                                        updateCollection2.Add(update6);
-                                    }
-                                }
-                                catch
-                                {
-                                    WriteWarning("RootCategiries Updates are empty. Use classic filters.");
-                                }
-                            }
-
-                            updateCollection = updateCollection2;
-                        }
-                        else
-                        {
-                            updateCollection = searchResult.Updates;
-                        }
-
-                        var num3 = 0;
-                        var progressRecord = new ProgressRecord(0, "Post search updates for " + target, "[" + num3 + "/" + count + "]");
-                        var collection = new Collection<PSObject>();
-                        foreach (IUpdate item in updateCollection)
-                        {
-                            WriteDebug(DateTime.Now + " " + item.Title);
-                            var text11 = WUToolsObj.ConvertSize(item.MaxDownloadSize);
-                            progressRecord.StatusDescription = "[" + num3 + "/" + count + "] " + item.Title + " " + text11;
-                            progressRecord.PercentComplete = num3 * 100 / count;
-                            WriteProgress(progressRecord);
-                            num3++;
-                            var flag2 = true;
-                            if (Category != null || NotCategory != null)
-                            {
-                                var text12 = "";
-                                foreach (ICategory category3 in item.Categories)
-                                {
-                                    text12 = text12 + category3.Name + "|";
-                                }
-
-                                WriteDebug(DateTime.Now + " " + text12);
-                                if (Category != null)
-                                {
-                                    WriteDebug(DateTime.Now + " Set post search criteria: Categories = " + string.Join(", ", Category));
-                                    var category2 = Category;
-                                    foreach (var pattern in category2)
-                                    {
-                                        if (!Regex.IsMatch(text12, pattern, RegexOptions.IgnoreCase))
-                                        {
-                                            flag2 = false;
-                                            continue;
-                                        }
-
-                                        flag2 = true;
-                                        break;
-                                    }
-                                }
-
-                                if (NotCategory != null && flag2)
-                                {
-                                    WriteDebug(
-                                        DateTime.Now + " Set post search criteria: NotCategories = " + string.Join(", ", NotCategory));
-                                    var notCategory = NotCategory;
-                                    foreach (var pattern2 in notCategory)
-                                    {
-                                        if (Regex.IsMatch(text12, pattern2, RegexOptions.IgnoreCase))
-                                        {
-                                            flag2 = false;
+                                        case "Critical Updates":
+                                            index = 0;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
                                             break;
-                                        }
-                                    }
-                                }
-
-                                WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
-                            }
-
-                            if (KBArticleID != null && flag2)
-                            {
-                                var text13 = string.Join(", ", KBArticleID);
-                                WriteDebug(DateTime.Now + " Set post search criteria: KBArticleIDs = " + text13);
-                                if (item.KBArticleIDs.Count > 0)
-                                {
-                                    foreach (string kBArticleID in item.KBArticleIDs)
-                                    {
-                                        if (!Regex.IsMatch(text13, kBArticleID, RegexOptions.IgnoreCase))
-                                        {
-                                            flag2 = false;
+                                        case "Definition Updates":
+                                            index = 1;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
                                             break;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    flag2 = false;
-                                }
-
-                                WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
-                            }
-
-                            if (NotKBArticleID != null && flag2)
-                            {
-                                var text15 = string.Join(", ", NotKBArticleID);
-                                WriteDebug(DateTime.Now + " Set post search criteria: NotKBArticleID = " + text15);
-                                if (item.KBArticleIDs.Count > 0)
-                                {
-                                    foreach (string kBArticleID2 in item.KBArticleIDs)
-                                    {
-                                        if (Regex.IsMatch(text15, kBArticleID2, RegexOptions.IgnoreCase))
-                                        {
-                                            flag2 = false;
+                                        case "Drivers":
+                                            index = 2;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
                                             break;
-                                        }
+                                        case "Feature Packs":
+                                            index = 3;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Security Updates":
+                                            index = 4;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Service Packs":
+                                            index = 5;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Tools":
+                                            index = 6;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Update Rollups":
+                                            index = 7;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Updates":
+                                            index = 8;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Upgrades":
+                                            index = 9;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
+                                        case "Microsoft":
+                                            index = 10;
+                                            WriteDebug(DateTime.Now + " RootCategory: " + rootCategory + " - " + index);
+                                            break;
                                     }
-                                }
 
-                                WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
-                            }
-
-                            if (Title != null && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: Title = " + Title);
-                                if (!Regex.IsMatch(item.Title, Title, RegexOptions.IgnoreCase))
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
-                                }
-                            }
-
-                            if (NotTitle != null && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: NotTitle = " + NotTitle);
-                                if (Regex.IsMatch(item.Title, NotTitle, RegexOptions.IgnoreCase))
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess: " + flag2);
-                                }
-                            }
-
-                            if (Severity != null && flag2)
-                            {
-                                var text16 = string.Join(", ", Severity);
-                                WriteDebug(DateTime.Now + " Set post search criteria: Severity = " + text16);
-                                if (Severity.Contains("Unspecified"))
-                                {
-                                    Severity = string.Join(",", Severity).Replace("Unspecified", "").Split(',');
-                                }
-
-                                if (!Severity.Contains(Convert.ToString((object)item.MsrcSeverity)))
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (NotSeverity != null && flag2)
-                            {
-                                var text17 = string.Join(", ", NotSeverity);
-                                WriteDebug(DateTime.Now + " Set post search criteria: NotSeverity = " + text17);
-                                if (NotSeverity.Contains("Unspecified"))
-                                {
-                                    NotSeverity = string.Join(",", NotSeverity).Replace("Unspecified", "").Split(',');
-                                }
-
-                                if (NotSeverity.Contains(Convert.ToString((object)item.MsrcSeverity)))
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (MaxSize > 0 && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: MaxDownloadSize <= " + MaxSize);
-                                if (MaxSize <= item.MaxDownloadSize)
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (MinSize > 0 && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: MaxDownloadSize >= " + MinSize);
-                                if (MinSize >= item.MaxDownloadSize)
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (IgnoreUserInput && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: CanRequestUserInput");
-                                if (item.InstallationBehavior.CanRequestUserInput)
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (IgnoreRebootRequired && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: RebootBehavior");
-                                if (item.InstallationBehavior.RebootBehavior != 0)
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (AutoSelectOnly && flag2)
-                            {
-                                WriteDebug(DateTime.Now + " Set post search criteria: AutoSelectOnWebsites");
-                                if (!item.AutoSelectOnWebSites)
-                                {
-                                    flag2 = false;
-                                    WriteDebug(DateTime.Now + " UpdateAccess" + flag2);
-                                }
-                            }
-
-                            if (!flag2)
-                            {
-                                continue;
-                            }
-
-                            WriteDebug(DateTime.Now + " Update was not filtered");
-                            var text18 = "";
-                            foreach (string kBArticleID3 in item.KBArticleIDs)
-                            {
-                                text18 = !(text18 == "") ? text18 + ", KB" + kBArticleID3 : text18 + "KB" + kBArticleID3;
-                            }
-
-                            var text20 = "-";
-                            text20 = !item.IsDownloaded ? text20 + "-" : text20 + "D";
-                            text20 = !item.IsInstalled ? text20 + "-" : text20 + "I";
-                            text20 = !item.IsMandatory ? text20 + "-" : text20 + "M";
-                            text20 = !item.IsHidden ? text20 + "-" : text20 + "H";
-                            text20 = !item.IsUninstallable ? text20 + "-" : text20 + "U";
-                            text20 = !item.IsBeta ? text20 + "-" : text20 + "B";
-                            var pSObject = new PSObject(item);
-                            pSObject.Properties.Add(new PSNoteProperty("Size", text11));
-                            pSObject.Properties.Add(new PSNoteProperty("Status", text20));
-                            pSObject.Properties.Add(new PSNoteProperty("ComputerName", target));
-                            pSObject.Properties.Add(new PSNoteProperty("KB", text18));
-                            pSObject.TypeNames.Clear();
-                            pSObject.TypeNames.Add("PSWindowsUpdate.WindowsUpdate");
-                            collection.Add(pSObject);
-                        }
-
-                        progressRecord.RecordType = ProgressRecordType.Completed;
-                        WriteProgress(progressRecord);
-                        var count2 = collection.Count;
-                        WriteVerbose("Found [" + count2 + "] Updates in post search criteria");
-                        if (Hide ||
-                            string.Equals(MyInvocation.InvocationName, "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(MyInvocation.InvocationName, "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(MyInvocation.InvocationName, "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var text21 = !Hide ? "Show" : "Hide";
-                            var num5 = 0;
-                            var progressRecord2 = new ProgressRecord(1, text21 + " updates for " + target, "[" + num5 + "/" + count2 + "]");
-                            foreach (var item2 in collection)
-                            {
-                                var update2 = (IUpdate)item2.BaseObject;
-                                var flag3 = false;
-                                progressRecord2.StatusDescription = "[" + num5 + "/" + count2 + "] " + update2.Title + " " +
-                                                                    item2.Properties["Size"].Value;
-                                progressRecord2.PercentComplete = num5 * 100 / count2;
-                                WriteProgress(progressRecord2);
-                                num5++;
-                                if (AcceptAll)
-                                {
-                                    flag3 = true;
-                                }
-                                else if (ShouldProcess(target,
-                                             "(" + DateTime.Now + ") " + text21 + " " + update2.Title + "[" +
-                                             item2.Properties["Size"].Value + "]"))
-                                {
-                                    flag3 = true;
-                                }
-
-                                if (flag3)
-                                {
                                     try
                                     {
-                                        update2.IsHidden = Hide;
-                                        item2.Properties.Add(new PSNoteProperty("HideResult", text21));
+                                        foreach (IUpdate update in searchResult.RootCategories[index].Updates)
+                                        {
+                                            updateCollection2.Add(update);
+                                        }
                                     }
                                     catch
                                     {
-                                        ThrowTerminatingError(new ErrorRecord(
-                                            new Exception(target + ": You don't have permission to perform this task."), "0x80240044",
-                                            ErrorCategory.CloseError, null));
+                                        WriteWarning("RootCategories Updates are empty. Use classic filters.");
                                     }
                                 }
 
-                                var text22 = "";
-                                text22 = !update2.IsDownloaded ? text22 + "-" : text22 + "D";
-                                text22 = !update2.IsInstalled ? text22 + "-" : text22 + "I";
-                                text22 = !update2.IsMandatory ? text22 + "-" : text22 + "M";
-                                text22 = !update2.IsHidden ? text22 + "-" : text22 + "H";
-                                text22 = !update2.IsUninstallable ? text22 + "-" : text22 + "U";
-                                text22 = !update2.IsBeta ? text22 + "-" : text22 + "B";
-                                item2.Properties["Status"].Value = text22;
+                                updateCollection = updateCollection2;
+                            }
+                            else
+                            {
+                                updateCollection = searchResult.Updates;
                             }
 
-                            progressRecord2.RecordType = ProgressRecordType.Completed;
-                            WriteProgress(progressRecord2);
-                        }
-
-                        if (!Download && !Install)
-                        {
-                            WriteDebug(DateTime.Now + " Return update list only");
-                            WriteObject(collection);
-                            OutputObj.AddRange(collection.ToList());
-                            continue;
-                        }
-
-                        var totalDownloaded = 0;
-                        var totalInstalled = 0;
-                        var text23 = "";
-                        if (Download || Install)
-                        {
-                            var num8 = 0;
-                            var activityId3 = 1;
-                            var activity3 = "Choose updates for " + target;
-                            var statusDescription3 = "[" + num8 + "/" + count2 + "]";
-                            var progressRecord3 = new ProgressRecord(activityId3, activity3, statusDescription3);
-                            var searchCritera = "";
-                            foreach (var item3 in collection)
+                            var num3 = 0;
+                            var progressRecord = new ProgressRecord(0, "Post search updates for " + target, "[" + num3 + "/" + count + "]");
+                            var collection = new Collection<PSObject>();
+                            foreach (IUpdate update in updateCollection)
                             {
-                                item3.Properties.Add(new PSNoteProperty("X", 1));
-                                item3.TypeNames.Clear();
-                                item3.TypeNames.Add("PSWindowsUpdate.WindowsUpdateJob");
-                                var update3 = (IUpdate)item3.BaseObject;
-                                progressRecord3.StatusDescription = "[" + num8 + "/" + count2 + "] " + update3.Title + " " +
-                                                                    item3.Properties["Size"].Value;
-                                progressRecord3.PercentComplete = num8 * 100 / count2;
-                                WriteProgress(progressRecord3);
-                                num8++;
-                                WriteDebug(DateTime.Now + " Show update to accept: " + update3.Title);
-                                var flag4 = false;
-                                flag4 = AcceptAll || (AutoSelectOnly
-                                    ? update3.AutoSelectOnWebSites ? true : false
-                                    : ShouldProcess(target,
-                                        "(" + DateTime.Now + ") " + update3.Title + "[" + item3.Properties["Size"].Value + "]")
-                                        ? true
-                                        : false);
-                                var text25 = "";
-                                var text26 = "";
-                                if (flag4)
+                                WriteDebug(DateTime.Now + " " + update.Title);
+                                var text11 = WUToolsObj.ConvertSize(update.MaxDownloadSize);
+                                progressRecord.StatusDescription = "[" + num3 + "/" + count + "] " + update.Title + " " + text11;
+                                progressRecord.PercentComplete = num3 * 100 / count;
+                                WriteProgress(progressRecord);
+                                num3++;
+                                var foundMatch = true;
+                                if (Category != null || NotCategory != null)
                                 {
-                                    if (!update3.EulaAccepted)
+                                    var input = "";
+                                    foreach (ICategory category in update.Categories)
                                     {
-                                        WriteDebug(DateTime.Now + " EulaAccepted");
-                                        try
+                                        input = input + category.Name + "|";
+                                    }
+
+                                    WriteDebug(DateTime.Now + " " + input);
+                                    if (Category != null)
+                                    {
+                                        WriteDebug(DateTime.Now + " Set post search criteria: Categories = " + string.Join(", ", Category));
+                                        foreach (var pattern in Category)
                                         {
-                                            update3.AcceptEula();
-                                        }
-                                        catch (Exception exception)
-                                        {
-                                            if (Debuger)
+                                            if (!Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase))
                                             {
-                                                var errorRecord5 = new ErrorRecord(exception, "Debug", ErrorCategory.CloseError, null);
-                                                WriteError(errorRecord5);
+                                                foundMatch = false;
                                             }
                                             else
                                             {
-                                                WriteDebug(DateTime.Now + " Can't accept Eula.");
+                                                foundMatch = true;
+                                                break;
                                             }
                                         }
                                     }
 
-                                    try
+                                    if (NotCategory != null && foundMatch)
                                     {
-                                        var pSObject2 = new PSObject(item3.Properties["Identity"].Value);
-                                        var text27 = (string)pSObject2.Properties["UpdateID"].Value;
-                                        var num9 = (int)pSObject2.Properties["RevisionNumber"].Value;
-                                        searchCritera = !(searchCritera == "")
-                                            ? searchCritera + " or (UpdateID = '" + text27 + "' and RevisionNumber = " + num9 + ")"
-                                            : "(UpdateID = '" + text27 + "' and RevisionNumber = " + num9 + ")";
-                                    }
-                                    catch (Exception ex3)
-                                    {
-                                        flag4 = false;
-                                        var errorRecord6 = new ErrorRecord(
-                                            new Exception("Something goes wrong: " + update3.Title + "; " + ex3.Message), "Debug",
-                                            ErrorCategory.CloseError, null);
-                                        WriteError(errorRecord6);
+                                        WriteDebug(
+                                            DateTime.Now + " Set post search criteria: NotCategories = " + string.Join(", ", NotCategory));
+                                        foreach (var pattern in NotCategory)
+                                        {
+                                            if (Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase))
+                                            {
+                                                foundMatch = false;
+                                                break;
+                                            }
+                                        }
                                     }
 
-                                    if (flag4)
-                                    {
-                                        text25 += "A";
-                                        text26 = "Accepted";
-                                        WriteDebug(DateTime.Now + " " + text26);
-                                        item3.Properties.Add(new PSNoteProperty("ChooseResult", text26));
-                                        item3.Properties.Add(new PSNoteProperty("Result", text26));
-                                    }
+                                    WriteDebug(DateTime.Now + " UpdateAccess: " + foundMatch);
                                 }
 
-                                if (!flag4)
+                                if (KBArticleID != null && foundMatch)
                                 {
-                                    try
+                                    var input = string.Join(", ", KBArticleID);
+                                    WriteDebug(DateTime.Now + " Set post search criteria: KBArticleIDs = " + input);
+                                    if (update.KBArticleIDs.Count > 0)
                                     {
-                                        var pSObject3 = new PSObject(item3.Properties["Identity"].Value);
-                                        var text28 = (string)pSObject3.Properties["UpdateID"].Value;
-                                        var num10 = (int)pSObject3.Properties["RevisionNumber"].Value;
-                                        text23 = !(text23 == "") ? text23 + ",'" + text28 + "'" : "'" + text28 + "'";
+                                        foreach (string kBArticleID in update.KBArticleIDs)
+                                        {
+                                            if (!Regex.IsMatch(input, kBArticleID, RegexOptions.IgnoreCase))
+                                            {
+                                                foundMatch = false;
+                                                break;
+                                            }
+                                        }
                                     }
-                                    catch (Exception ex4)
+                                    else
                                     {
-                                        flag4 = false;
-                                        var errorRecord7 = new ErrorRecord(
-                                            new Exception("Something goes wrong: " + update3.Title + "; " + ex4.Message), "Debug",
-                                            ErrorCategory.CloseError, null);
-                                        WriteError(errorRecord7);
+                                        foundMatch = false;
                                     }
 
-                                    text25 += "R";
-                                    text26 = "Rejected";
-                                    WriteDebug(DateTime.Now + " " + text26);
-                                    item3.Properties.Add(new PSNoteProperty("ChooseResult", text26));
-                                    item3.Properties.Add(new PSNoteProperty("Result", text26));
+                                    WriteDebug(DateTime.Now + " UpdateAccess: " + foundMatch);
                                 }
 
-                                if (!flag4 || (WUToolsObj.IsLocalHost(target) && !(ScheduleJob != DateTime.MinValue)))
+                                if (NotKBArticleID != null && foundMatch)
                                 {
-                                    text25 = !update3.IsDownloaded ? text25 + "-" : text25 + "D";
-                                    text25 = !update3.IsInstalled ? text25 + "-" : text25 + "I";
+                                    var input = string.Join(", ", NotKBArticleID);
+                                    WriteDebug(DateTime.Now + " Set post search criteria: NotKBArticleID = " + input);
+                                    if (update.KBArticleIDs.Count > 0)
+                                    {
+                                        foreach (string kBArticleID2 in update.KBArticleIDs)
+                                        {
+                                            if (Regex.IsMatch(input, kBArticleID2, RegexOptions.IgnoreCase))
+                                            {
+                                                foundMatch = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    WriteDebug(DateTime.Now + " UpdateAccess: " + foundMatch);
                                 }
-                                else
+
+                                if (Title != null && foundMatch)
                                 {
-                                    if (Download || Install)
+                                    WriteDebug(DateTime.Now + " Set post search criteria: Title = " + Title);
+                                    if (!Regex.IsMatch(update.Title, Title, RegexOptions.IgnoreCase))
                                     {
-                                        text25 += "?";
-                                    }
-
-                                    if (Install)
-                                    {
-                                        text25 += "?";
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess: " + foundMatch);
                                     }
                                 }
 
-                                text25 = !update3.IsMandatory ? text25 + "-" : text25 + "M";
-                                text25 = !update3.IsHidden ? text25 + "-" : text25 + "H";
-                                text25 = !update3.IsUninstallable ? text25 + "-" : text25 + "U";
-                                text25 = !update3.IsBeta ? text25 + "-" : text25 + "B";
-                                item3.Properties["Status"].Value = text25;
+                                if (NotTitle != null && foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Set post search criteria: NotTitle = " + NotTitle);
+                                    if (Regex.IsMatch(update.Title, NotTitle, RegexOptions.IgnoreCase))
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess: " + foundMatch);
+                                    }
+                                }
+
+                                if (Severity != null && foundMatch)
+                                {
+                                    var text16 = string.Join(", ", Severity);
+                                    WriteDebug(DateTime.Now + " Set post search criteria: Severity = " + text16);
+                                    if (Severity.Contains("Unspecified"))
+                                    {
+                                        Severity = string.Join(",", Severity).Replace("Unspecified", "").Split(',');
+                                    }
+
+                                    if (!Severity.Contains(Convert.ToString((object)update.MsrcSeverity)))
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (NotSeverity != null && foundMatch)
+                                {
+                                    var text17 = string.Join(", ", NotSeverity);
+                                    WriteDebug(DateTime.Now + " Set post search criteria: NotSeverity = " + text17);
+                                    if (NotSeverity.Contains("Unspecified"))
+                                    {
+                                        NotSeverity = string.Join(",", NotSeverity).Replace("Unspecified", "").Split(',');
+                                    }
+
+                                    if (NotSeverity.Contains(Convert.ToString((object)update.MsrcSeverity)))
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (MaxSize > 0 && foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Set post search criteria: MaxDownloadSize <= " + MaxSize);
+                                    if (MaxSize <= update.MaxDownloadSize)
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (MinSize > 0 && foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Set post search criteria: MaxDownloadSize >= " + MinSize);
+                                    if (MinSize >= update.MaxDownloadSize)
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (IgnoreUserInput && foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Set post search criteria: CanRequestUserInput");
+                                    if (update.InstallationBehavior.CanRequestUserInput)
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (IgnoreRebootRequired && foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Set post search criteria: RebootBehavior");
+                                    if (update.InstallationBehavior.RebootBehavior != 0)
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (AutoSelectOnly && foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Set post search criteria: AutoSelectOnWebsites");
+                                    if (!update.AutoSelectOnWebSites)
+                                    {
+                                        foundMatch = false;
+                                        WriteDebug(DateTime.Now + " UpdateAccess" + foundMatch);
+                                    }
+                                }
+
+                                if (foundMatch)
+                                {
+                                    WriteDebug(DateTime.Now + " Update was not filtered");
+                                    var text18 = "";
+                                    foreach (string kbArticleId in update.KBArticleIDs)
+                                    {
+                                        text18 = !(text18 == "") ? text18 + ", KB" + kbArticleId : text18 + "KB" + kbArticleId;
+                                    }
+
+                                    var text20 = "-";
+                                    text20 = !update.IsDownloaded ? text20 + "-" : text20 + "D";
+                                    text20 = !update.IsInstalled ? text20 + "-" : text20 + "I";
+                                    text20 = !update.IsMandatory ? text20 + "-" : text20 + "M";
+                                    text20 = !update.IsHidden ? text20 + "-" : text20 + "H";
+                                    text20 = !update.IsUninstallable ? text20 + "-" : text20 + "U";
+                                    text20 = !update.IsBeta ? text20 + "-" : text20 + "B";
+                                    var psObject = new PSObject(update);
+                                    psObject.Properties.Add(new PSNoteProperty("Size", text11));
+                                    psObject.Properties.Add(new PSNoteProperty("Status", text20));
+                                    psObject.Properties.Add(new PSNoteProperty("ComputerName", target));
+                                    psObject.Properties.Add(new PSNoteProperty("KB", text18));
+                                    psObject.TypeNames.Clear();
+                                    psObject.TypeNames.Add("PSWindowsUpdate.WindowsUpdate");
+                                    collection.Add(psObject);
+                                }
                             }
 
-                            progressRecord3.RecordType = ProgressRecordType.Completed;
-                            WriteProgress(progressRecord3);
-                            if (ShowPreSearchCriteria)
+                            progressRecord.RecordType = ProgressRecordType.Completed;
+                            WriteProgress(progressRecord);
+                            var count2 = collection.Count;
+                            WriteVerbose("Found [" + count2 + "] Updates in post search criteria");
+                            if (Hide ||
+                                string.Equals(MyInvocation.InvocationName, "Hide-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(MyInvocation.InvocationName, "Show-WindowsUpdate", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(MyInvocation.InvocationName, "UnHide-WindowsUpdate", StringComparison.OrdinalIgnoreCase))
                             {
-                                WriteVerbose("Chosen pre-Search Criteria: " + searchCritera);
-                            }
-
-                            var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
-                            WriteObject(collection, true);
-                            WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
-                            if (totalAccepted > 0 && (!WUToolsObj.IsLocalHost(target) || ScheduleJob != DateTime.MinValue))
-                            {
-                                var cmdLine = "";
-                                cmdLine = !Debuger
-                                    ? "Get-WindowsUpdate -AcceptAll"
-                                    : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
-                                cmdLine = cmdLine + " -Criteria \\\"" + searchCritera + "\\\"";
-                                if (RecurseCycle > 1)
+                                var text21 = !Hide ? "Show" : "Hide";
+                                var num5 = 0;
+                                var progressRecord2 = new ProgressRecord(1, text21 + " updates for " + target, "[" + num5 + "/" + count2 + "]");
+                                foreach (var item in collection)
                                 {
-                                    if (text23 != "")
+                                    var update2 = (IUpdate)item.BaseObject;
+                                    var flag = false;
+                                    progressRecord2.StatusDescription = "[" + num5 + "/" + count2 + "] " + update2.Title + " " +
+                                                                        item.Properties["Size"].Value;
+                                    progressRecord2.PercentComplete = num5 * 100 / count2;
+                                    WriteProgress(progressRecord2);
+                                    num5++;
+                                    if (AcceptAll)
                                     {
-                                        cmdLine = cmdLine + " -NotUpdateID " + text23;
+                                        flag = true;
+                                    }
+                                    else if (ShouldProcess(target,
+                                                 "(" + DateTime.Now + ") " + text21 + " " + update2.Title + "[" +
+                                                 item.Properties["Size"].Value + "]"))
+                                    {
+                                        flag = true;
                                     }
 
-                                    if (IsInstalled)
+                                    if (flag)
                                     {
-                                        cmdLine += " -IsInstalled";
+                                        try
+                                        {
+                                            update2.IsHidden = Hide;
+                                            item.Properties.Add(new PSNoteProperty("HideResult", text21));
+                                        }
+                                        catch
+                                        {
+                                            ThrowTerminatingError(new ErrorRecord(
+                                                new Exception(target + ": You don't have permission to perform this task."), "0x80240044",
+                                                ErrorCategory.CloseError, null));
+                                        }
                                     }
 
-                                    if (IsHidden)
-                                    {
-                                        cmdLine += " -IsHidden";
-                                    }
-
-                                    if (WithHidden)
-                                    {
-                                        cmdLine += " -WithHidden";
-                                    }
-
-                                    if (UpdateType != null)
-                                    {
-                                        cmdLine = cmdLine + " -UpdateType " + UpdateType;
-                                    }
-
-                                    if (DeploymentAction != null)
-                                    {
-                                        cmdLine = cmdLine + " -DeploymentAction " + DeploymentAction;
-                                    }
-
-                                    if (UpdateID != null)
-                                    {
-                                        cmdLine = cmdLine + " -UpdateID '" + string.Join("','", UpdateID) + "'";
-                                    }
-
-                                    if (RevisionNumber > 0)
-                                    {
-                                        cmdLine = cmdLine + " -RevisionNumber " + RevisionNumber;
-                                    }
-
-                                    if (CategoryIDs != null)
-                                    {
-                                        cmdLine = cmdLine + " -CategoryIDs " + string.Join(",", CategoryIDs);
-                                    }
-
-                                    if (IsAssigned)
-                                    {
-                                        cmdLine = !IsAssigned ? cmdLine + " -IsAssigned:$false" : cmdLine + " -IsAssigned";
-                                    }
-
-                                    if (IsPresent)
-                                    {
-                                        cmdLine = !IsPresent ? cmdLine + " -IsPresent:$false" : cmdLine + " -IsPresent";
-                                    }
-
-                                    if (AutoSelectOnWebSites)
-                                    {
-                                        cmdLine = !AutoSelectOnWebSites
-                                            ? cmdLine + " -AutoSelectOnWebSites:$false"
-                                            : cmdLine + " -AutoSelectOnWebSites";
-                                    }
-
-                                    if (RootCategories != null)
-                                    {
-                                        cmdLine = cmdLine + " -RootCategories '" + string.Join("','", RootCategories) + "'";
-                                    }
-
-                                    if (Category != null)
-                                    {
-                                        cmdLine = cmdLine + " -Category '" + string.Join("','", Category) + "'";
-                                    }
-
-                                    if (KBArticleID != null)
-                                    {
-                                        cmdLine = cmdLine + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
-                                    }
-
-                                    if (Title != null)
-                                    {
-                                        cmdLine = cmdLine + " -Title '" + Title + "'";
-                                    }
-
-                                    if (Severity != null)
-                                    {
-                                        cmdLine = cmdLine + " -Severity '" + string.Join("','", Severity) + "'";
-                                    }
-
-                                    if (NotCategory != null)
-                                    {
-                                        cmdLine = cmdLine + " -NotCategory '" + string.Join("','", NotCategory) + "'";
-                                    }
-
-                                    if (NotKBArticleID != null)
-                                    {
-                                        cmdLine = cmdLine + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
-                                    }
-
-                                    if (NotTitle != null)
-                                    {
-                                        cmdLine = cmdLine + " -NotTitle '" + NotTitle + "'";
-                                    }
-
-                                    if (NotSeverity != null)
-                                    {
-                                        cmdLine = cmdLine + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
-                                    }
-
-                                    if (IgnoreUserInput)
-                                    {
-                                        cmdLine += " -IgnoreUserInput";
-                                    }
-
-                                    if (IgnoreRebootRequired)
-                                    {
-                                        cmdLine += " -IgnoreRebootRequired";
-                                    }
-
-                                    if (AutoSelectOnly)
-                                    {
-                                        cmdLine += " -AutoSelectOnly";
-                                    }
-
-                                    if (MaxSize > 0)
-                                    {
-                                        cmdLine = cmdLine + " -MaxSize " + MaxSize;
-                                    }
-
-                                    if (MinSize > 0)
-                                    {
-                                        cmdLine = cmdLine + " -MinSize " + MinSize;
-                                    }
+                                    var text22 = "";
+                                    text22 = !update2.IsDownloaded ? text22 + "-" : text22 + "D";
+                                    text22 = !update2.IsInstalled ? text22 + "-" : text22 + "I";
+                                    text22 = !update2.IsMandatory ? text22 + "-" : text22 + "M";
+                                    text22 = !update2.IsHidden ? text22 + "-" : text22 + "H";
+                                    text22 = !update2.IsUninstallable ? text22 + "-" : text22 + "U";
+                                    text22 = !update2.IsBeta ? text22 + "-" : text22 + "B";
+                                    item.Properties["Status"].Value = text22;
                                 }
 
-                                if (Download)
+                                progressRecord2.RecordType = ProgressRecordType.Completed;
+                                WriteProgress(progressRecord2);
+                            }
+
+                            if (!Download && !Install)
+                            {
+                                WriteDebug(DateTime.Now + " Return update list only");
+                                WriteObject(collection);
+                                OutputObj.AddRange(collection.ToList());
+                            }
+                            else
+                            {
+                                var totalDownloaded = 0;
+                                var totalInstalled = 0;
+                                var text23 = "";
+                                if (Download || Install)
                                 {
-                                    cmdLine += " -Download";
+                                    var num8 = 0;
+                                    var statusDescription3 = "[" + num8 + "/" + count2 + "]";
+                                    var progressRecord3 = new ProgressRecord(1, "Choose updates for " + target, statusDescription3);
+                                    var searchCritera = "";
+                                    foreach (var item in collection)
+                                    {
+                                        item.Properties.Add(new PSNoteProperty("X", 1));
+                                        item.TypeNames.Clear();
+                                        item.TypeNames.Add("PSWindowsUpdate.WindowsUpdateJob");
+                                        var update = (IUpdate)item.BaseObject;
+                                        progressRecord3.StatusDescription = "[" + num8 + "/" + count2 + "] " + update.Title + " " +
+                                                                            item.Properties["Size"].Value;
+                                        progressRecord3.PercentComplete = num8 * 100 / count2;
+                                        WriteProgress(progressRecord3);
+                                        num8++;
+                                        WriteDebug(DateTime.Now + " Show update to accept: " + update.Title);
+                                        var flag = AcceptAll || (AutoSelectOnly
+                                            ? update.AutoSelectOnWebSites
+                                            : ShouldProcess(target, "(" + DateTime.Now + ") " + update.Title + "[" + item.Properties["Size"].Value + "]"));
+                                        var text25 = "";
+                                        var status = "";
+                                        if (flag)
+                                        {
+                                            if (!update.EulaAccepted)
+                                            {
+                                                WriteDebug(DateTime.Now + " EulaAccepted");
+                                                try
+                                                {
+                                                    update.AcceptEula();
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    if (Debuger)
+                                                    {
+                                                        WriteError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                                                    }
+                                                    else
+                                                    {
+                                                        WriteDebug(DateTime.Now + " Can't accept Eula.");
+                                                    }
+                                                }
+                                            }
+
+                                            try
+                                            {
+                                                var identity = new PSObject(item.Properties["Identity"].Value);
+                                                var updateId = (string)identity.Properties["UpdateID"].Value;
+                                                var revision = (int)identity.Properties["RevisionNumber"].Value;
+                                                searchCritera = !(searchCritera == "")
+                                                    ? searchCritera + " or (UpdateID = '" + updateId + "' and RevisionNumber = " + revision + ")"
+                                                    : "(UpdateID = '" + updateId + "' and RevisionNumber = " + revision + ")";
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                            }
+
+                                            if (flag)
+                                            {
+                                                text25 += "A";
+                                                status = "Accepted";
+                                                WriteDebug(DateTime.Now + " " + status);
+                                                item.Properties.Add(new PSNoteProperty("ChooseResult", status));
+                                                item.Properties.Add(new PSNoteProperty("Result", status));
+                                            }
+                                        }
+
+                                        if (!flag)
+                                        {
+                                            try
+                                            {
+                                                var identity = new PSObject(item.Properties["Identity"].Value);
+                                                var updateId = (string)identity.Properties["UpdateID"].Value;
+                                                var revision = (int)identity.Properties["RevisionNumber"].Value;
+                                                text23 = !(text23 == "") ? text23 + ",'" + updateId + "'" : "'" + updateId + "'";
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                            }
+
+                                            text25 += "R";
+                                            status = "Rejected";
+                                            WriteDebug(DateTime.Now + " " + status);
+                                            item.Properties.Add(new PSNoteProperty("ChooseResult", status));
+                                            item.Properties.Add(new PSNoteProperty("Result", status));
+                                        }
+
+                                        if (!flag || (WUToolsObj.IsLocalHost(target) && !(ScheduleJob != DateTime.MinValue)))
+                                        {
+                                            text25 = !update.IsDownloaded ? text25 + "-" : text25 + "D";
+                                            text25 = !update.IsInstalled ? text25 + "-" : text25 + "I";
+                                        }
+                                        else
+                                        {
+                                            if (Download || Install)
+                                            {
+                                                text25 += "?";
+                                            }
+
+                                            if (Install)
+                                            {
+                                                text25 += "?";
+                                            }
+                                        }
+
+                                        text25 = !update.IsMandatory ? text25 + "-" : text25 + "M";
+                                        text25 = !update.IsHidden ? text25 + "-" : text25 + "H";
+                                        text25 = !update.IsUninstallable ? text25 + "-" : text25 + "U";
+                                        text25 = !update.IsBeta ? text25 + "-" : text25 + "B";
+                                        item.Properties["Status"].Value = text25;
+                                    }
+
+                                    progressRecord3.RecordType = ProgressRecordType.Completed;
+                                    WriteProgress(progressRecord3);
+                                    if (ShowPreSearchCriteria)
+                                    {
+                                        WriteVerbose("Chosen pre-Search Criteria: " + searchCritera);
+                                    }
+
+                                    var totalAccepted = collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted").Count();
+                                    WriteObject(collection, true);
+                                    WriteVerbose("Accepted [" + totalAccepted + "] Updates ready to Download");
+                                    if (totalAccepted > 0 && (!WUToolsObj.IsLocalHost(target) || ScheduleJob != DateTime.MinValue))
+                                    {
+                                        var cmdLine = "";
+                                        cmdLine = !Debuger
+                                            ? "Get-WindowsUpdate -AcceptAll"
+                                            : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
+                                        cmdLine = cmdLine + " -Criteria \\\"" + searchCritera + "\\\"";
+                                        if (RecurseCycle > 1)
+                                        {
+                                            if (text23 != "")
+                                            {
+                                                cmdLine = cmdLine + " -NotUpdateID " + text23;
+                                            }
+
+                                            if (IsInstalled)
+                                            {
+                                                cmdLine += " -IsInstalled";
+                                            }
+
+                                            if (IsHidden)
+                                            {
+                                                cmdLine += " -IsHidden";
+                                            }
+
+                                            if (WithHidden)
+                                            {
+                                                cmdLine += " -WithHidden";
+                                            }
+
+                                            if (UpdateType != null)
+                                            {
+                                                cmdLine = cmdLine + " -UpdateType " + UpdateType;
+                                            }
+
+                                            if (DeploymentAction != null)
+                                            {
+                                                cmdLine = cmdLine + " -DeploymentAction " + DeploymentAction;
+                                            }
+
+                                            if (UpdateID != null)
+                                            {
+                                                cmdLine = cmdLine + " -UpdateID '" + string.Join("','", UpdateID) + "'";
+                                            }
+
+                                            if (RevisionNumber > 0)
+                                            {
+                                                cmdLine = cmdLine + " -RevisionNumber " + RevisionNumber;
+                                            }
+
+                                            if (CategoryIDs != null)
+                                            {
+                                                cmdLine = cmdLine + " -CategoryIDs " + string.Join(",", CategoryIDs);
+                                            }
+
+                                            if (IsAssigned)
+                                            {
+                                                cmdLine = !IsAssigned ? cmdLine + " -IsAssigned:$false" : cmdLine + " -IsAssigned";
+                                            }
+
+                                            if (IsPresent)
+                                            {
+                                                cmdLine = !IsPresent ? cmdLine + " -IsPresent:$false" : cmdLine + " -IsPresent";
+                                            }
+
+                                            if (AutoSelectOnWebSites)
+                                            {
+                                                cmdLine = !AutoSelectOnWebSites
+                                                    ? cmdLine + " -AutoSelectOnWebSites:$false"
+                                                    : cmdLine + " -AutoSelectOnWebSites";
+                                            }
+
+                                            if (RootCategories != null)
+                                            {
+                                                cmdLine = cmdLine + " -RootCategories '" + string.Join("','", RootCategories) + "'";
+                                            }
+
+                                            if (Category != null)
+                                            {
+                                                cmdLine = cmdLine + " -Category '" + string.Join("','", Category) + "'";
+                                            }
+
+                                            if (KBArticleID != null)
+                                            {
+                                                cmdLine = cmdLine + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
+                                            }
+
+                                            if (Title != null)
+                                            {
+                                                cmdLine = cmdLine + " -Title '" + Title + "'";
+                                            }
+
+                                            if (Severity != null)
+                                            {
+                                                cmdLine = cmdLine + " -Severity '" + string.Join("','", Severity) + "'";
+                                            }
+
+                                            if (NotCategory != null)
+                                            {
+                                                cmdLine = cmdLine + " -NotCategory '" + string.Join("','", NotCategory) + "'";
+                                            }
+
+                                            if (NotKBArticleID != null)
+                                            {
+                                                cmdLine = cmdLine + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
+                                            }
+
+                                            if (NotTitle != null)
+                                            {
+                                                cmdLine = cmdLine + " -NotTitle '" + NotTitle + "'";
+                                            }
+
+                                            if (NotSeverity != null)
+                                            {
+                                                cmdLine = cmdLine + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
+                                            }
+
+                                            if (IgnoreUserInput)
+                                            {
+                                                cmdLine += " -IgnoreUserInput";
+                                            }
+
+                                            if (IgnoreRebootRequired)
+                                            {
+                                                cmdLine += " -IgnoreRebootRequired";
+                                            }
+
+                                            if (AutoSelectOnly)
+                                            {
+                                                cmdLine += " -AutoSelectOnly";
+                                            }
+
+                                            if (MaxSize > 0)
+                                            {
+                                                cmdLine = cmdLine + " -MaxSize " + MaxSize;
+                                            }
+
+                                            if (MinSize > 0)
+                                            {
+                                                cmdLine = cmdLine + " -MinSize " + MinSize;
+                                            }
+                                        }
+
+                                        if (Download)
+                                        {
+                                            cmdLine += " -Download";
+                                        }
+
+                                        if (Install)
+                                        {
+                                            cmdLine += " -Install";
+                                        }
+
+                                        if (IgnoreReboot)
+                                        {
+                                            cmdLine += " -IgnoreReboot";
+                                        }
+                                        else if (AutoReboot)
+                                        {
+                                            cmdLine += " -AutoReboot";
+                                        }
+                                        else if (ScheduleReboot != DateTime.MinValue)
+                                        {
+                                            cmdLine = cmdLine + " -ScheduleReboot '" + ScheduleReboot + "'";
+                                        }
+
+                                        if (WindowsUpdate)
+                                        {
+                                            cmdLine += " -WindowsUpdate";
+                                        }
+                                        else if (MicrosoftUpdate)
+                                        {
+                                            cmdLine += " -MicrosoftUpdate";
+                                        }
+                                        else if (ServiceID != null)
+                                        {
+                                            cmdLine = cmdLine + " -ServiceID '" + ServiceID + "'";
+                                        }
+
+                                        if (SendReport)
+                                        {
+                                            cmdLine += " -SendReport";
+                                        }
+
+                                        if (SendHistory)
+                                        {
+                                            cmdLine += " -SendHistory";
+                                        }
+
+                                        if (RecurseCycle > 1)
+                                        {
+                                            cmdLine = cmdLine + " -RecurseCycle " + RecurseCycle;
+                                        }
+
+                                        if (!AutoReboot && ScheduleReboot == DateTime.MinValue && !IgnoreReboot)
+                                        {
+                                            cmdLine += " -IgnoreReboot";
+                                        }
+
+                                        cmdLine += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
+                                        var invokeWuJob = new InvokeWUJob();
+                                        invokeWuJob.ComputerName = [target];
+                                        if (Credential != null)
+                                        {
+                                            invokeWuJob.Credential = Credential;
+                                        }
+
+                                        invokeWuJob.Script = cmdLine;
+                                        invokeWuJob.Debuger = true;
+                                        if (ScheduleJob != DateTime.MinValue)
+                                        {
+                                            if (ScheduleJob.AddSeconds(10.0) <= DateTime.Now)
+                                            {
+                                                WriteVerbose("Execution time is gone. ScheduleJob was set to 1 minute delay from now.");
+                                                ScheduleJob = DateTime.Now.AddMinutes(1.0);
+                                            }
+
+                                            invokeWuJob.TriggerDate = ScheduleJob;
+                                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
+                                        }
+                                        else
+                                        {
+                                            invokeWuJob.RunNow = true;
+                                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (Now): ");
+                                        }
+
+                                        WriteVerbose("powershell.exe -Command \"" + cmdLine + "\"");
+                                        foreach (var sendToPipeline in invokeWuJob.Invoke())
+                                        {
+                                            WriteObject(sendToPipeline);
+                                        }
+
+                                        WriteDebug(DateTime.Now + " Return invoked update list");
+                                        OutputObj.AddRange(collection.ToList());
+                                        continue;
+                                    }
+
+                                    var num12 = 0;
+                                    var progressRecord4 = new ProgressRecord(1, "Download updates for " + target, "[" + num12 + "/" + totalAccepted + "]");
+                                    foreach (var sendToPipeline in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted"))
+                                    {
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("X", 2));
+                                        var update = (IUpdate)sendToPipeline.BaseObject;
+                                        var updateCollection3 =
+                                            (UpdateCollection)Activator.CreateInstance(
+                                                Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
+                                        updateCollection3.Add(update);
+                                        progressRecord4.StatusDescription = "[" + num12 + "/" + totalAccepted + "] " + update.Title + " " +
+                                                                            sendToPipeline.Properties["Size"].Value;
+                                        progressRecord4.PercentComplete = num12 * 100 / totalAccepted;
+                                        WriteProgress(progressRecord4);
+                                        num12++;
+                                        WriteDebug(DateTime.Now + " Show update to download: " + update.Title);
+                                        IUpdateDownloader updateDownloader = UpdateSessionObj.CreateUpdateDownloader();
+                                        updateDownloader.Updates = updateCollection3;
+                                        if (ForceDownload)
+                                        {
+                                            updateDownloader.IsForced = true;
+                                        }
+
+                                        IDownloadResult downloadResult;
+                                        try
+                                        {
+                                            downloadResult = updateDownloader.Download();
+                                            WriteDebug(DateTime.Now + " Downloaded");
+                                        }
+                                        catch (COMException ex)
+                                        {
+                                            var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                            var skip = false;
+                                            if (wuApiCodeDetails != null)
+                                            {
+                                                switch (wuApiCodeDetails.CodeType)
+                                                {
+                                                    case 2:
+                                                        WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description),
+                                                            wuApiCodeDetails.HResult, ErrorCategory.CloseError,
+                                                            null));
+                                                        skip = true;
+                                                        break;
+                                                    case 3:
+                                                        WriteWarning(wuApiCodeDetails.HResult + ": " + wuApiCodeDetails.Description);
+                                                        break;
+                                                }
+
+                                                if (skip)
+                                                {
+                                                    WriteDebug(DateTime.Now + " Skip to next computer");
+                                                    break;
+                                                }
+                                            }
+                                            else if (Debuger)
+                                            {
+                                                ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                                            }
+
+                                            WriteDebug(DateTime.Now + " Skip to next update");
+                                            continue;
+                                        }
+
+                                        var downloadMsg = "";
+                                        switch (downloadResult.ResultCode)
+                                        {
+                                            case OperationResultCode.orcNotStarted:
+                                                downloadMsg = "NotStarted";
+                                                break;
+                                            case OperationResultCode.orcInProgress:
+                                                downloadMsg = "InProgress";
+                                                break;
+                                            case OperationResultCode.orcSucceeded:
+                                                downloadMsg = "Downloaded";
+                                                break;
+                                            case OperationResultCode.orcSucceededWithErrors:
+                                                downloadMsg = "DownloadedWithErrors";
+                                                break;
+                                            case OperationResultCode.orcFailed:
+                                                downloadMsg = "Failed";
+                                                break;
+                                            case OperationResultCode.orcAborted:
+                                                downloadMsg = "Aborted";
+                                                break;
+                                        }
+
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("DownloadResult", downloadMsg));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("Result", downloadMsg));
+                                        var text30 = "";
+                                        text30 = !(sendToPipeline.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text30 + "R" : text30 + "A";
+                                        text30 = !(sendToPipeline.Properties["DownloadResult"].Value.ToString() == "Downloaded")
+                                            ? text30 + "F"
+                                            : text30 + "D";
+                                        text30 = !update.IsInstalled ? text30 + "-" : text30 + "I";
+                                        text30 = !update.IsMandatory ? text30 + "-" : text30 + "M";
+                                        text30 = !update.IsHidden ? text30 + "-" : text30 + "H";
+                                        text30 = !update.IsUninstallable ? text30 + "-" : text30 + "U";
+                                        text30 = !update.IsBeta ? text30 + "-" : text30 + "B";
+                                        sendToPipeline.Properties["Status"].Value = text30;
+                                        WriteObject(sendToPipeline, true);
+                                    }
+
+                                    progressRecord4.RecordType = ProgressRecordType.Completed;
+                                    WriteProgress(progressRecord4);
+                                    totalDownloaded = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
+                                    WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
+                                    if (!Install)
+                                    {
+                                        WriteDebug(DateTime.Now + " Return downloaded update list");
+                                        OutputObj.AddRange(collection.ToList());
+                                        continue;
+                                    }
                                 }
 
                                 if (Install)
                                 {
-                                    cmdLine += " -Install";
-                                }
-
-                                if (IgnoreReboot)
-                                {
-                                    cmdLine += " -IgnoreReboot";
-                                }
-                                else if (AutoReboot)
-                                {
-                                    cmdLine += " -AutoReboot";
-                                }
-                                else if (ScheduleReboot != DateTime.MinValue)
-                                {
-                                    cmdLine = cmdLine + " -ScheduleReboot '" + ScheduleReboot + "'";
-                                }
-
-                                if (WindowsUpdate)
-                                {
-                                    cmdLine += " -WindowsUpdate";
-                                }
-                                else if (MicrosoftUpdate)
-                                {
-                                    cmdLine += " -MicrosoftUpdate";
-                                }
-                                else if (ServiceID != null)
-                                {
-                                    cmdLine = cmdLine + " -ServiceID '" + ServiceID + "'";
-                                }
-
-                                if (SendReport)
-                                {
-                                    cmdLine += " -SendReport";
-                                }
-
-                                if (SendHistory)
-                                {
-                                    cmdLine += " -SendHistory";
-                                }
-
-                                if (RecurseCycle > 1)
-                                {
-                                    cmdLine = cmdLine + " -RecurseCycle " + RecurseCycle;
-                                }
-
-                                if (!AutoReboot && ScheduleReboot == DateTime.MinValue && !IgnoreReboot)
-                                {
-                                    cmdLine += " -IgnoreReboot";
-                                }
-
-                                cmdLine += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log";
-                                var invokeWUJob = new InvokeWUJob();
-                                invokeWUJob.ComputerName = new string[1] { target };
-                                if (Credential != null)
-                                {
-                                    invokeWUJob.Credential = Credential;
-                                }
-
-                                invokeWUJob.Script = cmdLine;
-                                invokeWUJob.Debuger = true;
-                                if (ScheduleJob != DateTime.MinValue)
-                                {
-                                    if (ScheduleJob.AddSeconds(10.0) <= DateTime.Now)
+                                    NeedsReboot = false;
+                                    var num13 = 0;
+                                    var progressRecord5 = new ProgressRecord(1, "Install updates for " + target, "[" + num13 + "/" + totalDownloaded + "]");
+                                    foreach (var sendToPipeline in collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded"))
                                     {
-                                        WriteVerbose("Execution time is gone. ScheduleJob was set to 1 minute delay from now.");
-                                        ScheduleJob = DateTime.Now.AddMinutes(1.0);
-                                    }
-
-                                    invokeWUJob.TriggerDate = ScheduleJob;
-                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
-                                }
-                                else
-                                {
-                                    invokeWUJob.RunNow = true;
-                                    WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (Now): ");
-                                }
-
-                                WriteVerbose("powershell.exe -Command \"" + cmdLine + "\"");
-                                var enumerable = invokeWUJob.Invoke();
-                                foreach (var item4 in enumerable)
-                                {
-                                    WriteObject(item4);
-                                }
-
-                                WriteDebug(DateTime.Now + " Return invoked update list");
-                                OutputObj.AddRange(collection.ToList());
-                                continue;
-                            }
-
-                            var num12 = 0;
-                            var activityId4 = 1;
-                            var activity4 = "Download updates for " + target;
-                            var statusDescription4 = "[" + num12 + "/" + totalAccepted + "]";
-                            var progressRecord4 = new ProgressRecord(activityId4, activity4, statusDescription4);
-                            foreach (var item5 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Accepted"))
-                            {
-                                item5.Properties.Add(new PSNoteProperty("X", 2));
-                                var update4 = (IUpdate)item5.BaseObject;
-                                var updateCollection3 =
-                                    (UpdateCollection)Activator.CreateInstance(
-                                        Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
-                                updateCollection3.Add(update4);
-                                progressRecord4.StatusDescription = "[" + num12 + "/" + totalAccepted + "] " + update4.Title + " " +
-                                                                    item5.Properties["Size"].Value;
-                                progressRecord4.PercentComplete = num12 * 100 / totalAccepted;
-                                WriteProgress(progressRecord4);
-                                num12++;
-                                WriteDebug(DateTime.Now + " Show update to download: " + update4.Title);
-                                IUpdateDownloader updateDownloader = UpdateSessionObj.CreateUpdateDownloader();
-                                updateDownloader.Updates = updateCollection3;
-                                if (ForceDownload)
-                                {
-                                    updateDownloader.IsForced = true;
-                                }
-
-                                IDownloadResult downloadResult;
-                                try
-                                {
-                                    downloadResult = updateDownloader.Download();
-                                    WriteDebug(DateTime.Now + " Downloaded");
-                                }
-                                catch (COMException ex5)
-                                {
-                                    var wUApiCodeDetails3 = WUToolsObj.GetWUApiCodeDetails(ex5.ErrorCode);
-                                    var flag5 = false;
-                                    if (wUApiCodeDetails3 != null)
-                                    {
-                                        switch (wUApiCodeDetails3.CodeType)
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("X", 3));
+                                        var update = (IUpdate)sendToPipeline.BaseObject;
+                                        var updateCollection4 =
+                                            (UpdateCollection)Activator.CreateInstance(
+                                                Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
+                                        updateCollection4.Add(update);
+                                        progressRecord5.StatusDescription = "[" + num13 + "/" + totalDownloaded + "] " + update.Title + " " +
+                                                                            sendToPipeline.Properties["Size"].Value;
+                                        progressRecord5.PercentComplete = num13 * 100 / totalDownloaded;
+                                        WriteProgress(progressRecord5);
+                                        num13++;
+                                        WriteDebug(DateTime.Now + " Show update to install: " + update.Title);
+                                        var updateInstaller = UpdateSessionObj.CreateUpdateInstaller();
+                                        updateInstaller.Updates = updateCollection4;
+                                        if (ForceInstall)
                                         {
-                                            case 2:
-                                                WriteError(new ErrorRecord(new Exception(wUApiCodeDetails3.Description),
-                                                    wUApiCodeDetails3.HResult, ErrorCategory.CloseError,
-                                                    null));
-                                                flag5 = true;
+                                            updateInstaller.IsForced = true;
+                                        }
+
+                                        IInstallationResult installationResult;
+                                        try
+                                        {
+                                            installationResult = updateInstaller.Install();
+                                            WriteDebug(DateTime.Now + " Installed");
+                                        }
+                                        catch (COMException ex)
+                                        {
+                                            var wuApiCodeDetails = WUToolsObj.GetWUApiCodeDetails(ex.ErrorCode);
+                                            var skip = false;
+                                            if (wuApiCodeDetails != null)
+                                            {
+                                                switch (wuApiCodeDetails.CodeType)
+                                                {
+                                                    case 2:
+                                                        WriteError(new ErrorRecord(new Exception(wuApiCodeDetails.Description),
+                                                            wuApiCodeDetails.HResult, ErrorCategory.CloseError, null));
+                                                        skip = true;
+                                                        break;
+                                                    case 3:
+                                                        WriteWarning(wuApiCodeDetails.HResult + ": " + wuApiCodeDetails.Description);
+                                                        break;
+                                                }
+
+                                                if (skip)
+                                                {
+                                                    WriteDebug(DateTime.Now + " Skip to next computer");
+                                                    break;
+                                                }
+                                            }
+                                            else if (Debuger)
+                                            {
+                                                ThrowTerminatingError(new ErrorRecord(ex, "Debug", ErrorCategory.CloseError, null));
+                                            }
+
+                                            WriteDebug(DateTime.Now + " Skip to next update");
+                                            continue;
+                                        }
+
+                                        if (!NeedsReboot)
+                                        {
+                                            NeedsReboot = installationResult.RebootRequired;
+                                            WriteDebug(DateTime.Now + " Reboot is required");
+                                        }
+
+                                        var installMsg = "";
+                                        switch (installationResult.ResultCode)
+                                        {
+                                            case OperationResultCode.orcNotStarted:
+                                                installMsg = "NotStarted";
                                                 break;
-                                            case 3:
-                                                WriteWarning(wUApiCodeDetails3.HResult + ": " + wUApiCodeDetails3.Description);
+                                            case OperationResultCode.orcInProgress:
+                                                installMsg = "InProgress";
+                                                break;
+                                            case OperationResultCode.orcSucceeded:
+                                                installMsg = "Installed";
+                                                break;
+                                            case OperationResultCode.orcSucceededWithErrors:
+                                                installMsg = "InstalledWithErrors";
+                                                break;
+                                            case OperationResultCode.orcFailed:
+                                                installMsg = "Failed";
+                                                break;
+                                            case OperationResultCode.orcAborted:
+                                                installMsg = "Aborted";
                                                 break;
                                         }
 
-                                        if (flag5)
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("InstallResult", installMsg));
+                                        sendToPipeline.Properties.Add(new PSNoteProperty("Result", installMsg));
+                                        var text31 = "";
+                                        text31 = !(sendToPipeline.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text31 + "R" : text31 + "A";
+                                        text31 = !(sendToPipeline.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text31 + "F" : text31 + "D";
+                                        text31 = !(sendToPipeline.Properties["InstallResult"].Value.ToString() == "Installed")
+                                            ? text31 + "F"
+                                            : !installationResult.RebootRequired
+                                                ? text31 + "I"
+                                                : text31 + "R";
+                                        text31 = !update.IsMandatory ? text31 + "-" : text31 + "M";
+                                        text31 = !update.IsHidden ? text31 + "-" : text31 + "H";
+                                        text31 = !update.IsUninstallable ? text31 + "-" : text31 + "U";
+                                        text31 = !update.IsBeta ? text31 + "-" : text31 + "B";
+                                        sendToPipeline.Properties["Status"].Value = text31;
+                                        WriteObject(sendToPipeline, true);
+                                    }
+
+                                    progressRecord5.RecordType = ProgressRecordType.Completed;
+                                    WriteProgress(progressRecord5);
+                                    totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
+                                    WriteVerbose("Installed [" + totalInstalled + "] Updates");
+                                    WriteDebug(DateTime.Now + " Return installed update list");
+                                    OutputObj.AddRange(collection.ToList());
+                                    if (totalInstalled > 0 && SendHistory)
+                                    {
+                                        var cmdLine2 = "Get-WUHistory -SendReport -Last " + totalInstalled +
+                                                       " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                                        var invokeWuJob = new InvokeWUJob();
+                                        invokeWuJob.ComputerName = [target];
+                                        if (Credential != null)
                                         {
-                                            WriteDebug(DateTime.Now + " Skip to next computer");
-                                            break;
+                                            invokeWuJob.Credential = Credential;
+                                        }
+
+                                        invokeWuJob.Script = cmdLine2;
+                                        invokeWuJob.TaskName = "PSWindowsUpdate_History";
+                                        if (NeedsReboot)
+                                        {
+                                            invokeWuJob.TriggerAtStart = true;
+                                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" +
+                                                         cmdLine2 + "\"");
+                                        }
+                                        else
+                                        {
+                                            invokeWuJob.RunNow = true;
+                                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" +
+                                                         cmdLine2 + "\"");
+                                        }
+
+                                        foreach (var sendToPipeline in invokeWuJob.Invoke())
+                                        {
+                                            WriteObject(sendToPipeline);
                                         }
                                     }
-                                    else if (Debuger)
+
+                                    if (RecurseCycle > 1)
                                     {
-                                        var errorRecord8 = new ErrorRecord(ex5, "Debug", ErrorCategory.CloseError, null);
-                                        ThrowTerminatingError(errorRecord8);
+                                        --RecurseCycle;
+
+                                        var cmdLine3 = !Debuger
+                                            ? "Get-WindowsUpdate -AcceptAll"
+                                            : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
+
+                                        if (IsInstalled)
+                                        {
+                                            cmdLine3 += " -IsInstalled";
+                                        }
+
+                                        if (IsHidden)
+                                        {
+                                            cmdLine3 += " -IsHidden";
+                                        }
+
+                                        if (WithHidden)
+                                        {
+                                            cmdLine3 += " -WithHidden";
+                                        }
+
+                                        if (UpdateType != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -UpdateType " + UpdateType;
+                                        }
+
+                                        if (DeploymentAction != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -DeploymentAction " + DeploymentAction;
+                                        }
+
+                                        if (UpdateID != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -UpdateID '" + string.Join("','", UpdateID) + "'";
+                                        }
+
+                                        if (NotUpdateID != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -NotUpdateID '" + string.Join("','", NotUpdateID) + "'";
+                                        }
+                                        else if (text23 != "")
+                                        {
+                                            cmdLine3 = cmdLine3 + " -NotUpdateID " + text23;
+                                        }
+
+                                        if (RevisionNumber > 0)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -RevisionNumber " + RevisionNumber;
+                                        }
+
+                                        if (CategoryIDs != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -CategoryIDs '" + string.Join("','", CategoryIDs) + "'";
+                                        }
+
+                                        if (IsAssigned)
+                                        {
+                                            cmdLine3 = !IsAssigned ? cmdLine3 + " -IsAssigned:$false" : cmdLine3 + " -IsAssigned";
+                                        }
+
+                                        if (IsPresent)
+                                        {
+                                            cmdLine3 = !IsPresent ? cmdLine3 + " -IsPresent:$false" : cmdLine3 + " -IsPresent";
+                                        }
+
+                                        if (AutoSelectOnWebSites)
+                                        {
+                                            cmdLine3 = !AutoSelectOnWebSites
+                                                ? cmdLine3 + " -AutoSelectOnWebSites:$false"
+                                                : cmdLine3 + " -AutoSelectOnWebSites";
+                                        }
+
+                                        if (RootCategories != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -RootCategories '" + string.Join("','", RootCategories) + "'";
+                                        }
+
+                                        if (Category != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -Category '" + string.Join("','", Category) + "'";
+                                        }
+
+                                        if (KBArticleID != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
+                                        }
+
+                                        if (Title != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -Title '" + Title + "'";
+                                        }
+
+                                        if (Severity != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -Severity '" + string.Join("','", Severity) + "'";
+                                        }
+
+                                        if (NotCategory != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -NotCategory '" + string.Join("','", NotCategory) + "'";
+                                        }
+
+                                        if (NotKBArticleID != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
+                                        }
+
+                                        if (NotTitle != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -NotTitle '" + NotTitle + "'";
+                                        }
+
+                                        if (NotSeverity != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
+                                        }
+
+                                        if (IgnoreUserInput)
+                                        {
+                                            cmdLine3 += " -IgnoreUserInput";
+                                        }
+
+                                        if (IgnoreRebootRequired)
+                                        {
+                                            cmdLine3 += " -IgnoreRebootRequired";
+                                        }
+
+                                        if (AutoSelectOnly)
+                                        {
+                                            cmdLine3 += " -AutoSelectOnly";
+                                        }
+
+                                        if (MaxSize > 0)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -MaxSize " + MaxSize;
+                                        }
+
+                                        if (MinSize > 0)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -MinSize " + MinSize;
+                                        }
+
+                                        if (Download)
+                                        {
+                                            cmdLine3 += " -Download";
+                                        }
+
+                                        if (Install)
+                                        {
+                                            cmdLine3 += " -Install";
+                                        }
+
+                                        if (IgnoreReboot)
+                                        {
+                                            cmdLine3 += " -IgnoreReboot";
+                                        }
+                                        else if (AutoReboot)
+                                        {
+                                            cmdLine3 += " -AutoReboot";
+                                        }
+                                        else if (ScheduleReboot != DateTime.MinValue)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -ScheduleReboot '" + ScheduleReboot + "'";
+                                        }
+
+                                        if (WindowsUpdate)
+                                        {
+                                            cmdLine3 += " -WindowsUpdate";
+                                        }
+                                        else if (MicrosoftUpdate)
+                                        {
+                                            cmdLine3 += " -MicrosoftUpdate";
+                                        }
+                                        else if (ServiceID != null)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -ServiceID '" + ServiceID + "'";
+                                        }
+
+                                        if (SendReport)
+                                        {
+                                            cmdLine3 += " -SendReport";
+                                        }
+
+                                        if (SendHistory)
+                                        {
+                                            cmdLine3 += " -SendHistory";
+                                        }
+
+                                        if (RecurseCycle > 1)
+                                        {
+                                            cmdLine3 = cmdLine3 + " -RecurseCycle " + RecurseCycle;
+                                        }
+
+                                        cmdLine3 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
+                                        var invokeWuJob = new InvokeWUJob();
+                                        invokeWuJob.ComputerName = [target];
+                                        if (Credential != null)
+                                        {
+                                            invokeWuJob.Credential = Credential;
+                                        }
+
+                                        invokeWuJob.Script = cmdLine3;
+                                        invokeWuJob.TaskName = "PSWindowsUpdate_Recurse" + RecurseCycle;
+                                        invokeWuJob.Debuger = true;
+                                        if (NeedsReboot)
+                                        {
+                                            invokeWuJob.TriggerAtStart = true;
+                                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (AtStart): ");
+                                        }
+                                        else
+                                        {
+                                            ScheduleJob = DateTime.Now.AddMinutes(5.0);
+                                            invokeWuJob.TriggerDate = ScheduleJob;
+                                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
+                                        }
+
+                                        WriteVerbose("powershell.exe -Command \"" + cmdLine3 + "\"");
+                                        foreach (var sendToPipeline in invokeWuJob.Invoke())
+                                        {
+                                            WriteObject(sendToPipeline);
+                                        }
                                     }
-
-                                    WriteDebug(DateTime.Now + " Skip to next update");
-                                    continue;
                                 }
-
-                                var value2 = "";
-                                switch (downloadResult.ResultCode)
-                                {
-                                    case OperationResultCode.orcNotStarted:
-                                        value2 = "NotStarted";
-                                        break;
-                                    case OperationResultCode.orcInProgress:
-                                        value2 = "InProgress";
-                                        break;
-                                    case OperationResultCode.orcSucceeded:
-                                        value2 = "Downloaded";
-                                        break;
-                                    case OperationResultCode.orcSucceededWithErrors:
-                                        value2 = "DownloadedWithErrors";
-                                        break;
-                                    case OperationResultCode.orcFailed:
-                                        value2 = "Failed";
-                                        break;
-                                    case OperationResultCode.orcAborted:
-                                        value2 = "Aborted";
-                                        break;
-                                }
-
-                                item5.Properties.Add(new PSNoteProperty("DownloadResult", value2));
-                                item5.Properties.Add(new PSNoteProperty("Result", value2));
-                                var text30 = "";
-                                text30 = !(item5.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text30 + "R" : text30 + "A";
-                                text30 = !(item5.Properties["DownloadResult"].Value.ToString() == "Downloaded")
-                                    ? text30 + "F"
-                                    : text30 + "D";
-                                text30 = !update4.IsInstalled ? text30 + "-" : text30 + "I";
-                                text30 = !update4.IsMandatory ? text30 + "-" : text30 + "M";
-                                text30 = !update4.IsHidden ? text30 + "-" : text30 + "H";
-                                text30 = !update4.IsUninstallable ? text30 + "-" : text30 + "U";
-                                text30 = !update4.IsBeta ? text30 + "-" : text30 + "B";
-                                item5.Properties["Status"].Value = text30;
-                                WriteObject(item5, true);
                             }
-
-                            progressRecord4.RecordType = ProgressRecordType.Completed;
-                            WriteProgress(progressRecord4);
-                            totalDownloaded = collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded").Count();
-                            WriteVerbose("Downloaded [" + totalDownloaded + "] Updates ready to Install");
-                            if (!Install)
-                            {
-                                WriteDebug(DateTime.Now + " Return downloaded update list");
-                                OutputObj.AddRange(collection.ToList());
-                                continue;
-                            }
-                        }
-
-                        if (!Install)
-                        {
-                            continue;
-                        }
-
-                        NeedsReboot = false;
-                        var num13 = 0;
-                        var activityId5 = 1;
-                        var activity5 = "Install updates for " + target;
-                        var statusDescription5 = "[" + num13 + "/" + totalDownloaded + "]";
-                        var progressRecord5 = new ProgressRecord(activityId5, activity5, statusDescription5);
-                        foreach (var item6 in collection.Where(x => x.Properties["Result"].Value.ToString() == "Downloaded"))
-                        {
-                            item6.Properties.Add(new PSNoteProperty("X", 3));
-                            var update5 = (IUpdate)item6.BaseObject;
-                            var updateCollection4 =
-                                (UpdateCollection)Activator.CreateInstance(
-                                    Marshal.GetTypeFromCLSID(new Guid("13639463-00DB-4646-803D-528026140D88")));
-                            updateCollection4.Add(update5);
-                            progressRecord5.StatusDescription = "[" + num13 + "/" + totalDownloaded + "] " + update5.Title + " " +
-                                                                item6.Properties["Size"].Value;
-                            progressRecord5.PercentComplete = num13 * 100 / totalDownloaded;
-                            WriteProgress(progressRecord5);
-                            num13++;
-                            WriteDebug(DateTime.Now + " Show update to install: " + update5.Title);
-                            var updateInstaller = UpdateSessionObj.CreateUpdateInstaller();
-                            updateInstaller.Updates = updateCollection4;
-                            if (ForceInstall)
-                            {
-                                updateInstaller.IsForced = true;
-                            }
-
-                            IInstallationResult installationResult;
-                            try
-                            {
-                                installationResult = updateInstaller.Install();
-                                WriteDebug(DateTime.Now + " Installed");
-                            }
-                            catch (COMException ex6)
-                            {
-                                var wUApiCodeDetails4 = WUToolsObj.GetWUApiCodeDetails(ex6.ErrorCode);
-                                var flag6 = false;
-                                if (wUApiCodeDetails4 != null)
-                                {
-                                    switch (wUApiCodeDetails4.CodeType)
-                                    {
-                                        case 2:
-                                            WriteError(new ErrorRecord(new Exception(wUApiCodeDetails4.Description),
-                                                wUApiCodeDetails4.HResult, ErrorCategory.CloseError, null));
-                                            flag6 = true;
-                                            break;
-                                        case 3:
-                                            WriteWarning(wUApiCodeDetails4.HResult + ": " + wUApiCodeDetails4.Description);
-                                            break;
-                                    }
-
-                                    if (flag6)
-                                    {
-                                        WriteDebug(DateTime.Now + " Skip to next computer");
-                                        break;
-                                    }
-                                }
-                                else if (Debuger)
-                                {
-                                    var errorRecord9 = new ErrorRecord(ex6, "Debug", ErrorCategory.CloseError, null);
-                                    ThrowTerminatingError(errorRecord9);
-                                }
-
-                                WriteDebug(DateTime.Now + " Skip to next update");
-                                continue;
-                            }
-
-                            if (!NeedsReboot)
-                            {
-                                NeedsReboot = installationResult.RebootRequired;
-                                WriteDebug(DateTime.Now + " Reboot is required");
-                            }
-
-                            var value3 = "";
-                            switch (installationResult.ResultCode)
-                            {
-                                case OperationResultCode.orcNotStarted:
-                                    value3 = "NotStarted";
-                                    break;
-                                case OperationResultCode.orcInProgress:
-                                    value3 = "InProgress";
-                                    break;
-                                case OperationResultCode.orcSucceeded:
-                                    value3 = "Installed";
-                                    break;
-                                case OperationResultCode.orcSucceededWithErrors:
-                                    value3 = "InstalledWithErrors";
-                                    break;
-                                case OperationResultCode.orcFailed:
-                                    value3 = "Failed";
-                                    break;
-                                case OperationResultCode.orcAborted:
-                                    value3 = "Aborted";
-                                    break;
-                            }
-
-                            item6.Properties.Add(new PSNoteProperty("InstallResult", value3));
-                            item6.Properties.Add(new PSNoteProperty("Result", value3));
-                            var text31 = "";
-                            text31 = !(item6.Properties["ChooseResult"].Value.ToString() == "Accepted") ? text31 + "R" : text31 + "A";
-                            text31 = !(item6.Properties["DownloadResult"].Value.ToString() == "Downloaded") ? text31 + "F" : text31 + "D";
-                            text31 = !(item6.Properties["InstallResult"].Value.ToString() == "Installed")
-                                ? text31 + "F"
-                                : !installationResult.RebootRequired
-                                    ? text31 + "I"
-                                    : text31 + "R";
-                            text31 = !update5.IsMandatory ? text31 + "-" : text31 + "M";
-                            text31 = !update5.IsHidden ? text31 + "-" : text31 + "H";
-                            text31 = !update5.IsUninstallable ? text31 + "-" : text31 + "U";
-                            text31 = !update5.IsBeta ? text31 + "-" : text31 + "B";
-                            item6.Properties["Status"].Value = text31;
-                            WriteObject(item6, true);
-                        }
-
-                        progressRecord5.RecordType = ProgressRecordType.Completed;
-                        WriteProgress(progressRecord5);
-                        totalInstalled = collection.Where(x => x.Properties["Result"].Value.ToString() == "Installed").Count();
-                        WriteVerbose("Installed [" + totalInstalled + "] Updates");
-                        WriteDebug(DateTime.Now + " Return installed update list");
-                        OutputObj.AddRange(collection.ToList());
-                        if (totalInstalled > 0 && SendHistory)
-                        {
-                            var cmdLine2 = "Get-WUHistory -SendReport -Last " + totalInstalled +
-                                           " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
-                            var invokeWUJob2 = new InvokeWUJob();
-                            invokeWUJob2.ComputerName = new string[1] { target };
-                            if (Credential != null)
-                            {
-                                invokeWUJob2.Credential = Credential;
-                            }
-
-                            invokeWUJob2.Script = cmdLine2;
-                            invokeWUJob2.TaskName = "PSWindowsUpdate_History";
-                            if (NeedsReboot)
-                            {
-                                invokeWUJob2.TriggerAtStart = true;
-                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (AtStart): powershell.exe -Command \"" +
-                                             cmdLine2 + "\"");
-                            }
-                            else
-                            {
-                                invokeWUJob2.RunNow = true;
-                                WriteVerbose("Invoke-WUJob: PSWindowsUpdate_History " + target + " (Now): powershell.exe -Command \"" +
-                                             cmdLine2 + "\"");
-                            }
-
-                            foreach (var item7 in invokeWUJob2.Invoke())
-                            {
-                                WriteObject(item7);
-                            }
-                        }
-
-                        if (RecurseCycle <= 1)
-                        {
-                            continue;
-                        }
-
-                        RecurseCycle--;
-
-                        var cmdLine3 = !Debuger
-                            ? "Get-WindowsUpdate -AcceptAll"
-                            : "$DebugPreference = 'Continue'; Get-WindowsUpdate -AcceptAll";
-
-                        if (IsInstalled)
-                        {
-                            cmdLine3 += " -IsInstalled";
-                        }
-
-                        if (IsHidden)
-                        {
-                            cmdLine3 += " -IsHidden";
-                        }
-
-                        if (WithHidden)
-                        {
-                            cmdLine3 += " -WithHidden";
-                        }
-
-                        if (UpdateType != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -UpdateType " + UpdateType;
-                        }
-
-                        if (DeploymentAction != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -DeploymentAction " + DeploymentAction;
-                        }
-
-                        if (UpdateID != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -UpdateID '" + string.Join("','", UpdateID) + "'";
-                        }
-
-                        if (NotUpdateID != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -NotUpdateID '" + string.Join("','", NotUpdateID) + "'";
-                        }
-                        else if (text23 != "")
-                        {
-                            cmdLine3 = cmdLine3 + " -NotUpdateID " + text23;
-                        }
-
-                        if (RevisionNumber > 0)
-                        {
-                            cmdLine3 = cmdLine3 + " -RevisionNumber " + RevisionNumber;
-                        }
-
-                        if (CategoryIDs != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -CategoryIDs '" + string.Join("','", CategoryIDs) + "'";
-                        }
-
-                        if (IsAssigned)
-                        {
-                            cmdLine3 = !IsAssigned ? cmdLine3 + " -IsAssigned:$false" : cmdLine3 + " -IsAssigned";
-                        }
-
-                        if (IsPresent)
-                        {
-                            cmdLine3 = !IsPresent ? cmdLine3 + " -IsPresent:$false" : cmdLine3 + " -IsPresent";
-                        }
-
-                        if (AutoSelectOnWebSites)
-                        {
-                            cmdLine3 = !AutoSelectOnWebSites
-                                ? cmdLine3 + " -AutoSelectOnWebSites:$false"
-                                : cmdLine3 + " -AutoSelectOnWebSites";
-                        }
-
-                        if (RootCategories != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -RootCategories '" + string.Join("','", RootCategories) + "'";
-                        }
-
-                        if (Category != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -Category '" + string.Join("','", Category) + "'";
-                        }
-
-                        if (KBArticleID != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -KBArticleID '" + string.Join("','", KBArticleID) + "'";
-                        }
-
-                        if (Title != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -Title '" + Title + "'";
-                        }
-
-                        if (Severity != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -Severity '" + string.Join("','", Severity) + "'";
-                        }
-
-                        if (NotCategory != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -NotCategory '" + string.Join("','", NotCategory) + "'";
-                        }
-
-                        if (NotKBArticleID != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -NotKBArticleID '" + string.Join("','", NotKBArticleID) + "'";
-                        }
-
-                        if (NotTitle != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -NotTitle '" + NotTitle + "'";
-                        }
-
-                        if (NotSeverity != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -NotSeverity '" + string.Join("','", NotSeverity) + "'";
-                        }
-
-                        if (IgnoreUserInput)
-                        {
-                            cmdLine3 += " -IgnoreUserInput";
-                        }
-
-                        if (IgnoreRebootRequired)
-                        {
-                            cmdLine3 += " -IgnoreRebootRequired";
-                        }
-
-                        if (AutoSelectOnly)
-                        {
-                            cmdLine3 += " -AutoSelectOnly";
-                        }
-
-                        if (MaxSize > 0)
-                        {
-                            cmdLine3 = cmdLine3 + " -MaxSize " + MaxSize;
-                        }
-
-                        if (MinSize > 0)
-                        {
-                            cmdLine3 = cmdLine3 + " -MinSize " + MinSize;
-                        }
-
-                        if (Download)
-                        {
-                            cmdLine3 += " -Download";
-                        }
-
-                        if (Install)
-                        {
-                            cmdLine3 += " -Install";
-                        }
-
-                        if (IgnoreReboot)
-                        {
-                            cmdLine3 += " -IgnoreReboot";
-                        }
-                        else if (AutoReboot)
-                        {
-                            cmdLine3 += " -AutoReboot";
-                        }
-                        else if (ScheduleReboot != DateTime.MinValue)
-                        {
-                            cmdLine3 = cmdLine3 + " -ScheduleReboot '" + ScheduleReboot + "'";
-                        }
-
-                        if (WindowsUpdate)
-                        {
-                            cmdLine3 += " -WindowsUpdate";
-                        }
-                        else if (MicrosoftUpdate)
-                        {
-                            cmdLine3 += " -MicrosoftUpdate";
-                        }
-                        else if (ServiceID != null)
-                        {
-                            cmdLine3 = cmdLine3 + " -ServiceID '" + ServiceID + "'";
-                        }
-
-                        if (SendReport)
-                        {
-                            cmdLine3 += " -SendReport";
-                        }
-
-                        if (SendHistory)
-                        {
-                            cmdLine3 += " -SendHistory";
-                        }
-
-                        if (RecurseCycle > 1)
-                        {
-                            cmdLine3 = cmdLine3 + " -RecurseCycle " + RecurseCycle;
-                        }
-
-                        cmdLine3 += " -Verbose *>&1 | Out-File $Env:TEMP\\PSWindowsUpdate.log -Append";
-                        var invokeWUJob3 = new InvokeWUJob();
-                        invokeWUJob3.ComputerName = new string[1] { target };
-                        if (Credential != null)
-                        {
-                            invokeWUJob3.Credential = Credential;
-                        }
-
-                        invokeWUJob3.Script = cmdLine3;
-                        invokeWUJob3.TaskName = "PSWindowsUpdate_Recurse" + RecurseCycle;
-                        invokeWUJob3.Debuger = true;
-                        if (NeedsReboot)
-                        {
-                            invokeWUJob3.TriggerAtStart = true;
-                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (AtStart): ");
-                        }
-                        else
-                        {
-                            ScheduleJob = DateTime.Now.AddMinutes(5.0);
-                            invokeWUJob3.TriggerDate = ScheduleJob;
-                            WriteVerbose("Invoke-WUJob: PSWindowsUpdate " + target + " (" + ScheduleJob + "): ");
-                        }
-
-                        WriteVerbose("powershell.exe -Command \"" + cmdLine3 + "\"");
-                        var enumerable3 = invokeWUJob3.Invoke();
-                        foreach (var item8 in enumerable3)
-                        {
-                            WriteObject(item8);
                         }
                     }
                     else if (Debuger)
                     {
-                        var errorRecord10 = new ErrorRecord(wUApiServiceManagerObj.Exception, "Debug", ErrorCategory.CloseError, null);
-                        WriteError(errorRecord10);
+                        WriteError(new ErrorRecord(serviceManagerObj.Exception, "Debug", ErrorCategory.CloseError, null));
                     }
                     else
                     {
-                        var error = wUApiServiceManagerObj.Error;
-                        WriteError(error);
+                        WriteError(serviceManagerObj.Error);
                     }
                 }
                 else if (Debuger)
                 {
-                    var errorRecord11 = new ErrorRecord(wUApiUpdateSessionObj.Exception, "Debug", ErrorCategory.CloseError, null);
-                    WriteError(errorRecord11);
+                    WriteError(new ErrorRecord(updateSessionObj.Exception, "Debug", ErrorCategory.CloseError, null));
                 }
                 else
                 {
-                    var error2 = wUApiUpdateSessionObj.Error;
-                    WriteError(error2);
+                    WriteError(updateSessionObj.Error);
                 }
             }
         }
 
+        /// <summary>Process</summary>
         protected override void ProcessRecord()
         {
             var flag = false;
@@ -2400,6 +2352,7 @@ namespace PSWindowsUpdate
             CoreProcessing();
         }
 
+        /// <summary>End</summary>
         protected override void EndProcessing()
         {
             CmdletEnd = DateTime.Now;
